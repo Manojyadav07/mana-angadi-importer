@@ -2,95 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Mana Angadi Design System - Village-friendly, warm, trustworthy */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm, earthy village palette */
+    --background: 45 30% 97%;
+    --foreground: 25 20% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 45 40% 99%;
+    --card-foreground: 25 20% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 45 40% 99%;
+    --popover-foreground: 25 20% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Soft sage green - trust, nature, freshness */
+    --primary: 145 35% 42%;
+    --primary-foreground: 45 40% 99%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm cream */
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 25 20% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted earthy tones */
+    --muted: 40 20% 92%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Terracotta accent for CTAs */
+    --accent: 18 70% 55%;
+    --accent-foreground: 45 40% 99%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Status colors */
+    --success: 145 50% 45%;
+    --success-foreground: 45 40% 99%;
+    
+    --warning: 35 90% 55%;
+    --warning-foreground: 25 20% 15%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 45 40% 99%;
 
-    --radius: 0.5rem;
+    /* Borders and inputs */
+    --border: 35 25% 88%;
+    --input: 35 25% 88%;
+    --ring: 145 35% 42%;
 
-    --sidebar-background: 0 0% 98%;
+    --radius: 0.75rem;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Shop status colors */
+    --shop-open: 145 50% 45%;
+    --shop-closed: 0 30% 55%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Order status colors */
+    --status-placed: 220 60% 55%;
+    --status-accepted: 35 80% 50%;
+    --status-ready: 145 50% 45%;
+    --status-delivered: 145 60% 40%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar (not used but keeping for compatibility) */
+    --sidebar-background: 45 30% 97%;
+    --sidebar-foreground: 25 20% 20%;
+    --sidebar-primary: 145 35% 42%;
+    --sidebar-primary-foreground: 45 40% 99%;
+    --sidebar-accent: 40 30% 94%;
+    --sidebar-accent-foreground: 25 20% 25%;
+    --sidebar-border: 35 25% 88%;
+    --sidebar-ring: 145 35% 42%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Keep same palette for now - village users prefer consistency */
+    --background: 45 30% 97%;
+    --foreground: 25 20% 20%;
+    --card: 45 40% 99%;
+    --card-foreground: 25 20% 20%;
+    --popover: 45 40% 99%;
+    --popover-foreground: 25 20% 20%;
+    --primary: 145 35% 42%;
+    --primary-foreground: 45 40% 99%;
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 25 20% 25%;
+    --muted: 40 20% 92%;
+    --muted-foreground: 25 15% 45%;
+    --accent: 18 70% 55%;
+    --accent-foreground: 45 40% 99%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 45 40% 99%;
+    --border: 35 25% 88%;
+    --input: 35 25% 88%;
+    --ring: 145 35% 42%;
+    --sidebar-background: 45 30% 97%;
+    --sidebar-foreground: 25 20% 20%;
+    --sidebar-primary: 145 35% 42%;
+    --sidebar-primary-foreground: 45 40% 99%;
+    --sidebar-accent: 40 30% 94%;
+    --sidebar-accent-foreground: 25 20% 25%;
+    --sidebar-border: 35 25% 88%;
+    --sidebar-ring: 145 35% 42%;
   }
 }
 
@@ -101,5 +111,233 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Sans Telugu', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Large, accessible text for village users */
+  html {
+    font-size: 18px;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 16px;
+    }
   }
 }
+
+@layer components {
+  /* Village-friendly large button */
+  .btn-village {
+    @apply px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200;
+    @apply active:scale-[0.98] touch-manipulation;
+    min-height: 56px;
+  }
+
+  .btn-primary {
+    @apply btn-village bg-primary text-primary-foreground;
+    @apply hover:opacity-90 active:opacity-95;
+  }
+
+  .btn-accent {
+    @apply btn-village bg-accent text-accent-foreground;
+    @apply hover:opacity-90 active:opacity-95;
+  }
+
+  .btn-secondary {
+    @apply btn-village bg-secondary text-secondary-foreground;
+    @apply hover:bg-muted;
+  }
+
+  /* Shop card styling */
+  .shop-card {
+    @apply bg-card rounded-2xl p-4 shadow-sm border border-border;
+    @apply transition-all duration-200 touch-manipulation;
+  }
+
+  .shop-card-active {
+    @apply shop-card cursor-pointer;
+    @apply hover:shadow-md active:scale-[0.99];
+  }
+
+  .shop-card-closed {
+    @apply shop-card opacity-60 cursor-not-allowed;
+  }
+
+  /* Product row styling */
+  .product-row {
+    @apply flex items-center justify-between py-4 border-b border-border last:border-b-0;
+  }
+
+  /* Status badges */
+  .badge-open {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    background-color: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+  }
+
+  .badge-closed {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    background-color: hsl(var(--shop-closed) / 0.15);
+    color: hsl(var(--shop-closed));
+  }
+
+  /* Order status badges */
+  .badge-status {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium;
+  }
+
+  .badge-placed {
+    @apply badge-status;
+    background-color: hsl(var(--status-placed) / 0.15);
+    color: hsl(var(--status-placed));
+  }
+
+  .badge-accepted {
+    @apply badge-status;
+    background-color: hsl(var(--status-accepted) / 0.15);
+    color: hsl(var(--status-accepted));
+  }
+
+  .badge-ready {
+    @apply badge-status;
+    background-color: hsl(var(--status-ready) / 0.15);
+    color: hsl(var(--status-ready));
+  }
+
+  .badge-delivered {
+    @apply badge-status;
+    background-color: hsl(var(--status-delivered) / 0.15);
+    color: hsl(var(--status-delivered));
+  }
+
+  /* Trust badge */
+  .trust-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium;
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+  }
+
+  /* Mobile container */
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen;
+  }
+
+  /* Safe area padding for bottom nav */
+  .safe-bottom {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-card border-t border-border;
+    @apply flex items-center justify-around;
+    height: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-4 min-w-[80px];
+    @apply text-muted-foreground transition-colors duration-200;
+  }
+
+  .bottom-nav-item-active {
+    @apply bottom-nav-item text-primary;
+  }
+
+  /* Input styling */
+  .input-village {
+    @apply w-full px-4 py-4 text-lg rounded-xl border-2 border-border;
+    @apply focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20;
+    @apply placeholder:text-muted-foreground/60;
+    min-height: 56px;
+  }
+
+  /* Screen header */
+  .screen-header {
+    @apply sticky top-0 bg-background/95 backdrop-blur-sm z-10;
+    @apply px-4 py-4 border-b border-border;
+  }
+
+  /* Quantity controls */
+  .qty-btn {
+    @apply w-10 h-10 rounded-full flex items-center justify-center;
+    @apply bg-secondary text-secondary-foreground font-bold text-xl;
+    @apply active:scale-95 transition-transform touch-manipulation;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }

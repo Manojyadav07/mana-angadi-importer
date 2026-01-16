@@ -1,0 +1,64 @@
+import { Shop } from '@/types';
+import { Store, ChefHat, Pill, ShieldCheck } from 'lucide-react';
+
+interface ShopCardProps {
+  shop: Shop;
+  onClick?: () => void;
+}
+
+const shopIcons = {
+  'కిరాణా': Store,
+  'హోటల్': ChefHat,
+  'మెడికల్': Pill,
+};
+
+export function ShopCard({ shop, onClick }: ShopCardProps) {
+  const Icon = shopIcons[shop.type] || Store;
+
+  return (
+    <div
+      className={shop.isOpen ? 'shop-card-active' : 'shop-card-closed'}
+      onClick={shop.isOpen ? onClick : undefined}
+    >
+      <div className="flex items-start gap-4">
+        {/* Shop Icon */}
+        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-7 h-7 text-primary" />
+        </div>
+
+        {/* Shop Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg text-foreground truncate">
+            {shop.name}
+          </h3>
+          
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {shop.type}
+          </p>
+
+          {/* Trust Badge */}
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <span className="trust-badge">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              మన ఊరి నమ్మకమైన అంగడి
+            </span>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div className="flex-shrink-0">
+          {shop.isOpen ? (
+            <span className="badge-open">
+              <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse-soft" />
+              తెరిచి ఉంది
+            </span>
+          ) : (
+            <span className="badge-closed">
+              మూసి ఉంది
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
