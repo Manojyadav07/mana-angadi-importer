@@ -21,12 +21,18 @@ interface Translations {
   shopNotFound: string;
   orderNotFound: string;
   currentStatus: string;
+  cancel: string;
+  confirm: string;
+  back: string;
   
   // Login
   enterMobileNumber: string;
   mobileNumber: string;
   sendOtp: string;
   invalidPhone: string;
+  merchantLogin: string;
+  customerLogin: string;
+  loginAs: string;
   
   // Home
   greeting: string;
@@ -40,6 +46,7 @@ interface Translations {
   outOfStock: string;
   viewCart: string;
   items: string;
+  shopClosed: string;
   
   // Cart
   yourOrder: string;
@@ -63,12 +70,15 @@ interface Translations {
   noOrders: string;
   orderDetails: string;
   orderTimeline: string;
+  browseShops: string;
+  viewOrderStatus: string;
   
   // Status
   statusPlaced: string;
   statusAccepted: string;
   statusReady: string;
   statusDelivered: string;
+  statusRejected: string;
   
   // Profile
   myDetails: string;
@@ -83,9 +93,53 @@ interface Translations {
   navHome: string;
   navOrders: string;
   navProfile: string;
+  navProducts: string;
   
   // Errors
   networkError: string;
+  
+  // Merchant
+  merchantMode: string;
+  shopStatus: string;
+  shopOpenLabel: string;
+  shopClosedLabel: string;
+  myShops: string;
+  incomingOrders: string;
+  allOrders: string;
+  newOrders: string;
+  acceptedOrders: string;
+  readyOrders: string;
+  deliveredOrders: string;
+  acceptOrder: string;
+  rejectOrder: string;
+  markReady: string;
+  orderAccepted: string;
+  orderRejected: string;
+  orderMarkedReady: string;
+  selectRejectionReason: string;
+  itemsNotAvailable: string;
+  shopClosedReason: string;
+  cannotFulfillNow: string;
+  
+  // Merchant Products
+  myProducts: string;
+  addProduct: string;
+  editProduct: string;
+  productName: string;
+  productNameTe: string;
+  productNameEn: string;
+  price: string;
+  inStock: string;
+  active: string;
+  category: string;
+  noProducts: string;
+  saveProduct: string;
+  deleteProduct: string;
+  productSaved: string;
+  
+  // Filter chips
+  all: string;
+  new: string;
 }
 
 const teluguTranslations: Translations = {
@@ -107,12 +161,18 @@ const teluguTranslations: Translations = {
   shopNotFound: 'అంగడి కనుగొనబడలేదు',
   orderNotFound: 'ఆర్డర్ కనుగొనబడలేదు',
   currentStatus: 'ప్రస్తుత స్థితి',
+  cancel: 'రద్దు చేయండి',
+  confirm: 'నిర్ధారించండి',
+  back: 'వెనుకకు',
   
   // Login
   enterMobileNumber: 'మీ నెంబర్ నమోదు చేయండి',
   mobileNumber: 'మొబైల్ నెంబర్',
   sendOtp: 'OTP పంపండి',
   invalidPhone: 'దయచేసి సరైన నెంబర్ నమోదు చేయండి',
+  merchantLogin: 'వ్యాపారి లాగిన్',
+  customerLogin: 'కస్టమర్ లాగిన్',
+  loginAs: 'లాగిన్ చేయండి',
   
   // Home
   greeting: 'నమస్తే 👋',
@@ -126,6 +186,7 @@ const teluguTranslations: Translations = {
   outOfStock: 'లభ్యం కాదు',
   viewCart: 'కార్ట్ చూడండి',
   items: 'వస్తువులు',
+  shopClosed: 'అంగడి మూసి ఉంది',
   
   // Cart
   yourOrder: 'మీ ఆర్డర్',
@@ -149,12 +210,15 @@ const teluguTranslations: Translations = {
   noOrders: 'ఇప్పటికీ ఆర్డర్లు లేవు',
   orderDetails: 'ఆర్డర్ వివరాలు',
   orderTimeline: 'ఆర్డర్ స్థితి',
+  browseShops: 'అంగడులు చూడండి',
+  viewOrderStatus: 'మీ ఆర్డర్ స్థితి ఇక్కడ చూడండి',
   
   // Status - exact translations from spec
   statusPlaced: 'నమోదయ్యింది',
   statusAccepted: 'అంగీకరించారు',
   statusReady: 'సిద్ధం',
   statusDelivered: 'డెలివరీ అయింది',
+  statusRejected: 'తిరస్కరించబడింది',
   
   // Profile
   myDetails: 'నా వివరాలు',
@@ -169,9 +233,53 @@ const teluguTranslations: Translations = {
   navHome: 'హోమ్',
   navOrders: 'ఆర్డర్లు',
   navProfile: 'ప్రొఫైల్',
+  navProducts: 'ఉత్పత్తులు',
   
   // Errors
   networkError: 'ఇంటర్నెట్ సమస్య కనిపిస్తోంది',
+  
+  // Merchant
+  merchantMode: 'వ్యాపారి మోడ్',
+  shopStatus: 'దుకాణం స్థితి',
+  shopOpenLabel: 'దుకాణం: తెరిచి ఉంది',
+  shopClosedLabel: 'దుకాణం: మూసి ఉంది',
+  myShops: 'నా దుకాణాలు',
+  incomingOrders: 'ఇన్కమింగ్ ఆర్డర్లు',
+  allOrders: 'అన్ని ఆర్డర్లు',
+  newOrders: 'కొత్త ఆర్డర్లు',
+  acceptedOrders: 'అంగీకరించిన ఆర్డర్లు',
+  readyOrders: 'సిద్ధమైన ఆర్డర్లు',
+  deliveredOrders: 'డెలివరీ అయిన ఆర్డర్లు',
+  acceptOrder: 'అంగీకరించండి',
+  rejectOrder: 'తిరస్కరించండి',
+  markReady: 'సిద్ధం అని మార్క్ చేయండి',
+  orderAccepted: 'ఆర్డర్ అంగీకరించబడింది',
+  orderRejected: 'ఆర్డర్ తిరస్కరించబడింది',
+  orderMarkedReady: 'ఆర్డర్ సిద్ధంగా ఉంది',
+  selectRejectionReason: 'తిరస్కరణ కారణం ఎంచుకోండి',
+  itemsNotAvailable: 'వస్తువులు అందుబాటులో లేవు',
+  shopClosedReason: 'దుకాణం మూసి ఉంది',
+  cannotFulfillNow: 'ఇప్పుడు నెరవేర్చలేము',
+  
+  // Merchant Products
+  myProducts: 'నా ఉత్పత్తులు',
+  addProduct: 'ఉత్పత్తి జోడించండి',
+  editProduct: 'ఉత్పత్తి సవరించండి',
+  productName: 'ఉత్పత్తి పేరు',
+  productNameTe: 'తెలుగు పేరు',
+  productNameEn: 'ఆంగ్ల పేరు',
+  price: 'ధర',
+  inStock: 'స్టాక్‌లో ఉంది',
+  active: 'యాక్టివ్',
+  category: 'కేటగిరీ',
+  noProducts: 'ఇంకా ఉత్పత్తులు లేవు',
+  saveProduct: 'ఉత్పత్తిని సేవ్ చేయండి',
+  deleteProduct: 'ఉత్పత్తిని తొలగించండి',
+  productSaved: 'ఉత్పత్తి సేవ్ అయింది',
+  
+  // Filter chips
+  all: 'అన్నీ',
+  new: 'కొత్త',
 };
 
 const englishTranslations: Translations = {
@@ -193,12 +301,18 @@ const englishTranslations: Translations = {
   shopNotFound: 'Shop not found',
   orderNotFound: 'Order not found',
   currentStatus: 'Current Status',
+  cancel: 'Cancel',
+  confirm: 'Confirm',
+  back: 'Back',
   
   // Login
   enterMobileNumber: 'Enter your mobile number',
   mobileNumber: 'Mobile Number',
   sendOtp: 'Send OTP',
   invalidPhone: 'Please enter a valid mobile number',
+  merchantLogin: 'Merchant Login',
+  customerLogin: 'Customer Login',
+  loginAs: 'Login as',
   
   // Home
   greeting: 'Hello 👋',
@@ -212,6 +326,7 @@ const englishTranslations: Translations = {
   outOfStock: 'Out of Stock',
   viewCart: 'View Cart',
   items: 'items',
+  shopClosed: 'Shop is closed',
   
   // Cart
   yourOrder: 'Your Order',
@@ -235,12 +350,15 @@ const englishTranslations: Translations = {
   noOrders: 'No orders yet',
   orderDetails: 'Order Details',
   orderTimeline: 'Order Status',
+  browseShops: 'Browse Shops',
+  viewOrderStatus: 'View your order status here',
   
   // Status
   statusPlaced: 'Placed',
   statusAccepted: 'Accepted',
   statusReady: 'Ready',
   statusDelivered: 'Delivered',
+  statusRejected: 'Rejected',
   
   // Profile
   myDetails: 'My Details',
@@ -255,9 +373,53 @@ const englishTranslations: Translations = {
   navHome: 'Home',
   navOrders: 'Orders',
   navProfile: 'Profile',
+  navProducts: 'Products',
   
   // Errors
   networkError: 'Network issue detected',
+  
+  // Merchant
+  merchantMode: 'Merchant Mode',
+  shopStatus: 'Shop Status',
+  shopOpenLabel: 'Shop: Open',
+  shopClosedLabel: 'Shop: Closed',
+  myShops: 'My Shops',
+  incomingOrders: 'Incoming Orders',
+  allOrders: 'All Orders',
+  newOrders: 'New Orders',
+  acceptedOrders: 'Accepted',
+  readyOrders: 'Ready',
+  deliveredOrders: 'Delivered',
+  acceptOrder: 'Accept',
+  rejectOrder: 'Reject',
+  markReady: 'Mark Ready',
+  orderAccepted: 'Order accepted',
+  orderRejected: 'Order rejected',
+  orderMarkedReady: 'Order marked ready',
+  selectRejectionReason: 'Select rejection reason',
+  itemsNotAvailable: 'Items not available',
+  shopClosedReason: 'Shop closed',
+  cannotFulfillNow: 'Cannot fulfill now',
+  
+  // Merchant Products
+  myProducts: 'My Products',
+  addProduct: 'Add Product',
+  editProduct: 'Edit Product',
+  productName: 'Product Name',
+  productNameTe: 'Telugu Name',
+  productNameEn: 'English Name',
+  price: 'Price',
+  inStock: 'In Stock',
+  active: 'Active',
+  category: 'Category',
+  noProducts: 'No products yet',
+  saveProduct: 'Save Product',
+  deleteProduct: 'Delete Product',
+  productSaved: 'Product saved',
+  
+  // Filter chips
+  all: 'All',
+  new: 'New',
 };
 
 interface LanguageContextType {

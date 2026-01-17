@@ -213,6 +213,12 @@
     color: hsl(var(--status-delivered));
   }
 
+  .badge-rejected {
+    @apply badge-status;
+    background-color: hsl(var(--destructive) / 0.15);
+    color: hsl(var(--destructive));
+  }
+
   /* Trust badge */
   .trust-badge {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium;

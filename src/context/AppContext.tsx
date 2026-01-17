@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, CartItem, Order, Product, OrderStatus, Shop } from '@/types';
+import { User, CartItem, Order, Product, OrderStatus, Shop, UserRole } from '@/types';
 
 interface AppContextType {
   // Auth state
   user: User | null;
   isAuthenticated: boolean;
-  login: (phone: string, name?: string) => void;
+  isMerchant: boolean;
+  login: (phone: string, name?: string, role?: UserRole, shopIds?: string[]) => void;
   logout: () => void;
   updateUserName: (name: string) => void;
 
@@ -23,6 +24,8 @@ interface AppContextType {
   orders: Order[];
   placeOrder: (shop: Shop, note?: string) => Order;
   getOrderById: (orderId: string) => Order | undefined;
+  getOrdersByShopIds: (shopIds: string[]) => Order[];
+  updateOrderStatus: (orderId: string, status: OrderStatus, rejectionReason_te?: string, rejectionReason_en?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -34,13 +37,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
 
   // Auth functions
-  const login = useCallback((phone: string, name?: string) => {
+  const login = useCallback((phone: string, name?: string, role: UserRole = 'customer', shopIds?: string[]) => {
     setUser({
-      id: `user_${Date.now()}`,
+      id: role === 'merchant' ? 'merchant_1' : `user_${Date.now()}`,
       name: name || '',
       phone,
-      role: 'customer',
+      role,
       village: 'Metlachittapur',
+      shopIds: shopIds || (role === 'merchant' ? ['shop_1', 'shop_2'] : undefined),
     });
   }, []);
 
@@ -122,6 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       shopId: shop.id,
       shopName_te: shop.name_te,
       shopName_en: shop.name_en,
+      shopType: shop.type,
       status: 'placed' as OrderStatus,
       total: getCartTotal(),
       items: cart.map(item => ({
@@ -133,23 +138,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         price: item.product.price,
       })),
       createdAt: new Date(),
+      statusUpdatedAt: new Date(),
+      customerNote: note,
     };
 
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
-
-    // Simulate order status progression (for demo)
-    setTimeout(() => {
-      setOrders(prev =>
-        prev.map(o => o.id === newOrder.id ? { ...o, status: 'accepted' as OrderStatus } : o)
-      );
-    }, 10000);
-
-    setTimeout(() => {
-      setOrders(prev =>
-        prev.map(o => o.id === newOrder.id ? { ...o, status: 'ready' as OrderStatus } : o)
-      );
-    }, 20000);
 
     return newOrder;
   }, [user, cart, getCartTotal, clearCart]);
@@ -158,9 +152,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return orders.find(order => order.id === orderId);
   }, [orders]);
 
+  const getOrdersByShopIds = useCallback((shopIds: string[]) => {
+    return orders.filter(order => shopIds.includes(order.shopId));
+  }, [orders]);
+
+  const updateOrderStatus = useCallback((
+    orderId: string, 
+    status: OrderStatus, 
+    rejectionReason_te?: string, 
+    rejectionReason_en?: string
+  ) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? { 
+              ...order, 
+              status, 
+              statusUpdatedAt: new Date(),
+              rejectionReason_te,
+              rejectionReason_en,
+            }
+          : order
+      )
+    );
+  }, []);
+
   const value: AppContextType = {
     user,
     isAuthenticated: !!user,
+    isMerchant: user?.role === 'merchant',
     login,
     logout,
     updateUserName,
@@ -175,6 +195,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     orders,
     placeOrder,
     getOrderById,
+    getOrdersByShopIds,
+    updateOrderStatus,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
