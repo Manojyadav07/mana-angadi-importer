@@ -15,6 +15,7 @@ interface Translations {
   testingMode: string;
   villageBadge: string;
   trustBadge: string;
+  trustedLocalShop: string;
   language: string;
   
   // Login
@@ -96,6 +97,7 @@ const teluguTranslations: Translations = {
   testingMode: '🧪 టెస్టింగ్ మోడ్ - OTP అవసరం లేదు',
   villageBadge: '📍 Metlachittapur, Metpally',
   trustBadge: 'మన ఊరి నమ్మకమైన అంగడి',
+  trustedLocalShop: 'మన ఊరి నమ్మకమైన అంగడి',
   language: 'భాష',
   
   // Login
@@ -140,11 +142,11 @@ const teluguTranslations: Translations = {
   orderDetails: 'ఆర్డర్ వివరాలు',
   orderTimeline: 'ఆర్డర్ స్థితి',
   
-  // Status
-  statusPlaced: 'నమోదు',
+  // Status - exact translations from spec
+  statusPlaced: 'నమోదయ్యింది',
   statusAccepted: 'అంగీకరించారు',
   statusReady: 'సిద్ధం',
-  statusDelivered: 'డెలివరీ అయ్యింది',
+  statusDelivered: 'డెలివరీ అయింది',
   
   // Profile
   myDetails: 'నా వివరాలు',
@@ -155,10 +157,10 @@ const teluguTranslations: Translations = {
   privacyGuarantee: 'గోప్యత హామీ',
   save: 'సేవ్ చేయండి',
   
-  // Nav
-  navHome: 'అంగడులు',
+  // Nav - exact translations from spec
+  navHome: 'హోమ్',
   navOrders: 'ఆర్డర్లు',
-  navProfile: 'నా వివరాలు',
+  navProfile: 'ప్రొఫైల్',
   
   // Errors
   networkError: 'ఇంటర్నెట్ సమస్య కనిపిస్తోంది',
@@ -176,7 +178,8 @@ const englishTranslations: Translations = {
   logout: 'Logout',
   testingMode: '🧪 Testing Mode - No OTP required',
   villageBadge: '📍 Metlachittapur, Metpally',
-  trustBadge: 'Your trusted village shop',
+  trustBadge: 'Trusted Local Shop',
+  trustedLocalShop: 'Trusted Local Shop',
   language: 'Language',
   
   // Login
