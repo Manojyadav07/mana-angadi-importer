@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { CheckCircle, Home } from 'lucide-react';
+import { CheckCircle, Home, ShoppingBag } from 'lucide-react';
 
 export function OrderSuccessPage() {
   const navigate = useNavigate();
@@ -35,16 +35,17 @@ export function OrderSuccessPage() {
 
       {/* Privacy Note */}
       <p className="text-muted-foreground text-sm text-center mt-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-        {t.privacyNote}
+        {t.privacyOrderNote}
       </p>
 
       {/* Actions */}
       <div className="w-full mt-8 space-y-3 animate-slide-up">
         <button
           onClick={() => navigate('/orders')}
-          className="btn-primary w-full"
+          className="btn-primary w-full flex items-center justify-center gap-2"
         >
-          {t.name === 'Name' ? 'View Order Status' : 'ఆర్డర్ స్థితి చూడండి'}
+          <ShoppingBag className="w-5 h-5" />
+          {t.myOrders}
         </button>
 
         <button
