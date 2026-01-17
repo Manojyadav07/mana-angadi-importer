@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { Store, ArrowRight, Loader2 } from 'lucide-react';
+
+const WELCOME_SHOWN_KEY = 'mana-angadi-welcome-shown';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -12,6 +14,19 @@ export function LoginPage() {
   
   const [phone, setPhone] = useState('9876543210');
   const [isLoading, setIsLoading] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem(WELCOME_SHOWN_KEY);
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  const handleWelcomeDismiss = () => {
+    localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
+    setShowWelcome(false);
+  };
 
   const handleQuickLogin = async () => {
     setIsLoading(true);
@@ -25,15 +40,19 @@ export function LoginPage() {
     setPhone(value);
   };
 
+  if (showWelcome) {
+    return (
+      <WelcomeScreen 
+        onContinue={handleWelcomeDismiss}
+        onSkip={handleWelcomeDismiss}
+      />
+    );
+  }
+
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
-      {/* Language Toggle */}
-      <div className="flex justify-end px-4 pt-4">
-        <LanguageToggle />
-      </div>
-
       {/* Header Section */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-8">
         {/* Logo */}
         <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-6 animate-scale-in">
           <Store className="w-12 h-12 text-primary" />

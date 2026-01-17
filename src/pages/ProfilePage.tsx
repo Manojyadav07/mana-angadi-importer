@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { User, Phone, MapPin, LogOut, Edit2, Check, Shield } from 'lucide-react';
+import { User, Phone, MapPin, LogOut, Edit2, Check, Shield, Globe } from 'lucide-react';
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, updateUserName } = useApp();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
 
@@ -26,11 +25,10 @@ export function ProfilePage() {
   return (
     <MobileLayout>
       {/* Header */}
-      <header className="px-4 pt-6 pb-4 flex items-center justify-between">
+      <header className="px-4 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-foreground animate-fade-in">
           {t.myDetails}
         </h1>
-        <LanguageToggle />
       </header>
 
       <div className="px-4 pb-4 space-y-4">
@@ -54,7 +52,7 @@ export function ProfilePage() {
                   />
                 ) : (
                   <p className="font-medium text-foreground">
-                    {user?.name || (t.name === 'Name' ? 'No name' : 'పేరు లేదు')}
+                    {user?.name || t.noName}
                   </p>
                 )}
               </div>
@@ -103,12 +101,53 @@ export function ProfilePage() {
           </div>
         </div>
 
+        {/* Language Toggle Card */}
+        <div className="bg-card rounded-2xl border border-border p-4 animate-fade-in" style={{ animationDelay: '0.05s' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.language}</p>
+                <p className="font-medium text-foreground">
+                  {language === 'te' ? 'తెలుగు' : 'English'}
+                </p>
+              </div>
+            </div>
+            
+            {/* Segmented Control */}
+            <div className="flex items-center bg-muted rounded-full p-1">
+              <button
+                onClick={() => setLanguage('te')}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  language === 'te'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                తెలుగు
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  language === 'en'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Privacy Note */}
         <div className="bg-primary/10 rounded-2xl p-4 flex items-start gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-foreground">
-              {t.name === 'Name' ? 'Privacy Guarantee' : 'గోప్యత హామీ'}
+              {t.privacyGuarantee}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               {t.privacyNote}

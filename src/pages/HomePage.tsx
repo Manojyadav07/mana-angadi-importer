@@ -38,7 +38,7 @@ export function HomePage() {
             <p className="text-lg text-foreground mt-0.5">{user.name}</p>
           )}
           <p className="text-muted-foreground mt-1">
-            {t.trustedShops}
+            {t.nearbyShops}
           </p>
         </div>
       </header>

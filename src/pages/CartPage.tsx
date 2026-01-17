@@ -39,7 +39,7 @@ export function CartPage() {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="font-bold text-lg text-foreground">
-              {t.name === 'Name' ? 'Your Cart' : 'మీ కార్ట్'}
+              {t.yourOrder}
             </h1>
           </div>
         </header>
@@ -50,13 +50,13 @@ export function CartPage() {
             <Trash2 className="w-10 h-10 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground text-center text-lg">
-            {t.emptyCartMessage}
+            {t.emptyCart}
           </p>
           <button
             onClick={() => navigate('/home')}
             className="btn-primary mt-6"
           >
-            {t.name === 'Name' ? 'Browse Shops' : 'అంగడులు చూడండి'}
+            {t.navHome}
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@ export function CartPage() {
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={t.name === 'Name' ? 'Any instructions...' : 'ఏదైనా సూచనలు...'}
+            placeholder={t.deliveryNote}
             className="w-full px-3 py-2 rounded-xl border border-border resize-none h-20 focus:outline-none focus:border-primary"
           />
         </div>
@@ -133,7 +133,7 @@ export function CartPage() {
           <div>
             <p className="font-medium text-foreground">{t.paymentNote}</p>
             <p className="text-sm text-muted-foreground">
-              {t.name === 'Name' ? 'Cash on Delivery only' : 'Cash on Delivery మాత్రమే'}
+              {t.paymentNote}
             </p>
           </div>
         </div>
@@ -154,9 +154,7 @@ export function CartPage() {
           className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-70"
         >
           {isPlacing ? (
-            <span className="animate-pulse">
-              {t.name === 'Name' ? 'Placing order...' : 'ఆర్డర్ పెడుతున్నాము...'}
-            </span>
+            <span className="animate-pulse">{t.placeOrder}...</span>
           ) : (
             t.placeOrder
           )}
