@@ -1,6 +1,6 @@
 import { Product, CartItem, getLocalizedName } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Package } from 'lucide-react';
 
 interface ProductRowProps {
   product: Product;
@@ -19,8 +19,23 @@ export function ProductRow({ product, cartItem, onAdd, onIncrease, onDecrease }:
 
   return (
     <div className="product-row">
+      {/* Product Image */}
+      <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+        {product.image ? (
+          <img 
+            src={product.image} 
+            alt={productName}
+            className={`w-full h-full object-cover ${!product.inStock ? 'opacity-50 grayscale' : ''}`}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Package className="w-6 h-6 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+
       {/* Product Info */}
-      <div className="flex-1 min-w-0 pr-4">
+      <div className="flex-1 min-w-0 px-3">
         <h4 className={`font-medium ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
           {productName}
         </h4>

@@ -27,6 +27,7 @@ export interface Product {
   inStock: boolean;
   unit_te?: string;
   unit_en?: string;
+  image?: string;
 }
 
 export interface CartItem {

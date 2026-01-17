@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getShopById, getLocalizedName } from '@/data/mockData';
-import { ArrowLeft, Plus, Minus, Trash2, Banknote } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Trash2, Banknote, Package } from 'lucide-react';
 
 export function CartPage() {
   const navigate = useNavigate();
@@ -92,23 +92,38 @@ export function CartPage() {
       {/* Cart Items */}
       <div className="flex-1 px-4 py-4 space-y-3">
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          {cart.map(item => (
+        {cart.map(item => (
             <div key={item.product.id} className="product-row px-4">
-              <div className="flex-1 min-w-0">
+              {/* Product Image */}
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                {item.product.image ? (
+                  <img 
+                    src={item.product.image} 
+                    alt={getProductName(item.product)}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 px-3">
                 <h4 className="font-medium text-foreground">{getProductName(item.product)}</h4>
                 <p className="text-primary font-semibold mt-0.5">
                   ₹{item.product.price} × {item.quantity} = ₹{item.product.price * item.quantity}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                   className="qty-btn"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                <span className="w-6 text-center font-semibold">{item.quantity}</span>
                 <button
                   onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                   className="qty-btn bg-primary text-primary-foreground"
