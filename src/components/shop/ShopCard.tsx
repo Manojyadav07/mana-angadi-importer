@@ -1,5 +1,6 @@
 import { Shop } from '@/types';
 import { Store, ChefHat, Pill, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ShopCardProps {
   shop: Shop;
@@ -14,6 +15,7 @@ const shopIcons = {
 
 export function ShopCard({ shop, onClick }: ShopCardProps) {
   const Icon = shopIcons[shop.type] || Store;
+  const { t } = useLanguage();
 
   return (
     <div
@@ -40,7 +42,7 @@ export function ShopCard({ shop, onClick }: ShopCardProps) {
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <span className="trust-badge">
               <ShieldCheck className="w-3.5 h-3.5" />
-              మన ఊరి నమ్మకమైన అంగడి
+              {t.trustBadge}
             </span>
           </div>
         </div>
@@ -50,11 +52,11 @@ export function ShopCard({ shop, onClick }: ShopCardProps) {
           {shop.isOpen ? (
             <span className="badge-open">
               <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse-soft" />
-              తెరిచి ఉంది
+              {t.open}
             </span>
           ) : (
             <span className="badge-closed">
-              మూసి ఉంది
+              {t.closed}
             </span>
           )}
         </div>

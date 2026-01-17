@@ -3,19 +3,27 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ShopCard } from '@/components/shop/ShopCard';
 import { shops } from '@/data/mockData';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { ShoppingBag } from 'lucide-react';
 
 export function HomePage() {
   const navigate = useNavigate();
   const { user, getCartItemCount, getCartTotal } = useApp();
+  const { t, language } = useLanguage();
   const cartCount = getCartItemCount();
   const cartTotal = getCartTotal();
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'శుభోదయం';
-    if (hour < 17) return 'శుభ మధ్యాహ్నం';
-    return 'శుభ సాయంత్రం';
+    if (language === 'te') {
+      if (hour < 12) return 'శుభోదయం';
+      if (hour < 17) return 'శుభ మధ్యాహ్నం';
+      return 'శుభ సాయంత్రం';
+    } else {
+      if (hour < 12) return 'Good Morning';
+      if (hour < 17) return 'Good Afternoon';
+      return 'Good Evening';
+    }
   };
 
   return (
@@ -30,7 +38,7 @@ export function HomePage() {
             <p className="text-lg text-foreground mt-0.5">{user.name}</p>
           )}
           <p className="text-muted-foreground mt-1">
-            మీ ఊరి నమ్మకమైన అంగడులు
+            {t.trustedShops}
           </p>
         </div>
       </header>
@@ -57,7 +65,7 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-full bg-accent-foreground/20 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5" />
               </div>
-              <span>{cartCount} వస్తువులు</span>
+              <span>{cartCount} {t.items}</span>
             </div>
             <span className="font-bold">₹{cartTotal}</span>
           </button>

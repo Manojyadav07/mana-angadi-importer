@@ -3,6 +3,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ProductRow } from '@/components/shop/ProductRow';
 import { getShopById, getProductsByShopId } from '@/data/mockData';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, ShoppingBag, Store, ChefHat, Pill } from 'lucide-react';
 
 const shopIcons = {
@@ -16,6 +17,7 @@ export function ShopPage() {
   const navigate = useNavigate();
   const { cart, addToCart, updateQuantity } = useApp();
   const { getCartItemCount, getCartTotal } = useApp();
+  const { t } = useLanguage();
 
   const shop = shopId ? getShopById(shopId) : undefined;
   const products = shopId ? getProductsByShopId(shopId) : [];
@@ -27,7 +29,9 @@ export function ShopPage() {
     return (
       <MobileLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground">అంగడి కనుగొనబడలేదు</p>
+          <p className="text-muted-foreground">
+            {t.name === 'Name' ? 'Shop not found' : 'అంగడి కనుగొనబడలేదు'}
+          </p>
         </div>
       </MobileLayout>
     );
@@ -102,7 +106,7 @@ export function ShopPage() {
               <div className="w-10 h-10 rounded-full bg-accent-foreground/20 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5" />
               </div>
-              <span>{cartCount} వస్తువులు</span>
+              <span>{cartCount} {t.items}</span>
             </div>
             <span className="font-bold">₹{cartTotal}</span>
           </button>

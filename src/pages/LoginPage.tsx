@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { Store, ArrowRight, Loader2 } from 'lucide-react';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useApp();
+  const { t } = useLanguage();
   
-  const [phone, setPhone] = useState('9876543210'); // Default test number
+  const [phone, setPhone] = useState('9876543210');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleQuickLogin = async () => {
@@ -24,8 +27,13 @@ export function LoginPage() {
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
+      {/* Language Toggle */}
+      <div className="flex justify-end px-4 pt-4">
+        <LanguageToggle />
+      </div>
+
       {/* Header Section */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-8 pb-8">
         {/* Logo */}
         <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-6 animate-scale-in">
           <Store className="w-12 h-12 text-primary" />
@@ -33,10 +41,10 @@ export function LoginPage() {
 
         {/* Title */}
         <h1 className="text-3xl font-bold text-foreground text-center animate-fade-in">
-          మన అంగడికి స్వాగతం
+          {t.welcome}
         </h1>
         <p className="text-muted-foreground text-center mt-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          టెస్టింగ్ కోసం లాగిన్ చేయండి
+          {t.enterMobileNumber}
         </p>
       </div>
 
@@ -51,7 +59,7 @@ export function LoginPage() {
             inputMode="numeric"
             value={phone}
             onChange={handlePhoneChange}
-            placeholder="మొబైల్ నెంబర్"
+            placeholder={t.mobileNumber}
             className="input-village pl-14"
           />
         </div>
@@ -65,21 +73,21 @@ export function LoginPage() {
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <>
-              కొనసాగించండి
+              {t.continue}
               <ArrowRight className="w-5 h-5" />
             </>
           )}
         </button>
 
         <p className="text-muted-foreground text-xs text-center">
-          🧪 టెస్టింగ్ మోడ్ - OTP అవసరం లేదు
+          {t.testingMode}
         </p>
       </div>
 
       {/* Village Badge */}
       <div className="px-6 pb-8 text-center">
         <span className="trust-badge">
-          📍 Metlachittapur, Metpally
+          {t.villageBadge}
         </span>
       </div>
     </div>

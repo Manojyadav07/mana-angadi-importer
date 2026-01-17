@@ -1,40 +1,32 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Package, User } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-
-interface NavItem {
-  path: string;
-  icon: React.ReactNode;
-  label: string;
-  labelTelugu: string;
-}
-
-const navItems: NavItem[] = [
-  {
-    path: '/home',
-    icon: <Home className="w-6 h-6" />,
-    label: 'Home',
-    labelTelugu: 'అంగడులు',
-  },
-  {
-    path: '/orders',
-    icon: <Package className="w-6 h-6" />,
-    label: 'Orders',
-    labelTelugu: 'ఆర్డర్లు',
-  },
-  {
-    path: '/profile',
-    icon: <User className="w-6 h-6" />,
-    label: 'Profile',
-    labelTelugu: 'నా వివరాలు',
-  },
-];
+import { useLanguage } from '@/context/LanguageContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { getCartItemCount } = useApp();
+  const { t } = useLanguage();
   const cartCount = getCartItemCount();
+
+  const navItems = [
+    {
+      path: '/home',
+      icon: <Home className="w-6 h-6" />,
+      label: t.navHome,
+    },
+    {
+      path: '/orders',
+      icon: <Package className="w-6 h-6" />,
+      label: t.navOrders,
+    },
+    {
+      path: '/profile',
+      icon: <User className="w-6 h-6" />,
+      label: t.navProfile,
+    },
+  ];
 
   // Don't show nav on login or cart screens
   if (location.pathname === '/' || location.pathname === '/cart' || location.pathname === '/order-success') {
@@ -62,7 +54,7 @@ export function BottomNav() {
                   </span>
                 )}
               </div>
-              <span className="text-xs mt-1 font-medium">{item.labelTelugu}</span>
+              <span className="text-xs mt-1 font-medium">{item.label}</span>
             </button>
           );
         })}

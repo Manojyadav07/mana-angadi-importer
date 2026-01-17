@@ -1,9 +1,11 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
 import { CheckCircle, Home } from 'lucide-react';
 
 export function OrderSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const orderId = location.state?.orderId;
 
   return (
@@ -15,25 +17,25 @@ export function OrderSuccessPage() {
 
       {/* Success Message */}
       <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">
-        మీ ఆర్డర్ విజయవంతంగా నమోదు అయ్యింది
+        {t.orderSuccessMessage}
       </h1>
 
       {orderId && (
         <p className="text-muted-foreground text-center mt-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          ఆర్డర్ #{orderId}
+          {t.orderId} #{orderId}
         </p>
       )}
 
       {/* Delivery Message */}
       <div className="bg-primary/10 rounded-2xl p-4 mt-6 w-full animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <p className="text-center text-foreground">
-          🛵 మన ఊరి డెలివరీ వ్యక్తి త్వరలో వస్తారు
+          🛵 {t.deliveryMessage}
         </p>
       </div>
 
       {/* Privacy Note */}
       <p className="text-muted-foreground text-sm text-center mt-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-        మీ ఆర్డర్ వివరాలు పూర్తిగా గోప్యంగా ఉంటాయి
+        {t.privacyNote}
       </p>
 
       {/* Actions */}
@@ -42,7 +44,7 @@ export function OrderSuccessPage() {
           onClick={() => navigate('/orders')}
           className="btn-primary w-full"
         >
-          ఆర్డర్ స్థితి చూడండి
+          {t.name === 'Name' ? 'View Order Status' : 'ఆర్డర్ స్థితి చూడండి'}
         </button>
 
         <button
@@ -50,7 +52,7 @@ export function OrderSuccessPage() {
           className="btn-secondary w-full flex items-center justify-center gap-2"
         >
           <Home className="w-5 h-5" />
-          అంగడులకు వెళ్ళండి
+          {t.goHome}
         </button>
       </div>
     </div>

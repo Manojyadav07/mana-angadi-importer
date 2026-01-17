@@ -1,4 +1,5 @@
 import { Product, CartItem } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 import { Plus, Minus } from 'lucide-react';
 
 interface ProductRowProps {
@@ -11,6 +12,7 @@ interface ProductRowProps {
 
 export function ProductRow({ product, cartItem, onAdd, onIncrease, onDecrease }: ProductRowProps) {
   const quantity = cartItem?.quantity || 0;
+  const { t } = useLanguage();
 
   return (
     <div className="product-row">
@@ -24,7 +26,7 @@ export function ProductRow({ product, cartItem, onAdd, onIncrease, onDecrease }:
           {product.unit && <span className="text-muted-foreground font-normal text-sm"> / {product.unit}</span>}
         </p>
         {!product.inStock && (
-          <span className="text-destructive text-sm">లభ్యం కాదు</span>
+          <span className="text-destructive text-sm">{t.outOfStock}</span>
         )}
       </div>
 
@@ -35,14 +37,14 @@ export function ProductRow({ product, cartItem, onAdd, onIncrease, onDecrease }:
             disabled
             className="px-4 py-2 rounded-xl bg-muted text-muted-foreground text-sm font-medium opacity-50 cursor-not-allowed"
           >
-            లభ్యం కాదు
+            {t.outOfStock}
           </button>
         ) : quantity === 0 ? (
           <button
             onClick={onAdd}
             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium text-sm active:scale-95 transition-transform touch-manipulation"
           >
-            కార్ట్‌లో వేయండి
+            {t.addToCart}
           </button>
         ) : (
           <div className="flex items-center gap-3">

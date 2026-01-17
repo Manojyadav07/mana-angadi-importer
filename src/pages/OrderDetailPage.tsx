@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
-import { ORDER_STATUS_LABELS } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, CheckCircle, Clock, Package, Truck } from 'lucide-react';
 
 const statusIcons = {
@@ -24,14 +24,27 @@ export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { getOrderById } = useApp();
+  const { t } = useLanguage();
 
   const order = orderId ? getOrderById(orderId) : undefined;
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'placed': return t.statusPlaced;
+      case 'accepted': return t.statusAccepted;
+      case 'ready': return t.statusReady;
+      case 'delivered': return t.statusDelivered;
+      default: return status;
+    }
+  };
 
   if (!order) {
     return (
       <MobileLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground">ఆర్డర్ కనుగొనబడలేదు</p>
+          <p className="text-muted-foreground">
+            {t.name === 'Name' ? 'Order not found' : 'ఆర్డర్ కనుగొనబడలేదు'}
+          </p>
         </div>
       </MobileLayout>
     );
@@ -51,7 +64,7 @@ export function OrderDetailPage() {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div>
-            <h1 className="font-bold text-lg text-foreground">ఆర్డర్ #{order.id}</h1>
+            <h1 className="font-bold text-lg text-foreground">{t.orderId} #{order.id}</h1>
             <p className="text-muted-foreground text-sm">{order.shopName}</p>
           </div>
         </div>
@@ -61,16 +74,18 @@ export function OrderDetailPage() {
         {/* Current Status */}
         <div className="bg-card rounded-2xl border border-border p-4">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">ప్రస్తుత స్థితి</span>
+            <span className="text-muted-foreground">
+              {t.name === 'Name' ? 'Current Status' : 'ప్రస్తుత స్థితి'}
+            </span>
             <span className={statusClasses[order.status]}>
-              {ORDER_STATUS_LABELS[order.status]}
+              {getStatusLabel(order.status)}
             </span>
           </div>
         </div>
 
         {/* Status Timeline */}
         <div className="bg-card rounded-2xl border border-border p-4">
-          <h3 className="font-semibold text-foreground mb-4">ఆర్డర్ ప్రయాణం</h3>
+          <h3 className="font-semibold text-foreground mb-4">{t.orderTimeline}</h3>
           
           <div className="space-y-4">
             {allStatuses.map((status, index) => {
@@ -98,7 +113,7 @@ export function OrderDetailPage() {
                         isCompleted ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
-                      {ORDER_STATUS_LABELS[status]}
+                      {getStatusLabel(status)}
                     </p>
                   </div>
 
@@ -114,7 +129,7 @@ export function OrderDetailPage() {
 
         {/* Order Items */}
         <div className="bg-card rounded-2xl border border-border p-4">
-          <h3 className="font-semibold text-foreground mb-4">ఆర్డర్ వివరాలు</h3>
+          <h3 className="font-semibold text-foreground mb-4">{t.orderDetails}</h3>
           
           <div className="space-y-3">
             {order.items.map((item, index) => (
@@ -133,7 +148,7 @@ export function OrderDetailPage() {
           </div>
 
           <div className="border-t border-border mt-4 pt-4 flex items-center justify-between">
-            <span className="font-semibold text-foreground">మొత్తం</span>
+            <span className="font-semibold text-foreground">{t.total}</span>
             <span className="text-xl font-bold text-primary">₹{order.total}</span>
           </div>
         </div>
@@ -141,7 +156,7 @@ export function OrderDetailPage() {
         {/* Privacy Note */}
         <div className="bg-primary/10 rounded-2xl p-4">
           <p className="text-sm text-center text-foreground">
-            🔒 మీ ఆర్డర్ వివరాలు పూర్తిగా గోప్యంగా ఉంటాయి
+            🔒 {t.privacyNote}
           </p>
         </div>
       </div>
