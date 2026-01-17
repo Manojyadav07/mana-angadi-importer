@@ -1,4 +1,5 @@
-import { Order, ORDER_STATUS_LABELS } from '@/types';
+import { Order } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 import { ChevronRight } from 'lucide-react';
 
 interface OrderCardProps {
@@ -14,6 +15,18 @@ const statusClasses: Record<string, string> = {
 };
 
 export function OrderCard({ order, onClick }: OrderCardProps) {
+  const { t } = useLanguage();
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'placed': return t.statusPlaced;
+      case 'accepted': return t.statusAccepted;
+      case 'ready': return t.statusReady;
+      case 'delivered': return t.statusDelivered;
+      default: return status;
+    }
+  };
+
   return (
     <div
       className="shop-card-active"
@@ -25,7 +38,7 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
             {order.shopName}
           </h3>
           <p className="text-muted-foreground text-sm mt-1">
-            ఆర్డర్ #{order.id}
+            {t.orderId} #{order.id}
           </p>
           <p className="text-muted-foreground text-sm">
             ₹{order.total}
@@ -34,7 +47,7 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
 
         <div className="flex items-center gap-3">
           <span className={statusClasses[order.status]}>
-            {ORDER_STATUS_LABELS[order.status]}
+            {getStatusLabel(order.status)}
           </span>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>

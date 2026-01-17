@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getShopById } from '@/data/mockData';
 import { ArrowLeft, Plus, Minus, Trash2, Banknote } from 'lucide-react';
 
 export function CartPage() {
   const navigate = useNavigate();
   const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, placeOrder } = useApp();
+  const { t } = useLanguage();
   const [note, setNote] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
 
@@ -17,7 +19,6 @@ export function CartPage() {
     if (!shop || cart.length === 0) return;
 
     setIsPlacing(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const order = placeOrder(shop.id, shop.name, note);
@@ -37,7 +38,9 @@ export function CartPage() {
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
-            <h1 className="font-bold text-lg text-foreground">మీ కార్ట్</h1>
+            <h1 className="font-bold text-lg text-foreground">
+              {t.name === 'Name' ? 'Your Cart' : 'మీ కార్ట్'}
+            </h1>
           </div>
         </header>
 
@@ -47,13 +50,13 @@ export function CartPage() {
             <Trash2 className="w-10 h-10 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground text-center text-lg">
-            ముందుగా వస్తువులు జోడించండి
+            {t.emptyCartMessage}
           </p>
           <button
             onClick={() => navigate('/home')}
             className="btn-primary mt-6"
           >
-            అంగడులు చూడండి
+            {t.name === 'Name' ? 'Browse Shops' : 'అంగడులు చూడండి'}
           </button>
         </div>
       </div>
@@ -72,7 +75,7 @@ export function CartPage() {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div>
-            <h1 className="font-bold text-lg text-foreground">మీ ఆర్డర్ వివరాలు</h1>
+            <h1 className="font-bold text-lg text-foreground">{t.yourOrder}</h1>
             {shop && (
               <p className="text-muted-foreground text-sm">{shop.name}</p>
             )}
@@ -114,12 +117,12 @@ export function CartPage() {
         {/* Delivery Note */}
         <div className="bg-card rounded-2xl border border-border p-4">
           <label className="text-sm text-muted-foreground mb-2 block">
-            డెలివరీ నోట్ (ఐచ్ఛికం)
+            {t.deliveryNote}
           </label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="ఏదైనా సూచనలు..."
+            placeholder={t.name === 'Name' ? 'Any instructions...' : 'ఏదైనా సూచనలు...'}
             className="w-full px-3 py-2 rounded-xl border border-border resize-none h-20 focus:outline-none focus:border-primary"
           />
         </div>
@@ -128,8 +131,10 @@ export function CartPage() {
         <div className="bg-primary/10 rounded-2xl p-4 flex items-center gap-3">
           <Banknote className="w-6 h-6 text-primary flex-shrink-0" />
           <div>
-            <p className="font-medium text-foreground">చెల్లింపు: డెలివరీ సమయంలో</p>
-            <p className="text-sm text-muted-foreground">Cash on Delivery మాత్రమే</p>
+            <p className="font-medium text-foreground">{t.paymentNote}</p>
+            <p className="text-sm text-muted-foreground">
+              {t.name === 'Name' ? 'Cash on Delivery only' : 'Cash on Delivery మాత్రమే'}
+            </p>
           </div>
         </div>
       </div>
@@ -138,7 +143,7 @@ export function CartPage() {
       <div className="px-4 pb-8 pt-4 border-t border-border bg-card">
         {/* Total */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-lg text-muted-foreground">మొత్తం</span>
+          <span className="text-lg text-muted-foreground">{t.total}</span>
           <span className="text-2xl font-bold text-foreground">₹{total}</span>
         </div>
 
@@ -149,9 +154,11 @@ export function CartPage() {
           className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-70"
         >
           {isPlacing ? (
-            <span className="animate-pulse">ఆర్డర్ పెడుతున్నాము...</span>
+            <span className="animate-pulse">
+              {t.name === 'Name' ? 'Placing order...' : 'ఆర్డర్ పెడుతున్నాము...'}
+            </span>
           ) : (
-            'ఆర్డర్ పెట్టండి'
+            t.placeOrder
           )}
         </button>
       </div>

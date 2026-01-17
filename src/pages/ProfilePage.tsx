@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { User, Phone, MapPin, LogOut, Edit2, Check, Shield } from 'lucide-react';
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, updateUserName } = useApp();
+  const { t } = useLanguage();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
 
@@ -23,10 +26,11 @@ export function ProfilePage() {
   return (
     <MobileLayout>
       {/* Header */}
-      <header className="px-4 pt-6 pb-4">
+      <header className="px-4 pt-6 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-          నా వివరాలు
+          {t.myDetails}
         </h1>
+        <LanguageToggle />
       </header>
 
       <div className="px-4 pb-4 space-y-4">
@@ -39,7 +43,7 @@ export function ProfilePage() {
                 <User className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">పేరు</p>
+                <p className="text-sm text-muted-foreground">{t.name}</p>
                 {isEditingName ? (
                   <input
                     type="text"
@@ -50,7 +54,7 @@ export function ProfilePage() {
                   />
                 ) : (
                   <p className="font-medium text-foreground">
-                    {user?.name || 'పేరు లేదు'}
+                    {user?.name || (t.name === 'Name' ? 'No name' : 'పేరు లేదు')}
                   </p>
                 )}
               </div>
@@ -82,7 +86,7 @@ export function ProfilePage() {
               <Phone className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">మొబైల్ నెంబర్</p>
+              <p className="text-sm text-muted-foreground">{t.mobileNumber}</p>
               <p className="font-medium text-foreground">+91 {user?.phone}</p>
             </div>
           </div>
@@ -93,7 +97,7 @@ export function ProfilePage() {
               <MapPin className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">గ్రామం</p>
+              <p className="text-sm text-muted-foreground">{t.village}</p>
               <p className="font-medium text-foreground">Metlachittapur</p>
             </div>
           </div>
@@ -103,9 +107,11 @@ export function ProfilePage() {
         <div className="bg-primary/10 rounded-2xl p-4 flex items-start gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-foreground">గోప్యత హామీ</p>
+            <p className="font-medium text-foreground">
+              {t.name === 'Name' ? 'Privacy Guarantee' : 'గోప్యత హామీ'}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              మీ ఆర్డర్ వివరాలు పూర్తిగా గోప్యంగా ఉంటాయి. మీ వ్యక్తిగత సమాచారం ఎవరితోనూ పంచుకోబడదు.
+              {t.privacyNote}
             </p>
           </div>
         </div>
@@ -117,7 +123,7 @@ export function ProfilePage() {
           style={{ animationDelay: '0.2s' }}
         >
           <LogOut className="w-5 h-5" />
-          లాగ్ అవుట్
+          {t.logout}
         </button>
       </div>
     </MobileLayout>
