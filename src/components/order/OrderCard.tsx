@@ -15,7 +15,7 @@ const statusClasses: Record<string, string> = {
 };
 
 export function OrderCard({ order, onClick }: OrderCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -27,6 +27,8 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
     }
   };
 
+  const shopName = language === 'en' ? order.shopName_en : order.shopName_te;
+
   return (
     <div
       className="shop-card-active"
@@ -35,7 +37,7 @@ export function OrderCard({ order, onClick }: OrderCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground">
-            {order.shopName}
+            {shopName}
           </h3>
           <p className="text-muted-foreground text-sm mt-1">
             {t.orderId} #{order.id}

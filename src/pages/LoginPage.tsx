@@ -41,12 +41,7 @@ export function LoginPage() {
   };
 
   if (showWelcome) {
-    return (
-      <WelcomeScreen 
-        onContinue={handleWelcomeDismiss}
-        onSkip={handleWelcomeDismiss}
-      />
-    );
+    return <WelcomeScreen onContinue={handleWelcomeDismiss} />;
   }
 
   return (

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, CartItem, Order, Product, OrderStatus } from '@/types';
+import { User, CartItem, Order, Product, OrderStatus, Shop } from '@/types';
 
 interface AppContextType {
   // Auth state
@@ -21,7 +21,7 @@ interface AppContextType {
 
   // Orders state
   orders: Order[];
-  placeOrder: (shopId: string, shopName: string, note?: string) => Order;
+  placeOrder: (shop: Shop, note?: string) => Order;
   getOrderById: (orderId: string) => Order | undefined;
 }
 
@@ -114,18 +114,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return cart.reduce((count, item) => count + item.quantity, 0);
   }, [cart]);
 
-  // Order functions
-  const placeOrder = useCallback((shopId: string, shopName: string, note?: string): Order => {
+  // Order functions - now takes Shop object for bilingual names
+  const placeOrder = useCallback((shop: Shop, note?: string): Order => {
     const newOrder: Order = {
       id: `ORD${Date.now().toString().slice(-8)}`,
       customerId: user?.id || '',
-      shopId,
-      shopName,
+      shopId: shop.id,
+      shopName_te: shop.name_te,
+      shopName_en: shop.name_en,
       status: 'placed' as OrderStatus,
       total: getCartTotal(),
       items: cart.map(item => ({
         productId: item.product.id,
-        productName: item.product.name,
+        // Snapshot both languages for order history
+        productName_te: item.product.name_te,
+        productName_en: item.product.name_en,
         quantity: item.quantity,
         price: item.product.price,
       })),

@@ -1,4 +1,4 @@
-import { Product, CartItem } from '@/types';
+import { Product, CartItem, getLocalizedName } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
 import { Plus, Minus } from 'lucide-react';
 
@@ -12,18 +12,21 @@ interface ProductRowProps {
 
 export function ProductRow({ product, cartItem, onAdd, onIncrease, onDecrease }: ProductRowProps) {
   const quantity = cartItem?.quantity || 0;
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const productName = getLocalizedName(product, language);
+  const unit = language === 'en' ? product.unit_en : product.unit_te;
 
   return (
     <div className="product-row">
       {/* Product Info */}
       <div className="flex-1 min-w-0 pr-4">
         <h4 className={`font-medium ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-          {product.name}
+          {productName}
         </h4>
         <p className="text-primary font-semibold mt-1">
           ₹{product.price}
-          {product.unit && <span className="text-muted-foreground font-normal text-sm"> / {product.unit}</span>}
+          {unit && <span className="text-muted-foreground font-normal text-sm"> / {unit}</span>}
         </p>
         {!product.inStock && (
           <span className="text-destructive text-sm">{t.outOfStock}</span>

@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getShopById } from '@/data/mockData';
+import { getShopById, getLocalizedName } from '@/data/mockData';
 import { ArrowLeft, Plus, Minus, Trash2, Banknote } from 'lucide-react';
 
 export function CartPage() {
   const navigate = useNavigate();
   const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, placeOrder } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [note, setNote] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
 
@@ -21,9 +21,13 @@ export function CartPage() {
     setIsPlacing(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const order = placeOrder(shop.id, shop.name, note);
+    const order = placeOrder(shop, note);
     setIsPlacing(false);
     navigate('/order-success', { state: { orderId: order.id } });
+  };
+
+  const getProductName = (product: { name_te: string; name_en: string }) => {
+    return language === 'en' ? product.name_en : product.name_te;
   };
 
   if (cart.length === 0) {
@@ -63,6 +67,8 @@ export function CartPage() {
     );
   }
 
+  const shopName = shop ? getLocalizedName(shop, language) : '';
+
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -77,7 +83,7 @@ export function CartPage() {
           <div>
             <h1 className="font-bold text-lg text-foreground">{t.yourOrder}</h1>
             {shop && (
-              <p className="text-muted-foreground text-sm">{shop.name}</p>
+              <p className="text-muted-foreground text-sm">{shopName}</p>
             )}
           </div>
         </div>
@@ -89,7 +95,7 @@ export function CartPage() {
           {cart.map(item => (
             <div key={item.product.id} className="product-row px-4">
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-foreground">{item.product.name}</h4>
+                <h4 className="font-medium text-foreground">{getProductName(item.product)}</h4>
                 <p className="text-primary font-semibold mt-0.5">
                   ₹{item.product.price} × {item.quantity} = ₹{item.product.price * item.quantity}
                 </p>
@@ -132,9 +138,6 @@ export function CartPage() {
           <Banknote className="w-6 h-6 text-primary flex-shrink-0" />
           <div>
             <p className="font-medium text-foreground">{t.paymentNote}</p>
-            <p className="text-sm text-muted-foreground">
-              {t.paymentNote}
-            </p>
           </div>
         </div>
       </div>

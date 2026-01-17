@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ProductRow } from '@/components/shop/ProductRow';
-import { getShopById, getProductsByShopId } from '@/data/mockData';
+import { getShopById, getProductsByShopId, getLocalizedName, getLocalizedShopType } from '@/data/mockData';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, ShoppingBag, Store, ChefHat, Pill } from 'lucide-react';
@@ -17,7 +17,7 @@ export function ShopPage() {
   const navigate = useNavigate();
   const { cart, addToCart, updateQuantity } = useApp();
   const { getCartItemCount, getCartTotal } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const shop = shopId ? getShopById(shopId) : undefined;
   const products = shopId ? getProductsByShopId(shopId) : [];
@@ -30,14 +30,16 @@ export function ShopPage() {
       <MobileLayout>
         <div className="flex items-center justify-center min-h-screen">
           <p className="text-muted-foreground">
-            {t.name === 'Name' ? 'Shop not found' : 'అంగడి కనుగొనబడలేదు'}
+            {t.shopNotFound}
           </p>
         </div>
       </MobileLayout>
     );
   }
 
-  const Icon = shopIcons[shop.type] || Store;
+  const Icon = shopIcons[shop.type_te] || Store;
+  const shopName = getLocalizedName(shop, language);
+  const shopType = getLocalizedShopType(shop, language);
 
   const getCartItem = (productId: string) => {
     return cart.find(item => item.product.id === productId);
@@ -61,9 +63,9 @@ export function ShopPage() {
             </div>
             <div className="min-w-0">
               <h1 className="font-bold text-lg text-foreground truncate">
-                {shop.name}
+                {shopName}
               </h1>
-              <p className="text-muted-foreground text-sm">{shop.type}</p>
+              <p className="text-muted-foreground text-sm">{shopType}</p>
             </div>
           </div>
         </div>

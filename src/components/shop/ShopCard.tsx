@@ -1,4 +1,4 @@
-import { Shop } from '@/types';
+import { Shop, getLocalizedName, getLocalizedShopType } from '@/types';
 import { Store, ChefHat, Pill, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -14,8 +14,11 @@ const shopIcons = {
 };
 
 export function ShopCard({ shop, onClick }: ShopCardProps) {
-  const Icon = shopIcons[shop.type] || Store;
-  const { t } = useLanguage();
+  const Icon = shopIcons[shop.type_te] || Store;
+  const { t, language } = useLanguage();
+
+  const shopName = getLocalizedName(shop, language);
+  const shopType = getLocalizedShopType(shop, language);
 
   return (
     <div
@@ -31,11 +34,11 @@ export function ShopCard({ shop, onClick }: ShopCardProps) {
         {/* Shop Info */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-lg text-foreground truncate">
-            {shop.name}
+            {shopName}
           </h3>
           
           <p className="text-muted-foreground text-sm mt-0.5">
-            {shop.type}
+            {shopType}
           </p>
 
           {/* Trust Badge */}

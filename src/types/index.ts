@@ -6,23 +6,27 @@ export interface User {
   phone: string;
   role: 'customer';
   village: string;
+  language?: 'te' | 'en';
 }
 
 export interface Shop {
   id: string;
-  name: string;
-  type: 'కిరాణా' | 'హోటల్' | 'మెడికల్';
-  typeEnglish: 'Grocery' | 'Restaurant' | 'Medical';
+  name_te: string;
+  name_en: string;
+  type_te: 'కిరాణా' | 'హోటల్' | 'మెడికల్';
+  type_en: 'Grocery' | 'Restaurant' | 'Medical';
   isOpen: boolean;
 }
 
 export interface Product {
   id: string;
   shopId: string;
-  name: string;
+  name_te: string;
+  name_en: string;
   price: number;
   inStock: boolean;
-  unit?: string;
+  unit_te?: string;
+  unit_en?: string;
 }
 
 export interface CartItem {
@@ -36,7 +40,8 @@ export interface Order {
   id: string;
   customerId: string;
   shopId: string;
-  shopName: string;
+  shopName_te: string;
+  shopName_en: string;
   status: OrderStatus;
   total: number;
   items: OrderItem[];
@@ -45,15 +50,24 @@ export interface Order {
 
 export interface OrderItem {
   productId: string;
-  productName: string;
+  // Snapshot fields for bilingual order history
+  productName_te: string;
+  productName_en: string;
   quantity: number;
   price: number;
 }
 
-// Status labels in Telugu
-export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  placed: 'నమోదు అయ్యింది',
-  accepted: 'అంగీకరించారు',
-  ready: 'సిద్ధంగా ఉంది',
-  delivered: 'డెలివరీ అయ్యింది',
-};
+// Helper to get localized name
+export function getLocalizedName(
+  item: { name_te: string; name_en: string },
+  language: 'te' | 'en'
+): string {
+  return language === 'en' ? item.name_en : item.name_te;
+}
+
+export function getLocalizedShopType(
+  shop: Shop,
+  language: 'te' | 'en'
+): string {
+  return language === 'en' ? shop.type_en : shop.type_te;
+}
