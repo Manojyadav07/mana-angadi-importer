@@ -1,16 +1,17 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, User } from 'lucide-react';
+import { Home, Package, User, ShoppingBag } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getCartItemCount } = useApp();
+  const { getCartItemCount, isMerchant } = useApp();
   const { t } = useLanguage();
   const cartCount = getCartItemCount();
 
-  const navItems = [
+  // Customer navigation
+  const customerNavItems = [
     {
       path: '/home',
       icon: <Home className="w-6 h-6" />,
@@ -28,6 +29,27 @@ export function BottomNav() {
     },
   ];
 
+  // Merchant navigation
+  const merchantNavItems = [
+    {
+      path: '/merchant/orders',
+      icon: <Package className="w-6 h-6" />,
+      label: t.navOrders,
+    },
+    {
+      path: '/merchant/products',
+      icon: <ShoppingBag className="w-6 h-6" />,
+      label: t.navProducts,
+    },
+    {
+      path: '/merchant/profile',
+      icon: <User className="w-6 h-6" />,
+      label: t.navProfile,
+    },
+  ];
+
+  const navItems = isMerchant ? merchantNavItems : customerNavItems;
+
   // Don't show nav on login or cart screens
   if (location.pathname === '/' || location.pathname === '/cart' || location.pathname === '/order-success') {
     return null;
@@ -38,7 +60,8 @@ export function BottomNav() {
       <div className="max-w-md mx-auto w-full flex items-center justify-around">
         {navItems.map(item => {
           const isActive = location.pathname === item.path || 
-            (item.path === '/home' && location.pathname.startsWith('/shop'));
+            (item.path === '/home' && location.pathname.startsWith('/shop')) ||
+            (item.path === '/merchant/orders' && location.pathname.startsWith('/merchant/order/'));
           
           return (
             <button
@@ -48,7 +71,7 @@ export function BottomNav() {
             >
               <div className="relative">
                 {item.icon}
-                {item.path === '/home' && cartCount > 0 && (
+                {!isMerchant && item.path === '/home' && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-2xs rounded-full flex items-center justify-center font-bold">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
