@@ -24,7 +24,7 @@ export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { getOrderById } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const order = orderId ? getOrderById(orderId) : undefined;
 
@@ -43,7 +43,7 @@ export function OrderDetailPage() {
       <MobileLayout>
         <div className="flex items-center justify-center min-h-screen">
           <p className="text-muted-foreground">
-            {t.name === 'Name' ? 'Order not found' : 'ఆర్డర్ కనుగొనబడలేదు'}
+            {t.orderNotFound}
           </p>
         </div>
       </MobileLayout>
@@ -51,6 +51,7 @@ export function OrderDetailPage() {
   }
 
   const currentStatusIndex = allStatuses.indexOf(order.status);
+  const shopName = language === 'en' ? order.shopName_en : order.shopName_te;
 
   return (
     <MobileLayout>
@@ -65,7 +66,7 @@ export function OrderDetailPage() {
           </button>
           <div>
             <h1 className="font-bold text-lg text-foreground">{t.orderId} #{order.id}</h1>
-            <p className="text-muted-foreground text-sm">{order.shopName}</p>
+            <p className="text-muted-foreground text-sm">{shopName}</p>
           </div>
         </div>
       </header>
@@ -75,7 +76,7 @@ export function OrderDetailPage() {
         <div className="bg-card rounded-2xl border border-border p-4">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">
-              {t.name === 'Name' ? 'Current Status' : 'ప్రస్తుత స్థితి'}
+              {t.currentStatus}
             </span>
             <span className={statusClasses[order.status]}>
               {getStatusLabel(order.status)}
@@ -132,19 +133,24 @@ export function OrderDetailPage() {
           <h3 className="font-semibold text-foreground mb-4">{t.orderDetails}</h3>
           
           <div className="space-y-3">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div>
-                  <p className="text-foreground">{item.productName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    ₹{item.price} × {item.quantity}
+            {order.items.map((item, index) => {
+              // Use snapshot fields based on current language
+              const productName = language === 'en' ? item.productName_en : item.productName_te;
+              
+              return (
+                <div key={index} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-foreground">{productName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      ₹{item.price} × {item.quantity}
+                    </p>
+                  </div>
+                  <p className="font-medium text-foreground">
+                    ₹{item.price * item.quantity}
                   </p>
                 </div>
-                <p className="font-medium text-foreground">
-                  ₹{item.price * item.quantity}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="border-t border-border mt-4 pt-4 flex items-center justify-between">

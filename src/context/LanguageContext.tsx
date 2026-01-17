@@ -8,6 +8,7 @@ interface Translations {
   welcome: string;
   welcomeMessage: string;
   welcomeSubMessage: string;
+  chooseLanguageFirst: string;
   okay: string;
   continue: string;
   skip: string;
@@ -17,6 +18,9 @@ interface Translations {
   trustBadge: string;
   trustedLocalShop: string;
   language: string;
+  shopNotFound: string;
+  orderNotFound: string;
+  currentStatus: string;
   
   // Login
   enterMobileNumber: string;
@@ -90,6 +94,7 @@ const teluguTranslations: Translations = {
   welcome: 'మన అంగడికి స్వాగతం',
   welcomeMessage: 'ఇది మన ఊరి కోసం తయారైన యాప్.',
   welcomeSubMessage: 'మీ ఆర్డర్ సురక్షితంగా, గోప్యంగా డెలివరీ అవుతుంది.',
+  chooseLanguageFirst: 'ముందుగా మీ భాష ఎంచుకోండి',
   okay: 'సరే',
   continue: 'కొనసాగించండి',
   skip: 'దాటవేయండి',
@@ -99,6 +104,9 @@ const teluguTranslations: Translations = {
   trustBadge: 'మన ఊరి నమ్మకమైన అంగడి',
   trustedLocalShop: 'మన ఊరి నమ్మకమైన అంగడి',
   language: 'భాష',
+  shopNotFound: 'అంగడి కనుగొనబడలేదు',
+  orderNotFound: 'ఆర్డర్ కనుగొనబడలేదు',
+  currentStatus: 'ప్రస్తుత స్థితి',
   
   // Login
   enterMobileNumber: 'మీ నెంబర్ నమోదు చేయండి',
@@ -172,6 +180,7 @@ const englishTranslations: Translations = {
   welcome: 'Welcome to Mana Angadi',
   welcomeMessage: 'This app is made for our village.',
   welcomeSubMessage: 'Your orders will be delivered safely and privately.',
+  chooseLanguageFirst: 'Choose your language first',
   okay: 'Okay',
   continue: 'Continue',
   skip: 'Skip',
@@ -181,6 +190,9 @@ const englishTranslations: Translations = {
   trustBadge: 'Trusted Local Shop',
   trustedLocalShop: 'Trusted Local Shop',
   language: 'Language',
+  shopNotFound: 'Shop not found',
+  orderNotFound: 'Order not found',
+  currentStatus: 'Current Status',
   
   // Login
   enterMobileNumber: 'Enter your mobile number',

@@ -1,13 +1,12 @@
 import { useLanguage } from '@/context/LanguageContext';
-import { Store, Heart } from 'lucide-react';
+import { Store } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onContinue: () => void;
-  onSkip: () => void;
 }
 
-export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
-  const { t } = useLanguage();
+export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
+  const { t, language, setLanguage } = useLanguage();
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
@@ -23,36 +22,57 @@ export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
           {t.appName}
         </h1>
 
-        {/* Welcome Message */}
-        <div className="mt-8 space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p className="text-lg text-foreground leading-relaxed">
-            {t.welcomeMessage}
-          </p>
-          <p className="text-muted-foreground leading-relaxed">
-            {t.welcomeSubMessage}
-          </p>
+        {/* Welcome Title */}
+        <p className="text-xl text-foreground mt-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          {t.welcome}
+        </p>
+
+        {/* Language Selection Prompt */}
+        <p className="text-muted-foreground mt-6 animate-fade-in" style={{ animationDelay: '0.15s' }}>
+          {t.chooseLanguageFirst}
+        </p>
+
+        {/* Language Selector - Prominent */}
+        <div className="mt-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center bg-muted rounded-full p-1.5">
+            <button
+              onClick={() => setLanguage('te')}
+              className={`px-6 py-3 rounded-full text-base font-medium transition-all ${
+                language === 'te'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              తెలుగు
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-6 py-3 rounded-full text-base font-medium transition-all ${
+                language === 'en'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              English
+            </button>
+          </div>
         </div>
 
-        {/* Trust Icon */}
-        <div className="mt-8 flex items-center gap-2 text-primary animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <Heart className="w-5 h-5 fill-primary" />
-          <span className="text-sm font-medium">{t.villageBadge}</span>
+        {/* Village Badge */}
+        <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.25s' }}>
+          <span className="trust-badge">
+            {t.villageBadge}
+          </span>
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="px-6 pb-12 space-y-3 animate-slide-up">
+      {/* Continue Button */}
+      <div className="px-6 pb-12 animate-slide-up">
         <button
           onClick={onContinue}
           className="btn-accent w-full"
         >
-          {t.okay}
-        </button>
-        <button
-          onClick={onSkip}
-          className="w-full py-3 text-muted-foreground font-medium hover:text-foreground transition-colors"
-        >
-          {t.skip}
+          {t.continue}
         </button>
       </div>
     </div>
