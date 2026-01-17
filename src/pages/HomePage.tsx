@@ -9,37 +9,50 @@ import { ShoppingBag } from 'lucide-react';
 export function HomePage() {
   const navigate = useNavigate();
   const { user, getCartItemCount, getCartTotal } = useApp();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const cartCount = getCartItemCount();
   const cartTotal = getCartTotal();
-
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (language === 'te') {
-      if (hour < 12) return 'శుభోదయం';
-      if (hour < 17) return 'శుభ మధ్యాహ్నం';
-      return 'శుభ సాయంత్రం';
-    } else {
-      if (hour < 12) return 'Good Morning';
-      if (hour < 17) return 'Good Afternoon';
-      return 'Good Evening';
-    }
-  };
 
   return (
     <MobileLayout>
       {/* Header */}
       <header className="px-4 pt-6 pb-4">
-        <div className="animate-fade-in">
-          <h1 className="text-2xl font-bold text-foreground">
-            {greeting()} 👋
-          </h1>
-          {user?.name && (
-            <p className="text-lg text-foreground mt-0.5">{user.name}</p>
-          )}
-          <p className="text-muted-foreground mt-1">
-            {t.nearbyShops}
-          </p>
+        <div className="flex items-start justify-between animate-fade-in">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {t.greeting}
+            </h1>
+            {user?.name && (
+              <p className="text-lg text-foreground mt-0.5">{user.name}</p>
+            )}
+            <p className="text-muted-foreground mt-1">
+              {t.nearbyShops}
+            </p>
+          </div>
+          
+          {/* Language Toggle */}
+          <div className="flex items-center bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => setLanguage('te')}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                language === 'te'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              తెలుగు
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                language === 'en'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              EN
+            </button>
+          </div>
         </div>
       </header>
 
