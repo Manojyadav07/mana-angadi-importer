@@ -4,41 +4,14 @@ import { useLanguage } from '@/context/LanguageContext';
 import { MapPin, RefreshCw, Navigation } from 'lucide-react';
 import { LocationUpdate } from '@/types';
 
-// Lazy load map to handle potential failures gracefully
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default marker icon
-const deliveryIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
 interface LiveTrackingCardProps {
   orderId: string;
-}
-
-// Component to update map view when location changes
-function MapUpdater({ location }: { location: LocationUpdate }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView([location.lat, location.lng], 15);
-  }, [map, location.lat, location.lng]);
-  
-  return null;
 }
 
 export function LiveTrackingCard({ orderId }: LiveTrackingCardProps) {
   const { getLatestLocation, locationUpdates } = useApp();
   const { t } = useLanguage();
   const [location, setLocation] = useState<LocationUpdate | undefined>(undefined);
-  const [mapError, setMapError] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
   // Poll for location updates every 10 seconds
@@ -71,6 +44,12 @@ export function LiveTrackingCard({ orderId }: LiveTrackingCardProps) {
     return new Date(date).toLocaleTimeString();
   };
 
+  // Generate OpenStreetMap static image URL
+  const getMapImageUrl = (lat: number, lng: number) => {
+    // Using OSM static map service (free, no API key required)
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=400x200&markers=${lat},${lng},lightblue`;
+  };
+
   return (
     <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
@@ -95,39 +74,31 @@ export function LiveTrackingCard({ orderId }: LiveTrackingCardProps) {
         {t.deliveryOnTheWay}
       </p>
 
-      {/* Map or Fallback */}
+      {/* Map Image or Fallback */}
       {location ? (
-        !mapError ? (
-          <div className="h-48 rounded-xl overflow-hidden border border-border">
-            <MapContainer
-              center={[location.lat, location.lng]}
-              zoom={15}
-              scrollWheelZoom={false}
-              style={{ height: '100%', width: '100%' }}
-              // @ts-ignore - onError is valid
-              onError={() => setMapError(true)}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker position={[location.lat, location.lng]} icon={deliveryIcon} />
-              <MapUpdater location={location} />
-            </MapContainer>
+        <div className="space-y-2">
+          {/* Static Map Image */}
+          <div className="h-40 rounded-xl overflow-hidden border border-border bg-muted">
+            <img 
+              src={getMapImageUrl(location.lat, location.lng)}
+              alt="Delivery location map"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Hide the image if it fails to load
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           </div>
-        ) : (
-          // Fallback UI when map fails
-          <div className="h-32 rounded-xl bg-muted flex flex-col items-center justify-center border border-border">
-            <MapPin className="w-8 h-8 text-primary mb-2" />
-            <p className="text-sm text-foreground font-medium">{t.liveTracking}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              📍 {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t.lastUpdated}: {formatLastUpdated(location.createdAt)}
-            </p>
+          
+          {/* Coordinates and last updated */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+            </span>
+            <span>{formatLastUpdated(location.createdAt)}</span>
           </div>
-        )
+        </div>
       ) : (
         // Waiting for location
         <div className="h-32 rounded-xl bg-muted flex flex-col items-center justify-center border border-border">
