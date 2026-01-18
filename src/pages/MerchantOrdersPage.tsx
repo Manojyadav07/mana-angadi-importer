@@ -1,26 +1,22 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getShopsByOwner } from '@/data/mockData';
-import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Package, Clock } from 'lucide-react';
 import { Order, OrderStatus, getShopTypeIcon } from '@/types';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
-import { OrderStatusStepper } from '@/components/merchant/OrderStatusStepper';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { MerchantOrderDetailSheet } from '@/components/merchant/MerchantOrderDetailSheet';
 import { toast } from 'sonner';
 
 type FilterType = 'all' | 'placed' | 'accepted' | 'ready' | 'delivered';
 
 export function MerchantOrdersPage() {
-  const navigate = useNavigate();
   const { user, getOrdersByShopIds, updateOrderStatus } = useApp();
   const { t, language } = useLanguage();
   const [filter, setFilter] = useState<FilterType>('all');
   const [isLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showRejectSheet, setShowRejectSheet] = useState(false);
   
   const shops = user?.shopIds ? getShopsByOwner(user.id) : [];
   const shopIds = shops.map(s => s.id);
@@ -62,13 +58,10 @@ export function MerchantOrdersPage() {
     setSelectedOrder(null);
   };
 
-  const handleReject = (reason_te: string, reason_en: string) => {
-    if (selectedOrder) {
-      updateOrderStatus(selectedOrder.id, 'rejected', reason_te, reason_en);
-      toast.error(t.orderRejected);
-      setSelectedOrder(null);
-      setShowRejectSheet(false);
-    }
+  const handleReject = (orderId: string, reason_te: string, reason_en: string) => {
+    updateOrderStatus(orderId, 'rejected', reason_te, reason_en);
+    toast.error(t.orderRejected);
+    setSelectedOrder(null);
   };
 
   const handleMarkReady = (orderId: string) => {
@@ -76,12 +69,6 @@ export function MerchantOrdersPage() {
     toast.success(t.orderMarkedReady);
     setSelectedOrder(null);
   };
-
-  const rejectionReasons = [
-    { te: 'వస్తువులు అందుబాటులో లేవు', en: 'Items not available' },
-    { te: 'దుకాణం మూసి ఉంది', en: 'Shop closed' },
-    { te: 'ఇప్పుడు నెరవేర్చలేము', en: 'Cannot fulfill now' },
-  ];
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -180,92 +167,14 @@ export function MerchantOrdersPage() {
       )}
 
       {/* Order Detail Sheet */}
-      <Sheet open={!!selectedOrder && !showRejectSheet} onOpenChange={() => setSelectedOrder(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          {selectedOrder && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <span className="text-xl">{getShopTypeIcon(selectedOrder.shopType)}</span>
-                  #{selectedOrder.id}
-                </SheetTitle>
-              </SheetHeader>
-              
-              <div className="py-4 space-y-4">
-                {/* Status Stepper */}
-                <OrderStatusStepper status={selectedOrder.status} />
-                
-                {/* Items */}
-                <div className="bg-muted/50 rounded-xl p-3 space-y-2">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between">
-                      <span className="text-foreground">
-                        {language === 'en' ? item.productName_en : item.productName_te} × {item.quantity}
-                      </span>
-                      <span className="font-medium">₹{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                  <div className="border-t border-border pt-2 flex justify-between font-semibold">
-                    <span>{t.total}</span>
-                    <span>₹{selectedOrder.total}</span>
-                  </div>
-                </div>
-                
-                {/* Actions */}
-                {selectedOrder.status === 'placed' && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowRejectSheet(true)}
-                      className="flex-1 py-3 rounded-xl bg-destructive/10 text-destructive font-medium flex items-center justify-center gap-2"
-                    >
-                      <XCircle className="w-5 h-5" />
-                      {t.rejectOrder}
-                    </button>
-                    <button
-                      onClick={() => handleAccept(selectedOrder.id)}
-                      className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      {t.acceptOrder}
-                    </button>
-                  </div>
-                )}
-                
-                {selectedOrder.status === 'accepted' && (
-                  <button
-                    onClick={() => handleMarkReady(selectedOrder.id)}
-                    className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
-                  >
-                    <Package className="w-5 h-5" />
-                    {t.markReady}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Rejection Reason Sheet */}
-      <Sheet open={showRejectSheet} onOpenChange={setShowRejectSheet}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader>
-            <SheetTitle>{t.selectRejectionReason}</SheetTitle>
-          </SheetHeader>
-          
-          <div className="py-4 space-y-3">
-            {rejectionReasons.map((reason, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleReject(reason.te, reason.en)}
-                className="w-full py-3 px-4 rounded-xl bg-muted text-foreground font-medium text-left hover:bg-muted/80 transition-colors"
-              >
-                {language === 'en' ? reason.en : reason.te}
-              </button>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MerchantOrderDetailSheet
+        order={selectedOrder}
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onMarkReady={handleMarkReady}
+      />
     </MobileLayout>
   );
 }
