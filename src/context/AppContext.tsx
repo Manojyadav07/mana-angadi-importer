@@ -207,17 +207,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     rejectionReason_en?: string
   ) => {
     setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId
-          ? { 
-              ...order, 
-              status, 
-              statusUpdatedAt: new Date(),
-              rejectionReason_te,
-              rejectionReason_en,
-            }
-          : order
-      )
+      prev.map(order => {
+        if (order.id !== orderId) return order;
+        
+        const updates: Partial<Order> = {
+          status,
+          statusUpdatedAt: new Date(),
+          rejectionReason_te,
+          rejectionReason_en,
+        };
+
+        // Set timeline timestamps based on status
+        if (status === 'accepted') {
+          updates.acceptedAt = new Date();
+        } else if (status === 'ready') {
+          updates.readyAt = new Date();
+        }
+
+        return { ...order, ...updates };
+      })
     );
   }, []);
 

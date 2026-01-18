@@ -76,6 +76,9 @@ export interface Order {
   merchantNote_en?: string;
   rejectionReason_te?: string;
   rejectionReason_en?: string;
+  // Timeline timestamps
+  acceptedAt?: Date;
+  readyAt?: Date;
   // Delivery partner fields
   deliveryPartnerId?: string;
   deliveryPartnerName?: string;

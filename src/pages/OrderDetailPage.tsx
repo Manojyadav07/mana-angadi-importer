@@ -2,20 +2,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { ArrowLeft, CheckCircle, Clock, Package, Truck, XCircle } from 'lucide-react';
+import { ArrowLeft, XCircle } from 'lucide-react';
 import { OrderStatus } from '@/types';
 import { LiveTrackingCard } from '@/components/tracking/LiveTrackingCard';
-
-const statusIcons: Record<OrderStatus, React.ElementType> = {
-  placed: Clock,
-  accepted: CheckCircle,
-  ready: Package,
-  assigned: Truck,
-  pickedUp: Truck,
-  onTheWay: Truck,
-  delivered: Truck,
-  rejected: XCircle,
-};
+import { OrderTimeline } from '@/components/order/OrderTimeline';
+import { HelpSupportButton } from '@/components/order/HelpSupportButton';
+import { ETADisplay } from '@/components/order/ETADisplay';
+import { ReorderButton } from '@/components/order/ReorderButton';
 
 const statusClasses: Record<OrderStatus, string> = {
   placed: 'badge-placed',
@@ -28,11 +21,6 @@ const statusClasses: Record<OrderStatus, string> = {
   rejected: 'badge-rejected',
 };
 
-// Customer-facing statuses (simplified view)
-const customerStatuses: OrderStatus[] = ['placed', 'accepted', 'ready', 'delivered'];
-// Delivery statuses for expanded view
-const deliveryStatuses: OrderStatus[] = ['ready', 'assigned', 'pickedUp', 'onTheWay', 'delivered'];
-
 export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
@@ -43,6 +31,10 @@ export function OrderDetailPage() {
   
   // Show live tracking for active delivery statuses
   const showLiveTracking = order && ['assigned', 'pickedUp', 'onTheWay'].includes(order.status);
+  // Show ETA for delivery phase orders
+  const showETA = order && ['assigned', 'pickedUp', 'onTheWay'].includes(order.status);
+  // Show reorder button for delivered orders
+  const showReorder = order?.status === 'delivered';
 
   const getStatusLabel = (status: OrderStatus) => {
     switch (status) {
@@ -57,9 +49,6 @@ export function OrderDetailPage() {
       default: return status;
     }
   };
-  
-  // Determine if order is in delivery phase
-  const isInDeliveryPhase = ['assigned', 'pickedUp', 'onTheWay', 'delivered'].includes(order?.status || '');
 
   if (!order) {
     return (
@@ -74,9 +63,6 @@ export function OrderDetailPage() {
   }
 
   const isRejected = order.status === 'rejected';
-  // Use appropriate status list based on order phase
-  const statusList = isInDeliveryPhase ? deliveryStatuses : customerStatuses;
-  const currentStatusIndex = isRejected ? -1 : statusList.indexOf(order.status);
   const shopName = language === 'en' ? order.shopName_en : order.shopName_te;
   const rejectionReason = language === 'en' ? order.rejectionReason_en : order.rejectionReason_te;
 
@@ -84,17 +70,21 @@ export function OrderDetailPage() {
     <MobileLayout>
       {/* Header */}
       <header className="screen-header">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div>
-            <h1 className="font-bold text-lg text-foreground">{t.orderId} #{order.id}</h1>
-            <p className="text-muted-foreground text-sm">{shopName}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <div>
+              <h1 className="font-bold text-lg text-foreground">{t.orderId} #{order.id}</h1>
+              <p className="text-muted-foreground text-sm">{shopName}</p>
+            </div>
           </div>
+          {/* Help Button */}
+          <HelpSupportButton orderId={order.id} />
         </div>
       </header>
 
@@ -114,49 +104,14 @@ export function OrderDetailPage() {
           )}
         </div>
 
-        {/* Status Timeline */}
+        {/* ETA Display - Only for active deliveries */}
+        {showETA && <ETADisplay order={order} />}
+
+        {/* Order Timeline */}
         {!isRejected && (
           <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
             <h3 className="font-semibold text-foreground mb-4">{t.orderTimeline}</h3>
-            
-            <div className="space-y-4">
-              {statusList.map((status, index) => {
-                const Icon = statusIcons[status];
-                const isCompleted = index <= currentStatusIndex;
-                const isCurrent = index === currentStatusIndex;
-
-                return (
-                  <div key={status} className="flex items-center gap-4">
-                    {/* Icon */}
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                        isCompleted
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-
-                    {/* Status Text */}
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium ${
-                          isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {getStatusLabel(status)}
-                      </p>
-                    </div>
-
-                    {/* Check mark */}
-                    {isCompleted && !isCurrent && (
-                      <CheckCircle className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <OrderTimeline order={order} />
           </div>
         )}
 
@@ -216,6 +171,11 @@ export function OrderDetailPage() {
             <span className="text-xl font-bold text-primary">₹{order.total}</span>
           </div>
         </div>
+
+        {/* Reorder Button - Only for delivered orders */}
+        {showReorder && (
+          <ReorderButton order={order} />
+        )}
 
         {/* Privacy Note */}
         <div className="bg-primary/10 rounded-2xl p-4">

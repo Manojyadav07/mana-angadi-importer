@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Order, OrderStatus, getShopTypeIcon } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
-import { OrderStatusStepper } from './OrderStatusStepper';
+import { OrderTimeline } from '@/components/order/OrderTimeline';
+import { HelpSupportButton } from '@/components/order/HelpSupportButton';
 import { 
   Sheet, 
   SheetContent, 
@@ -23,8 +24,6 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  User, 
-  MapPin,
   ChevronRight,
   AlertCircle
 } from 'lucide-react';
@@ -119,9 +118,12 @@ export function MerchantOrderDetailSheet({
                   </SheetDescription>
                 </div>
               </div>
-              <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
-                {getStatusLabel(order.status)}
-              </span>
+              <div className="flex items-center gap-2">
+                <HelpSupportButton orderId={order.id} />
+                <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </div>
             </div>
           </SheetHeader>
           
@@ -132,9 +134,9 @@ export function MerchantOrderDetailSheet({
               <span>{formatTime(order.createdAt)}</span>
             </div>
 
-            {/* Status Stepper */}
+            {/* Order Timeline */}
             <div className="bg-muted/30 rounded-2xl p-4">
-              <OrderStatusStepper status={order.status} />
+              <OrderTimeline order={order} compact />
             </div>
             
             {/* Items List */}
