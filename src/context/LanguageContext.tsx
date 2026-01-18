@@ -33,6 +33,8 @@ interface Translations {
   merchantLogin: string;
   customerLogin: string;
   loginAs: string;
+  customer: string;
+  merchant: string;
   
   // Home
   greeting: string;
@@ -173,6 +175,8 @@ const teluguTranslations: Translations = {
   merchantLogin: 'వ్యాపారి లాగిన్',
   customerLogin: 'కస్టమర్ లాగిన్',
   loginAs: 'లాగిన్ చేయండి',
+  customer: 'కస్టమర్',
+  merchant: 'వ్యాపారి',
   
   // Home
   greeting: 'నమస్తే 👋',
@@ -313,6 +317,8 @@ const englishTranslations: Translations = {
   merchantLogin: 'Merchant Login',
   customerLogin: 'Customer Login',
   loginAs: 'Login as',
+  customer: 'Customer',
+  merchant: 'Merchant',
   
   // Home
   greeting: 'Hello 👋',

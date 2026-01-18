@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ShopCard } from '@/components/shop/ShopCard';
+import { SkeletonShopCard } from '@/components/ui/SkeletonCard';
 import { shops } from '@/data/mockData';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -12,6 +14,16 @@ export function HomePage() {
   const { t, language, setLanguage } = useLanguage();
   const cartCount = getCartItemCount();
   const cartTotal = getCartTotal();
+  
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate loading for polished UX
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <MobileLayout>
@@ -57,14 +69,26 @@ export function HomePage() {
       </header>
 
       {/* Shop List */}
-      <div className="px-4 pb-4 space-y-3 stagger-children">
-        {shops.map(shop => (
-          <ShopCard
-            key={shop.id}
-            shop={shop}
-            onClick={() => navigate(`/shop/${shop.id}`)}
-          />
-        ))}
+      <div className="px-4 pb-4 space-y-3">
+        {isLoading ? (
+          // Skeleton Loading State
+          <>
+            <SkeletonShopCard />
+            <SkeletonShopCard />
+            <SkeletonShopCard />
+          </>
+        ) : (
+          // Actual Shop List
+          <div className="space-y-3 stagger-children">
+            {shops.map(shop => (
+              <ShopCard
+                key={shop.id}
+                shop={shop}
+                onClick={() => navigate(`/shop/${shop.id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Floating Cart Button */}
