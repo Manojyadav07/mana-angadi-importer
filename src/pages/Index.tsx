@@ -1,19 +1,20 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/context/AppContext';
-import { LoginPage } from './LoginPage';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { LoginPage } from "./LoginPage";
+import { useAuth } from "@/context/AuthContext";
+import { getRouteForRole } from "@/context/auth/authHelpers";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useApp();
+  const { user, role, isLoading } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/home');
-    }
-  }, [isAuthenticated, navigate]);
+    if (isLoading) return;
+    if (user && role) navigate(getRouteForRole(role));
+  }, [isLoading, user, role, navigate]);
 
   return <LoginPage />;
 };
 
 export default Index;
+
