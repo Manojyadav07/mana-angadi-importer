@@ -1,19 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Order, getShopTypeIcon } from '@/types';
 import { getShopById } from '@/data/mockData';
-import { Package, MapPin, Truck, Phone, ArrowRight, CheckCircle } from 'lucide-react';
+import { Package, MapPin, Truck, Phone, ArrowRight, CheckCircle, Navigation } from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { DeliveryStatusStepper } from '@/components/delivery/DeliveryStatusStepper';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { toast } from 'sonner';
 
 export function DeliveryOrdersPage() {
-  const { user, orders, getReadyOrders, getDeliveryPartnerOrders, acceptDelivery, updateDeliveryStatus } = useApp();
+  const { user, orders, getReadyOrders, getDeliveryPartnerOrders, acceptDelivery, updateDeliveryStatus, updateLocation } = useApp();
   const { t, language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 500);
@@ -28,6 +30,61 @@ export function DeliveryOrdersPage() {
     o.deliveredAt && 
     new Date(o.deliveredAt).toDateString() === new Date().toDateString()
   );
+
+  // Location tracking for active delivery
+  const sendLocationUpdate = useCallback(() => {
+    if (!activeOrder || !['pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
+    
+    if (!navigator.geolocation) {
+      console.log('Geolocation not supported');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        updateLocation(activeOrder.id, position.coords.latitude, position.coords.longitude);
+        console.log('Location updated:', position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.log('Location error:', error.message);
+        // Use mock location for testing if real location fails
+        if (activeOrder) {
+          // Simulate location near Metlachittapur village
+          const mockLat = 18.8 + (Math.random() * 0.01);
+          const mockLng = 78.5 + (Math.random() * 0.01);
+          updateLocation(activeOrder.id, mockLat, mockLng);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+  }, [activeOrder, updateLocation]);
+
+  // Request location permission and start tracking
+  useEffect(() => {
+    if (!activeOrder || !['pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
+
+    // Request permission
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setLocationPermission('granted');
+          toast.success(language === 'te' ? 'లొకేషన్ ట్రాకింగ్ ఆన్' : 'Location tracking on');
+        },
+        () => {
+          setLocationPermission('denied');
+          // Still continue with mock data for demo
+        }
+      );
+    }
+
+    // Send location immediately
+    sendLocationUpdate();
+
+    // Send location updates every 15 seconds while in PickedUp or OnTheWay status
+    const interval = setInterval(sendLocationUpdate, 15000);
+    
+    return () => clearInterval(interval);
+  }, [activeOrder?.id, activeOrder?.status, sendLocationUpdate, language]);
 
   const handleAcceptDelivery = (order: Order) => {
     if (user) {
@@ -132,6 +189,18 @@ export function DeliveryOrdersPage() {
                   <ArrowRight className="w-5 h-5 text-primary" />
                 </div>
               </div>
+
+              {/* Location Tracking Indicator */}
+              {['pickedUp', 'onTheWay'].includes(activeOrder.status) && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-primary">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  <Navigation className="w-3 h-3" />
+                  {language === 'te' ? 'లొకేషన్ షేర్ అవుతోంది' : 'Sharing location'}
+                </div>
+              )}
 
               {/* Action Button */}
               {getNextAction() && (

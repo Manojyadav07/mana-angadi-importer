@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, CheckCircle, Clock, Package, Truck, XCircle } from 'lucide-react';
 import { OrderStatus } from '@/types';
+import { LiveTrackingCard } from '@/components/tracking/LiveTrackingCard';
 
 const statusIcons: Record<OrderStatus, React.ElementType> = {
   placed: Clock,
@@ -39,6 +40,9 @@ export function OrderDetailPage() {
   const { t, language } = useLanguage();
 
   const order = orderId ? getOrderById(orderId) : undefined;
+  
+  // Show live tracking for active delivery statuses
+  const showLiveTracking = order && ['assigned', 'pickedUp', 'onTheWay'].includes(order.status);
 
   const getStatusLabel = (status: OrderStatus) => {
     switch (status) {
@@ -154,6 +158,11 @@ export function OrderDetailPage() {
               })}
             </div>
           </div>
+        )}
+
+        {/* Live Tracking Section - Only show for active deliveries */}
+        {showLiveTracking && order && (
+          <LiveTrackingCard orderId={order.id} />
         )}
 
         {/* Rejected Status */}

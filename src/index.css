@@ -6,6 +6,20 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
+/* Leaflet Map Styles */
+@import 'leaflet/dist/leaflet.css';
+
+/* Fix Leaflet z-index issues */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
+.leaflet-container {
+  z-index: 1 !important;
+  font-family: inherit;
+}
+
 @layer base {
   :root {
     /* Warm, earthy village palette */
