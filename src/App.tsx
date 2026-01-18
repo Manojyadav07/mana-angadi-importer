@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AddressProvider } from "@/context/AddressContext";
 import Index from "./pages/Index";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
@@ -67,7 +68,9 @@ const App = () => (
       <BrowserRouter>
         <LanguageProvider>
           <AppProvider>
-            <AppRoutes />
+            <AddressProvider>
+              <AppRoutes />
+            </AddressProvider>
           </AppProvider>
         </LanguageProvider>
       </BrowserRouter>

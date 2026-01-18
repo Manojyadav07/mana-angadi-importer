@@ -1,6 +1,19 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, CartItem, Order, Product, OrderStatus, Shop, UserRole, LocationUpdate, METPALLY_COORDS, METLACHITTAPUR_COORDS } from '@/types';
+import { 
+  User, CartItem, Order, Product, OrderStatus, Shop, UserRole, LocationUpdate, 
+  METPALLY_COORDS, METLACHITTAPUR_COORDS, PaymentMethod, PaymentStatus,
+  CustomerAddress, calculateDistanceKm, calculateDeliveryFee, calculateETA, formatAddress
+} from '@/types';
 import { getShopById } from '@/data/mockData';
+
+interface PlaceOrderOptions {
+  shop: Shop;
+  note?: string;
+  address?: CustomerAddress;
+  paymentMethod?: PaymentMethod;
+  codChangeNeeded?: number;
+  upiTxnRef?: string;
+}
 
 interface AppContextType {
   // Auth state
@@ -8,6 +21,7 @@ interface AppContextType {
   isAuthenticated: boolean;
   isMerchant: boolean;
   isDelivery: boolean;
+  isAdmin: boolean;
   login: (phone: string, name?: string, role?: UserRole, shopIds?: string[]) => void;
   logout: () => void;
   updateUserName: (name: string) => void;
@@ -26,7 +40,7 @@ interface AppContextType {
 
   // Orders state
   orders: Order[];
-  placeOrder: (shop: Shop, note?: string) => Order;
+  placeOrder: (options: PlaceOrderOptions) => Order;
   getOrderById: (orderId: string) => Order | undefined;
   getOrdersByShopIds: (shopIds: string[]) => Order[];
   getReadyOrders: () => Order[];
@@ -34,6 +48,7 @@ interface AppContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus, rejectionReason_te?: string, rejectionReason_en?: string) => void;
   acceptDelivery: (orderId: string, deliveryPartnerId: string, deliveryPartnerName: string) => void;
   updateDeliveryStatus: (orderId: string, status: 'pickedUp' | 'onTheWay' | 'delivered') => void;
+  updatePaymentStatus: (orderId: string, status: PaymentStatus) => void;
   
   // Location tracking
   locationUpdates: LocationUpdate[];
@@ -52,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth functions
   const login = useCallback((phone: string, name?: string, role: UserRole = 'customer', shopIds?: string[]) => {
-    const userId = role === 'merchant' ? 'merchant_1' : role === 'delivery' ? 'delivery_1' : `user_${Date.now()}`;
+    const userId = role === 'merchant' ? 'merchant_1' : role === 'delivery' ? 'delivery_1' : role === 'admin' ? 'admin_1' : `user_${Date.now()}`;
     setUser({
       id: userId,
       name: name || '',
@@ -143,10 +158,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [cart]);
 
   // Order functions
-  const placeOrder = useCallback((shop: Shop, note?: string): Order => {
+  const placeOrder = useCallback((options: PlaceOrderOptions): Order => {
+    const { shop, note, address, paymentMethod = 'COD', codChangeNeeded, upiTxnRef } = options;
+    
     // Get shop coordinates or use defaults
     const pickupLat = shop.pickupLat ?? METPALLY_COORDS.lat;
     const pickupLng = shop.pickupLng ?? METPALLY_COORDS.lng;
+    
+    // Get drop coordinates from address or use defaults
+    const dropLat = address?.lat ?? METLACHITTAPUR_COORDS.lat;
+    const dropLng = address?.lng ?? METLACHITTAPUR_COORDS.lng;
+    
+    // Calculate distance
+    const distanceKm = calculateDistanceKm(pickupLat, pickupLng, dropLat, dropLng);
+    
+    // Calculate subtotal
+    const subtotal = getCartTotal();
+    
+    // Calculate delivery fee
+    const { fee: deliveryFee, freeDelivery } = calculateDeliveryFee(shop.type, distanceKm, subtotal);
+    
+    // Calculate ETA
+    const eta = calculateETA(distanceKm);
+    
+    // Format address text
+    const addressText_te = address 
+      ? formatAddress(address, 'te') 
+      : 'రామాలయం దగ్గర, మెట్లచిట్టాపూర్';
+    const addressText_en = address 
+      ? formatAddress(address, 'en') 
+      : 'Near Temple, Metlachittapur';
     
     const newOrder: Order = {
       id: `ORD${Date.now().toString().slice(-8)}`,
@@ -156,7 +197,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       shopName_en: shop.name_en,
       shopType: shop.type,
       status: 'placed' as OrderStatus,
-      total: getCartTotal(),
+      subtotal,
+      deliveryFee,
+      total: subtotal + deliveryFee,
       items: cart.map(item => ({
         productId: item.product.id,
         productName_te: item.product.name_te,
@@ -167,13 +210,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: new Date(),
       statusUpdatedAt: new Date(),
       customerNote: note,
-      customerAddressText: 'Near Temple, Metlachittapur',
-      deliveryFee: 20,
-      // Snapshot coordinates
+      // Address snapshots
+      deliveryAddressId: address?.id,
+      customerAddressText_te: addressText_te,
+      customerAddressText_en: addressText_en,
+      customerAddressText: addressText_en, // Legacy
+      deliveryInstructions_te: address?.deliveryInstructions_te,
+      deliveryInstructions_en: address?.deliveryInstructions_en,
+      // Coordinate snapshots
       pickupLatSnapshot: pickupLat,
       pickupLngSnapshot: pickupLng,
-      dropLatSnapshot: METLACHITTAPUR_COORDS.lat,
-      dropLngSnapshot: METLACHITTAPUR_COORDS.lng,
+      dropLatSnapshot: dropLat,
+      dropLngSnapshot: dropLng,
+      // Distance and ETA
+      approxDistanceKm: distanceKm,
+      etaMin: eta?.min,
+      etaMax: eta?.max,
+      // Payment
+      paymentMethod,
+      paymentStatus: paymentMethod === 'UPI' ? 'Pending' : 'Unpaid',
+      upiTxnRef,
+      codChangeNeededFor: codChangeNeeded,
     };
 
     setOrders(prev => [newOrder, ...prev]);
@@ -264,10 +321,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           updates.onTheWayAt = new Date();
         } else if (status === 'delivered') {
           updates.deliveredAt = new Date();
+          // Mark COD as paid on delivery
+          if (order.paymentMethod === 'COD') {
+            updates.paymentStatus = 'Paid';
+            updates.paidAt = new Date();
+          }
         }
 
         return { ...order, ...updates };
       })
+    );
+  }, []);
+
+  // Update payment status
+  const updatePaymentStatus = useCallback((orderId: string, status: PaymentStatus) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? {
+              ...order,
+              paymentStatus: status,
+              paidAt: status === 'Paid' ? new Date() : order.paidAt,
+            }
+          : order
+      )
     );
   }, []);
 
@@ -296,6 +373,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isMerchant: user?.role === 'merchant',
     isDelivery: user?.role === 'delivery',
+    isAdmin: user?.role === 'admin',
     login,
     logout,
     updateUserName,
@@ -318,6 +396,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateOrderStatus,
     acceptDelivery,
     updateDeliveryStatus,
+    updatePaymentStatus,
     locationUpdates,
     updateLocation,
     getLatestLocation,
