@@ -11,6 +11,9 @@ export const shops: Shop[] = [
     type_en: 'Grocery',
     isOpen: true,
     isActive: true,
+    // Metpally location
+    pickupLat: 18.8305,
+    pickupLng: 78.6098,
   },
   {
     id: 'shop_2',
@@ -22,6 +25,8 @@ export const shops: Shop[] = [
     type_en: 'Restaurant',
     isOpen: true,
     isActive: true,
+    pickupLat: 18.8310,
+    pickupLng: 78.6102,
   },
   {
     id: 'shop_3',
@@ -33,6 +38,8 @@ export const shops: Shop[] = [
     type_en: 'Medical',
     isOpen: false,
     isActive: true,
+    pickupLat: 18.8298,
+    pickupLng: 78.6085,
   },
   {
     id: 'shop_4',
@@ -44,6 +51,8 @@ export const shops: Shop[] = [
     type_en: 'Grocery',
     isOpen: true,
     isActive: true,
+    pickupLat: 18.8315,
+    pickupLng: 78.6110,
   },
 ];
 

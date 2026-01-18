@@ -32,6 +32,9 @@ export interface Shop {
   isActive: boolean;
   address_te?: string;
   address_en?: string;
+  // Pickup location coordinates (Metpally)
+  pickupLat?: number;
+  pickupLng?: number;
 }
 
 export interface Product {
@@ -82,7 +85,16 @@ export interface Order {
   deliveredAt?: Date;
   customerAddressText?: string;
   deliveryFee?: number;
+  // Pickup/Drop location snapshots
+  pickupLatSnapshot?: number;
+  pickupLngSnapshot?: number;
+  dropLatSnapshot?: number;
+  dropLngSnapshot?: number;
 }
+
+// Default coordinates for Metpally (Shops) and Metlachittapur (Customer)
+export const METPALLY_COORDS = { lat: 18.8305, lng: 78.6098 }; // Metpally, Telangana 505325
+export const METLACHITTAPUR_COORDS = { lat: 18.7892, lng: 78.5723 }; // Metlachittapur village
 
 export interface OrderItem {
   productId: string;
