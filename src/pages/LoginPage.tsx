@@ -16,6 +16,7 @@ import {
   User,
   Eye,
   EyeOff,
+  Globe,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { toast } from "sonner";
@@ -45,7 +46,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { signIn, signUp, setInitialRole, refresh, resetPassword, user, role, isLoading: authLoading, authError, retryHydration } =
     useAuth();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const [tab, setTab] = useState<AuthTab>("signIn");
   const isSignUp = tab === "signUp";
@@ -225,6 +226,34 @@ export function LoginPage() {
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
+      {/* Language Toggle - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="flex items-center gap-1 bg-muted rounded-full p-1">
+          <button
+            type="button"
+            onClick={() => setLanguage("te")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              language === "te"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            తెలుగు
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage("en")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              language === "en"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            English
+          </button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-4">
         <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4 animate-scale-in">
