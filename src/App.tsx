@@ -21,6 +21,12 @@ import { DeliveryOnboardingPage } from "./pages/DeliveryOnboardingPage";
 import { DeliveryOrdersPage } from "./pages/DeliveryOrdersPage";
 import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { AdminOnboardingPage } from "./pages/admin/AdminOnboardingPage";
+import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
+import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
+import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
+import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +36,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin } = useApp();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/home" replace />;
   }
   
   return <>{children}</>;
@@ -55,6 +75,13 @@ function AppRoutes() {
       <Route path="/delivery/orders" element={<ProtectedRoute><DeliveryOrdersPage /></ProtectedRoute>} />
       <Route path="/delivery/earnings" element={<ProtectedRoute><DeliveryEarningsPage /></ProtectedRoute>} />
       <Route path="/delivery/profile" element={<ProtectedRoute><DeliveryProfilePage /></ProtectedRoute>} />
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+      <Route path="/admin/onboarding" element={<AdminRoute><AdminOnboardingPage /></AdminRoute>} />
+      <Route path="/admin/shops" element={<AdminRoute><AdminShopsPage /></AdminRoute>} />
+      <Route path="/admin/fees" element={<AdminRoute><AdminFeesPage /></AdminRoute>} />
+      <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
+      <Route path="/admin/profile" element={<AdminRoute><AdminProfilePage /></AdminRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
