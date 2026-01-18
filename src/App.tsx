@@ -3,9 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { AppProvider } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AddressProvider } from "@/context/AddressContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
@@ -28,13 +29,22 @@ import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
 import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
 import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useApp();
+  const { user, isLoading } = useAuth();
   
-  if (!isAuthenticated) {
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
     return <Navigate to="/" replace />;
   }
   
@@ -42,13 +52,65 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isAdmin } = useApp();
+  const { user, role, isLoading } = useAuth();
   
-  if (!isAuthenticated) {
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
     return <Navigate to="/" replace />;
   }
   
-  if (!isAdmin) {
+  if (role !== 'admin') {
+    return <Navigate to="/home" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function MerchantRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (role !== 'merchant' && role !== 'admin') {
+    return <Navigate to="/home" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function DeliveryRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (role !== 'delivery' && role !== 'admin') {
     return <Navigate to="/home" replace />;
   }
   
@@ -67,14 +129,14 @@ function AppRoutes() {
       <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       {/* Merchant Routes */}
-      <Route path="/merchant/orders" element={<ProtectedRoute><MerchantOrdersPage /></ProtectedRoute>} />
-      <Route path="/merchant/products" element={<ProtectedRoute><MerchantProductsPage /></ProtectedRoute>} />
-      <Route path="/merchant/profile" element={<ProtectedRoute><MerchantProfilePage /></ProtectedRoute>} />
+      <Route path="/merchant/orders" element={<MerchantRoute><MerchantOrdersPage /></MerchantRoute>} />
+      <Route path="/merchant/products" element={<MerchantRoute><MerchantProductsPage /></MerchantRoute>} />
+      <Route path="/merchant/profile" element={<MerchantRoute><MerchantProfilePage /></MerchantRoute>} />
       {/* Delivery Partner Routes */}
-      <Route path="/delivery/onboarding" element={<ProtectedRoute><DeliveryOnboardingPage /></ProtectedRoute>} />
-      <Route path="/delivery/orders" element={<ProtectedRoute><DeliveryOrdersPage /></ProtectedRoute>} />
-      <Route path="/delivery/earnings" element={<ProtectedRoute><DeliveryEarningsPage /></ProtectedRoute>} />
-      <Route path="/delivery/profile" element={<ProtectedRoute><DeliveryProfilePage /></ProtectedRoute>} />
+      <Route path="/delivery/onboarding" element={<DeliveryRoute><DeliveryOnboardingPage /></DeliveryRoute>} />
+      <Route path="/delivery/orders" element={<DeliveryRoute><DeliveryOrdersPage /></DeliveryRoute>} />
+      <Route path="/delivery/earnings" element={<DeliveryRoute><DeliveryEarningsPage /></DeliveryRoute>} />
+      <Route path="/delivery/profile" element={<DeliveryRoute><DeliveryProfilePage /></DeliveryRoute>} />
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
       <Route path="/admin/onboarding" element={<AdminRoute><AdminOnboardingPage /></AdminRoute>} />
@@ -94,11 +156,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <LanguageProvider>
-          <AppProvider>
-            <AddressProvider>
-              <AppRoutes />
-            </AddressProvider>
-          </AppProvider>
+          <AuthProvider>
+            <AppProvider>
+              <AddressProvider>
+                <AppRoutes />
+              </AddressProvider>
+            </AppProvider>
+          </AuthProvider>
         </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>
