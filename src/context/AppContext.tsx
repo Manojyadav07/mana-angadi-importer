@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, CartItem, Order, Product, OrderStatus, Shop, UserRole, LocationUpdate } from '@/types';
+import { User, CartItem, Order, Product, OrderStatus, Shop, UserRole, LocationUpdate, METPALLY_COORDS, METLACHITTAPUR_COORDS } from '@/types';
+import { getShopById } from '@/data/mockData';
 
 interface AppContextType {
   // Auth state
@@ -143,6 +144,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Order functions
   const placeOrder = useCallback((shop: Shop, note?: string): Order => {
+    // Get shop coordinates or use defaults
+    const pickupLat = shop.pickupLat ?? METPALLY_COORDS.lat;
+    const pickupLng = shop.pickupLng ?? METPALLY_COORDS.lng;
+    
     const newOrder: Order = {
       id: `ORD${Date.now().toString().slice(-8)}`,
       customerId: user?.id || '',
@@ -164,6 +169,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       customerNote: note,
       customerAddressText: 'Near Temple, Metlachittapur',
       deliveryFee: 20,
+      // Snapshot coordinates
+      pickupLatSnapshot: pickupLat,
+      pickupLngSnapshot: pickupLng,
+      dropLatSnapshot: METLACHITTAPUR_COORDS.lat,
+      dropLngSnapshot: METLACHITTAPUR_COORDS.lng,
     };
 
     setOrders(prev => [newOrder, ...prev]);

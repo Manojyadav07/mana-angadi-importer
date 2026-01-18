@@ -162,7 +162,13 @@ export function OrderDetailPage() {
 
         {/* Live Tracking Section - Only show for active deliveries */}
         {showLiveTracking && order && (
-          <LiveTrackingCard orderId={order.id} />
+          <LiveTrackingCard 
+            orderId={order.id} 
+            pickupLat={order.pickupLatSnapshot}
+            pickupLng={order.pickupLngSnapshot}
+            dropLat={order.dropLatSnapshot}
+            dropLng={order.dropLngSnapshot}
+          />
         )}
 
         {/* Rejected Status */}

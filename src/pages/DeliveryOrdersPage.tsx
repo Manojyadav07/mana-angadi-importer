@@ -31,12 +31,19 @@ export function DeliveryOrdersPage() {
     new Date(o.deliveredAt).toDateString() === new Date().toDateString()
   );
 
-  // Location tracking for active delivery
+  // Location tracking for active delivery - START FROM ASSIGNED STATUS
   const sendLocationUpdate = useCallback(() => {
-    if (!activeOrder || !['pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
+    // Track from Assigned → Delivered (not just PickedUp/OnTheWay)
+    if (!activeOrder || !['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
     
     if (!navigator.geolocation) {
       console.log('Geolocation not supported');
+      // Use mock location for demo
+      if (activeOrder) {
+        const mockLat = 18.81 + (Math.random() * 0.02);
+        const mockLng = 78.59 + (Math.random() * 0.02);
+        updateLocation(activeOrder.id, mockLat, mockLng);
+      }
       return;
     }
 
@@ -48,10 +55,11 @@ export function DeliveryOrdersPage() {
       (error) => {
         console.log('Location error:', error.message);
         // Use mock location for testing if real location fails
+        // Simulate movement between Metpally and Metlachittapur
         if (activeOrder) {
-          // Simulate location near Metlachittapur village
-          const mockLat = 18.8 + (Math.random() * 0.01);
-          const mockLng = 78.5 + (Math.random() * 0.01);
+          const progress = Math.random();
+          const mockLat = 18.8305 - (progress * 0.0413); // Moving from Metpally to Metlachittapur
+          const mockLng = 78.6098 - (progress * 0.0375);
           updateLocation(activeOrder.id, mockLat, mockLng);
         }
       },
@@ -59,9 +67,10 @@ export function DeliveryOrdersPage() {
     );
   }, [activeOrder, updateLocation]);
 
-  // Request location permission and start tracking
+  // Request location permission and start tracking - FROM ASSIGNED STATUS
   useEffect(() => {
-    if (!activeOrder || !['pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
+    // Start tracking immediately when order is assigned
+    if (!activeOrder || !['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
 
     // Request permission
     if (navigator.geolocation) {
@@ -77,10 +86,10 @@ export function DeliveryOrdersPage() {
       );
     }
 
-    // Send location immediately
+    // Send location immediately when order becomes assigned
     sendLocationUpdate();
 
-    // Send location updates every 15 seconds while in PickedUp or OnTheWay status
+    // Send location updates every 15 seconds while order is active
     const interval = setInterval(sendLocationUpdate, 15000);
     
     return () => clearInterval(interval);
@@ -190,8 +199,8 @@ export function DeliveryOrdersPage() {
                 </div>
               </div>
 
-              {/* Location Tracking Indicator */}
-              {['pickedUp', 'onTheWay'].includes(activeOrder.status) && (
+              {/* Location Tracking Indicator - Show from Assigned status */}
+              {['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status) && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-primary">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
