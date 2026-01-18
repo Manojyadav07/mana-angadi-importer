@@ -177,6 +177,14 @@ interface Translations {
   liveTracking: string;
   lastUpdated: string;
   deliveryFee: string;
+  
+  // Premium features
+  orderAgain: string;
+  estimatedTime: string;
+  help: string;
+  callSupport: string;
+  whatsappSupport: string;
+  currentStatusLabel: string;
 }
 
 const teluguTranslations: Translations = {
@@ -354,6 +362,14 @@ const teluguTranslations: Translations = {
   liveTracking: 'లైవ్ ట్రాకింగ్',
   lastUpdated: 'చివరిగా అప్డేట్',
   deliveryFee: 'డెలివరీ ఫీ',
+  
+  // Premium features
+  orderAgain: 'మళ్ళీ ఆర్డర్ చేయండి',
+  estimatedTime: 'అంచనా సమయం',
+  help: 'సహాయం',
+  callSupport: 'కాల్ చేయండి',
+  whatsappSupport: 'వాట్సాప్',
+  currentStatusLabel: 'ప్రస్తుత స్థితి',
 };
 
 const englishTranslations: Translations = {
@@ -531,6 +547,14 @@ const englishTranslations: Translations = {
   liveTracking: 'Live Tracking',
   lastUpdated: 'Last updated',
   deliveryFee: 'Delivery Fee',
+  
+  // Premium features
+  orderAgain: 'Order Again',
+  estimatedTime: 'Estimated time',
+  help: 'Help',
+  callSupport: 'Call Support',
+  whatsappSupport: 'WhatsApp Support',
+  currentStatusLabel: 'Current status',
 };
 
 interface LanguageContextType {

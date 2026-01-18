@@ -1,10 +1,15 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { User, MapPin, Phone, LogOut, Languages, Power, AlertCircle } from 'lucide-react';
+import { User, MapPin, Phone, LogOut, Languages, Power, AlertCircle, HelpCircle, MessageCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+
+// Support contact configuration
+const SUPPORT_CONFIG = {
+  phone: '+919876543210',
+  whatsapp: '+919876543210',
+};
 
 export function DeliveryProfilePage() {
   const navigate = useNavigate();
@@ -110,6 +115,33 @@ export function DeliveryProfilePage() {
               }`}
             >
               English
+            </button>
+          </div>
+        </div>
+
+        {/* Help & Support */}
+        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-primary" />
+            {language === 'te' ? 'సహాయం' : 'Help & Support'}
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => window.location.href = `tel:${SUPPORT_CONFIG.phone}`}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-secondary text-secondary-foreground font-medium active:scale-[0.98] transition-transform"
+            >
+              <Phone className="w-4 h-4" />
+              {language === 'te' ? 'కాల్' : 'Call'}
+            </button>
+            <button
+              onClick={() => {
+                const msg = encodeURIComponent(language === 'te' ? 'నాకు సహాయం కావాలి' : 'I need help');
+                window.open(`https://wa.me/${SUPPORT_CONFIG.whatsapp.replace('+', '')}?text=${msg}`, '_blank');
+              }}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-500/10 text-green-700 font-medium active:scale-[0.98] transition-transform"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {language === 'te' ? 'వాట్సాప్' : 'WhatsApp'}
             </button>
           </div>
         </div>

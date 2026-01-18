@@ -7,6 +7,8 @@ import { getShopById } from '@/data/mockData';
 import { Package, MapPin, Truck, Phone, ArrowRight, CheckCircle, Navigation } from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { DeliveryStatusStepper } from '@/components/delivery/DeliveryStatusStepper';
+import { OrderTimeline } from '@/components/order/OrderTimeline';
+import { HelpSupportButton } from '@/components/order/HelpSupportButton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 
@@ -291,16 +293,19 @@ export function DeliveryOrdersPage() {
       <Sheet open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
           <SheetHeader>
-            <SheetTitle className="text-left">
-              {t.orderId} #{selectedOrder?.id}
-            </SheetTitle>
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-left">
+                {t.orderId} #{selectedOrder?.id}
+              </SheetTitle>
+              {selectedOrder && <HelpSupportButton orderId={selectedOrder.id} />}
+            </div>
           </SheetHeader>
           
           {selectedOrder && (
             <div className="mt-4 space-y-4 overflow-y-auto max-h-[70vh]">
-              {/* Status */}
+              {/* Timeline */}
               <div className="bg-muted/50 rounded-xl p-4">
-                <DeliveryStatusStepper status={selectedOrder.status} />
+                <OrderTimeline order={selectedOrder} compact />
               </div>
 
               {/* Pickup Location */}
