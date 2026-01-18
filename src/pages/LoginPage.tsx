@@ -3,16 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
-import { Store, ArrowRight, Loader2, ShoppingBag, Briefcase } from 'lucide-react';
+import { Store, ArrowRight, Loader2, ShoppingBag, Briefcase, Truck, Shield } from 'lucide-react';
+import { UserRole } from '@/types';
 
 const WELCOME_SHOWN_KEY = 'mana-angadi-welcome-shown';
 
-type LoginRole = 'customer' | 'merchant' | 'delivery';
+type LoginRole = 'customer' | 'merchant' | 'delivery' | 'admin';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [phone, setPhone] = useState('9876543210');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,6 +42,9 @@ export function LoginPage() {
     } else if (selectedRole === 'delivery') {
       login(phone, 'Delivery Partner', 'delivery');
       navigate('/delivery/onboarding');
+    } else if (selectedRole === 'admin') {
+      login(phone, 'Admin User', 'admin');
+      navigate('/admin/dashboard');
     } else {
       login(phone, 'Test User', 'customer');
       navigate('/home');
@@ -55,6 +59,8 @@ export function LoginPage() {
   if (showWelcome) {
     return <WelcomeScreen onContinue={handleWelcomeDismiss} />;
   }
+
+  const adminLabel = language === 'en' ? 'Admin' : 'అడ్మిన్';
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
@@ -129,29 +135,54 @@ export function LoginPage() {
             </button>
           </div>
           
-          {/* Delivery Partner Option */}
-          <button
-            type="button"
-            onClick={() => setSelectedRole('delivery')}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-              selectedRole === 'delivery'
-                ? 'border-primary bg-primary/10 shadow-sm'
-                : 'border-border bg-card hover:border-muted-foreground/30'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              selectedRole === 'delivery' ? 'bg-primary/20' : 'bg-muted'
-            }`}>
-              <ShoppingBag className={`w-6 h-6 ${
+          {/* Delivery & Admin Options */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('delivery')}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                selectedRole === 'delivery'
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : 'border-border bg-card hover:border-muted-foreground/30'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                selectedRole === 'delivery' ? 'bg-primary/20' : 'bg-muted'
+              }`}>
+                <Truck className={`w-5 h-5 ${
+                  selectedRole === 'delivery' ? 'text-primary' : 'text-muted-foreground'
+                }`} />
+              </div>
+              <span className={`text-sm font-medium ${
                 selectedRole === 'delivery' ? 'text-primary' : 'text-muted-foreground'
-              }`} />
-            </div>
-            <span className={`text-sm font-medium ${
-              selectedRole === 'delivery' ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              {t.delivery}
-            </span>
-          </button>
+              }`}>
+                {t.delivery}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedRole('admin')}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                selectedRole === 'admin'
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : 'border-border bg-card hover:border-muted-foreground/30'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                selectedRole === 'admin' ? 'bg-primary/20' : 'bg-muted'
+              }`}>
+                <Shield className={`w-5 h-5 ${
+                  selectedRole === 'admin' ? 'text-primary' : 'text-muted-foreground'
+                }`} />
+              </div>
+              <span className={`text-sm font-medium ${
+                selectedRole === 'admin' ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+                {adminLabel}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Phone Input */}
