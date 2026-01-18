@@ -1,6 +1,6 @@
 // Mana Angadi Data Types
 
-export type UserRole = 'customer' | 'merchant';
+export type UserRole = 'customer' | 'merchant' | 'delivery';
 
 export interface User {
   id: string;
@@ -11,6 +11,11 @@ export interface User {
   language?: 'te' | 'en';
   // For merchants: list of shop IDs they own
   shopIds?: string[];
+  // For delivery partners
+  isAvailable?: boolean;
+  insuranceAcknowledged?: boolean;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
 }
 
 export type ShopType = 'kirana' | 'restaurant' | 'medical';
@@ -48,7 +53,8 @@ export interface CartItem {
   quantity: number;
 }
 
-export type OrderStatus = 'placed' | 'accepted' | 'rejected' | 'ready' | 'delivered';
+// Extended order statuses for delivery workflow
+export type OrderStatus = 'placed' | 'accepted' | 'rejected' | 'ready' | 'assigned' | 'pickedUp' | 'onTheWay' | 'delivered';
 
 export interface Order {
   id: string;
@@ -67,6 +73,15 @@ export interface Order {
   merchantNote_en?: string;
   rejectionReason_te?: string;
   rejectionReason_en?: string;
+  // Delivery partner fields
+  deliveryPartnerId?: string;
+  deliveryPartnerName?: string;
+  assignedAt?: Date;
+  pickedUpAt?: Date;
+  onTheWayAt?: Date;
+  deliveredAt?: Date;
+  customerAddressText?: string;
+  deliveryFee?: number;
 }
 
 export interface OrderItem {
@@ -76,6 +91,14 @@ export interface OrderItem {
   productName_en: string;
   quantity: number;
   price: number;
+}
+
+export interface LocationUpdate {
+  orderId: string;
+  deliveryPartnerId: string;
+  lat: number;
+  lng: number;
+  createdAt: Date;
 }
 
 // Helper to get localized name
@@ -100,5 +123,17 @@ export function getShopTypeIcon(type: ShopType): string {
     case 'restaurant': return '🍽️';
     case 'medical': return '💊';
     default: return '🏪';
+  }
+}
+
+// Get delivery status for stepper
+export function getDeliveryStatusStep(status: OrderStatus): number {
+  switch (status) {
+    case 'ready': return 0;
+    case 'assigned': return 1;
+    case 'pickedUp': return 2;
+    case 'onTheWay': return 3;
+    case 'delivered': return 4;
+    default: return -1;
   }
 }

@@ -7,7 +7,7 @@ import { Store, ArrowRight, Loader2, ShoppingBag, Briefcase } from 'lucide-react
 
 const WELCOME_SHOWN_KEY = 'mana-angadi-welcome-shown';
 
-type LoginRole = 'customer' | 'merchant';
+type LoginRole = 'customer' | 'merchant' | 'delivery';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -38,6 +38,9 @@ export function LoginPage() {
     if (selectedRole === 'merchant') {
       login(phone, 'Merchant User', 'merchant', ['shop_1', 'shop_2', 'shop_3']);
       navigate('/merchant/orders');
+    } else if (selectedRole === 'delivery') {
+      login(phone, 'Delivery Partner', 'delivery');
+      navigate('/delivery/onboarding');
     } else {
       login(phone, 'Test User', 'customer');
       navigate('/home');
@@ -121,10 +124,34 @@ export function LoginPage() {
               <span className={`text-sm font-medium ${
                 selectedRole === 'merchant' ? 'text-primary' : 'text-muted-foreground'
               }`}>
-                {t.merchant || 'Merchant'}
+                {t.merchant}
               </span>
             </button>
           </div>
+          
+          {/* Delivery Partner Option */}
+          <button
+            type="button"
+            onClick={() => setSelectedRole('delivery')}
+            className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              selectedRole === 'delivery'
+                ? 'border-primary bg-primary/10 shadow-sm'
+                : 'border-border bg-card hover:border-muted-foreground/30'
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              selectedRole === 'delivery' ? 'bg-primary/20' : 'bg-muted'
+            }`}>
+              <ShoppingBag className={`w-6 h-6 ${
+                selectedRole === 'delivery' ? 'text-primary' : 'text-muted-foreground'
+              }`} />
+            </div>
+            <span className={`text-sm font-medium ${
+              selectedRole === 'delivery' ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+              {t.delivery}
+            </span>
+          </button>
         </div>
 
         {/* Phone Input */}

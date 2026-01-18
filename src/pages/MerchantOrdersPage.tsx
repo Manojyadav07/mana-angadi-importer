@@ -41,6 +41,9 @@ export function MerchantOrdersPage() {
     placed: 'badge-placed',
     accepted: 'badge-accepted',
     ready: 'badge-ready',
+    assigned: 'badge-ready',
+    pickedUp: 'badge-ready',
+    onTheWay: 'badge-ready',
     delivered: 'badge-delivered',
     rejected: 'badge-rejected',
   };

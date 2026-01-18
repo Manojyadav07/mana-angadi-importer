@@ -9,6 +9,9 @@ const statusIcons: Record<OrderStatus, React.ElementType> = {
   placed: Clock,
   accepted: CheckCircle,
   ready: Package,
+  assigned: Truck,
+  pickedUp: Truck,
+  onTheWay: Truck,
   delivered: Truck,
   rejected: XCircle,
 };
@@ -17,11 +20,17 @@ const statusClasses: Record<OrderStatus, string> = {
   placed: 'badge-placed',
   accepted: 'badge-accepted',
   ready: 'badge-ready',
+  assigned: 'badge-ready',
+  pickedUp: 'badge-ready',
+  onTheWay: 'badge-ready',
   delivered: 'badge-delivered',
   rejected: 'badge-rejected',
 };
 
-const normalStatuses: OrderStatus[] = ['placed', 'accepted', 'ready', 'delivered'];
+// Customer-facing statuses (simplified view)
+const customerStatuses: OrderStatus[] = ['placed', 'accepted', 'ready', 'delivered'];
+// Delivery statuses for expanded view
+const deliveryStatuses: OrderStatus[] = ['ready', 'assigned', 'pickedUp', 'onTheWay', 'delivered'];
 
 export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -36,11 +45,17 @@ export function OrderDetailPage() {
       case 'placed': return t.statusPlaced;
       case 'accepted': return t.statusAccepted;
       case 'ready': return t.statusReady;
+      case 'assigned': return t.statusAssigned;
+      case 'pickedUp': return t.statusPickedUp;
+      case 'onTheWay': return t.statusOnTheWay;
       case 'delivered': return t.statusDelivered;
       case 'rejected': return t.statusRejected;
       default: return status;
     }
   };
+  
+  // Determine if order is in delivery phase
+  const isInDeliveryPhase = ['assigned', 'pickedUp', 'onTheWay', 'delivered'].includes(order?.status || '');
 
   if (!order) {
     return (
@@ -55,7 +70,9 @@ export function OrderDetailPage() {
   }
 
   const isRejected = order.status === 'rejected';
-  const currentStatusIndex = isRejected ? -1 : normalStatuses.indexOf(order.status);
+  // Use appropriate status list based on order phase
+  const statusList = isInDeliveryPhase ? deliveryStatuses : customerStatuses;
+  const currentStatusIndex = isRejected ? -1 : statusList.indexOf(order.status);
   const shopName = language === 'en' ? order.shopName_en : order.shopName_te;
   const rejectionReason = language === 'en' ? order.rejectionReason_en : order.rejectionReason_te;
 
@@ -99,7 +116,7 @@ export function OrderDetailPage() {
             <h3 className="font-semibold text-foreground mb-4">{t.orderTimeline}</h3>
             
             <div className="space-y-4">
-              {normalStatuses.map((status, index) => {
+              {statusList.map((status, index) => {
                 const Icon = statusIcons[status];
                 const isCompleted = index <= currentStatusIndex;
                 const isCurrent = index === currentStatusIndex;

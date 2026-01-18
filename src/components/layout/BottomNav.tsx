@@ -1,57 +1,37 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, User, ShoppingBag } from 'lucide-react';
+import { Home, Package, User, ShoppingBag, Wallet, Truck } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getCartItemCount, isMerchant } = useApp();
+  const { getCartItemCount, isMerchant, isDelivery } = useApp();
   const { t } = useLanguage();
   const cartCount = getCartItemCount();
 
-  // Customer navigation
   const customerNavItems = [
-    {
-      path: '/home',
-      icon: <Home className="w-6 h-6" />,
-      label: t.navHome,
-    },
-    {
-      path: '/orders',
-      icon: <Package className="w-6 h-6" />,
-      label: t.navOrders,
-    },
-    {
-      path: '/profile',
-      icon: <User className="w-6 h-6" />,
-      label: t.navProfile,
-    },
+    { path: '/home', icon: <Home className="w-6 h-6" />, label: t.navHome },
+    { path: '/orders', icon: <Package className="w-6 h-6" />, label: t.navOrders },
+    { path: '/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
   ];
 
-  // Merchant navigation
   const merchantNavItems = [
-    {
-      path: '/merchant/orders',
-      icon: <Package className="w-6 h-6" />,
-      label: t.navOrders,
-    },
-    {
-      path: '/merchant/products',
-      icon: <ShoppingBag className="w-6 h-6" />,
-      label: t.navProducts,
-    },
-    {
-      path: '/merchant/profile',
-      icon: <User className="w-6 h-6" />,
-      label: t.navProfile,
-    },
+    { path: '/merchant/orders', icon: <Package className="w-6 h-6" />, label: t.navOrders },
+    { path: '/merchant/products', icon: <ShoppingBag className="w-6 h-6" />, label: t.navProducts },
+    { path: '/merchant/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
   ];
 
-  const navItems = isMerchant ? merchantNavItems : customerNavItems;
+  const deliveryNavItems = [
+    { path: '/delivery/orders', icon: <Truck className="w-6 h-6" />, label: t.navDeliveries },
+    { path: '/delivery/earnings', icon: <Wallet className="w-6 h-6" />, label: t.navEarnings },
+    { path: '/delivery/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
+  ];
 
-  // Don't show nav on login or cart screens
-  if (location.pathname === '/' || location.pathname === '/cart' || location.pathname === '/order-success') {
+  const navItems = isDelivery ? deliveryNavItems : isMerchant ? merchantNavItems : customerNavItems;
+
+  const hiddenPaths = ['/', '/cart', '/order-success', '/delivery/onboarding'];
+  if (hiddenPaths.includes(location.pathname)) {
     return null;
   }
 
@@ -71,7 +51,7 @@ export function BottomNav() {
             >
               <div className="relative">
                 {item.icon}
-                {!isMerchant && item.path === '/home' && cartCount > 0 && (
+                {!isMerchant && !isDelivery && item.path === '/home' && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-2xs rounded-full flex items-center justify-center font-bold">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
