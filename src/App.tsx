@@ -16,11 +16,14 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { MerchantOrdersPage } from "./pages/MerchantOrdersPage";
 import { MerchantProductsPage } from "./pages/MerchantProductsPage";
 import { MerchantProfilePage } from "./pages/MerchantProfilePage";
+import { DeliveryOnboardingPage } from "./pages/DeliveryOnboardingPage";
+import { DeliveryOrdersPage } from "./pages/DeliveryOrdersPage";
+import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
+import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useApp();
   
@@ -46,6 +49,11 @@ function AppRoutes() {
       <Route path="/merchant/orders" element={<ProtectedRoute><MerchantOrdersPage /></ProtectedRoute>} />
       <Route path="/merchant/products" element={<ProtectedRoute><MerchantProductsPage /></ProtectedRoute>} />
       <Route path="/merchant/profile" element={<ProtectedRoute><MerchantProfilePage /></ProtectedRoute>} />
+      {/* Delivery Partner Routes */}
+      <Route path="/delivery/onboarding" element={<ProtectedRoute><DeliveryOnboardingPage /></ProtectedRoute>} />
+      <Route path="/delivery/orders" element={<ProtectedRoute><DeliveryOrdersPage /></ProtectedRoute>} />
+      <Route path="/delivery/earnings" element={<ProtectedRoute><DeliveryEarningsPage /></ProtectedRoute>} />
+      <Route path="/delivery/profile" element={<ProtectedRoute><DeliveryProfilePage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

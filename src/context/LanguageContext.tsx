@@ -35,6 +35,7 @@ interface Translations {
   loginAs: string;
   customer: string;
   merchant: string;
+  delivery: string;
   
   // Home
   greeting: string;
@@ -81,6 +82,9 @@ interface Translations {
   statusReady: string;
   statusDelivered: string;
   statusRejected: string;
+  statusAssigned: string;
+  statusPickedUp: string;
+  statusOnTheWay: string;
   
   // Profile
   myDetails: string;
@@ -96,6 +100,8 @@ interface Translations {
   navOrders: string;
   navProfile: string;
   navProducts: string;
+  navDeliveries: string;
+  navEarnings: string;
   
   // Errors
   networkError: string;
@@ -142,6 +148,35 @@ interface Translations {
   // Filter chips
   all: string;
   new: string;
+  
+  // Delivery Partner
+  deliveryPartner: string;
+  availableDeliveries: string;
+  myActiveDelivery: string;
+  acceptDelivery: string;
+  markPickedUp: string;
+  startDelivery: string;
+  markDelivered: string;
+  noDeliveriesAvailable: string;
+  noActiveDelivery: string;
+  pickup: string;
+  dropoff: string;
+  callShop: string;
+  callCustomer: string;
+  earnings: string;
+  todayDeliveries: string;
+  todayEarnings: string;
+  noEarningsYet: string;
+  available: string;
+  notAvailable: string;
+  emergencyContact: string;
+  insuranceAcknowledgement: string;
+  insuranceMessage: string;
+  iUnderstand: string;
+  deliveryOnTheWay: string;
+  liveTracking: string;
+  lastUpdated: string;
+  deliveryFee: string;
 }
 
 const teluguTranslations: Translations = {
@@ -177,6 +212,7 @@ const teluguTranslations: Translations = {
   loginAs: 'లాగిన్ చేయండి',
   customer: 'కస్టమర్',
   merchant: 'వ్యాపారి',
+  delivery: 'డెలివరీ',
   
   // Home
   greeting: 'నమస్తే 👋',
@@ -217,12 +253,15 @@ const teluguTranslations: Translations = {
   browseShops: 'అంగడులు చూడండి',
   viewOrderStatus: 'మీ ఆర్డర్ స్థితి ఇక్కడ చూడండి',
   
-  // Status - exact translations from spec
+  // Status
   statusPlaced: 'నమోదయ్యింది',
   statusAccepted: 'అంగీకరించారు',
   statusReady: 'సిద్ధం',
   statusDelivered: 'డెలివరీ అయింది',
   statusRejected: 'తిరస్కరించబడింది',
+  statusAssigned: 'అప్పగించబడింది',
+  statusPickedUp: 'పికప్ అయింది',
+  statusOnTheWay: 'వస్తున్నాను',
   
   // Profile
   myDetails: 'నా వివరాలు',
@@ -233,11 +272,13 @@ const teluguTranslations: Translations = {
   privacyGuarantee: 'గోప్యత హామీ',
   save: 'సేవ్ చేయండి',
   
-  // Nav - exact translations from spec
+  // Nav
   navHome: 'హోమ్',
   navOrders: 'ఆర్డర్లు',
   navProfile: 'ప్రొఫైల్',
   navProducts: 'ఉత్పత్తులు',
+  navDeliveries: 'డెలివరీలు',
+  navEarnings: 'ఆదాయం',
   
   // Errors
   networkError: 'ఇంటర్నెట్ సమస్య కనిపిస్తోంది',
@@ -284,6 +325,35 @@ const teluguTranslations: Translations = {
   // Filter chips
   all: 'అన్నీ',
   new: 'కొత్త',
+  
+  // Delivery Partner
+  deliveryPartner: 'డెలివరీ పార్ట్‌నర్',
+  availableDeliveries: 'లభ్యమైన డెలివరీలు',
+  myActiveDelivery: 'నా యాక్టివ్ డెలివరీ',
+  acceptDelivery: 'డెలివరీ తీసుకోండి',
+  markPickedUp: 'పికప్ అయింది',
+  startDelivery: 'వస్తున్నాను',
+  markDelivered: 'డెలివరీ అయింది',
+  noDeliveriesAvailable: 'ఇప్పటికి డెలివరీలు లేవు',
+  noActiveDelivery: 'యాక్టివ్ డెలివరీ లేదు',
+  pickup: 'పికప్',
+  dropoff: 'డ్రాప్',
+  callShop: 'షాప్‌కి కాల్ చేయండి',
+  callCustomer: 'కస్టమర్‌కి కాల్ చేయండి',
+  earnings: 'ఆదాయం',
+  todayDeliveries: 'ఈ రోజు డెలివరీలు',
+  todayEarnings: 'ఈ రోజు ఆదాయం',
+  noEarningsYet: 'ఇంకా ఆదాయం లేదు',
+  available: 'అందుబాటులో ఉంది',
+  notAvailable: 'అందుబాటులో లేదు',
+  emergencyContact: 'అత్యవసర సంప్రదింపు',
+  insuranceAcknowledgement: 'బీమా అంగీకారం',
+  insuranceMessage: 'డెలివరీ పని ప్రమాదకరం కావొచ్చు. నేను అర్థం చేసుకున్నాను.',
+  iUnderstand: 'నేను అర్థం చేసుకున్నాను',
+  deliveryOnTheWay: 'డెలివరీ వస్తోంది',
+  liveTracking: 'లైవ్ ట్రాకింగ్',
+  lastUpdated: 'చివరిగా అప్డేట్',
+  deliveryFee: 'డెలివరీ ఫీ',
 };
 
 const englishTranslations: Translations = {
@@ -319,6 +389,7 @@ const englishTranslations: Translations = {
   loginAs: 'Login as',
   customer: 'Customer',
   merchant: 'Merchant',
+  delivery: 'Delivery',
   
   // Home
   greeting: 'Hello 👋',
@@ -365,6 +436,9 @@ const englishTranslations: Translations = {
   statusReady: 'Ready',
   statusDelivered: 'Delivered',
   statusRejected: 'Rejected',
+  statusAssigned: 'Assigned',
+  statusPickedUp: 'Picked Up',
+  statusOnTheWay: 'On The Way',
   
   // Profile
   myDetails: 'My Details',
@@ -380,6 +454,8 @@ const englishTranslations: Translations = {
   navOrders: 'Orders',
   navProfile: 'Profile',
   navProducts: 'Products',
+  navDeliveries: 'Deliveries',
+  navEarnings: 'Earnings',
   
   // Errors
   networkError: 'Network issue detected',
@@ -426,6 +502,35 @@ const englishTranslations: Translations = {
   // Filter chips
   all: 'All',
   new: 'New',
+  
+  // Delivery Partner
+  deliveryPartner: 'Delivery Partner',
+  availableDeliveries: 'Available Deliveries',
+  myActiveDelivery: 'My Active Delivery',
+  acceptDelivery: 'Accept Delivery',
+  markPickedUp: 'Picked Up',
+  startDelivery: 'On The Way',
+  markDelivered: 'Delivered',
+  noDeliveriesAvailable: 'No deliveries right now',
+  noActiveDelivery: 'No active delivery',
+  pickup: 'Pickup',
+  dropoff: 'Drop-off',
+  callShop: 'Call Shop',
+  callCustomer: 'Call Customer',
+  earnings: 'Earnings',
+  todayDeliveries: 'Today\'s Deliveries',
+  todayEarnings: 'Today\'s Earnings',
+  noEarningsYet: 'No earnings yet',
+  available: 'Available',
+  notAvailable: 'Not Available',
+  emergencyContact: 'Emergency Contact',
+  insuranceAcknowledgement: 'Insurance Acknowledgement',
+  insuranceMessage: 'Delivery work can involve risk. I understand.',
+  iUnderstand: 'I Understand',
+  deliveryOnTheWay: 'Delivery is on the way',
+  liveTracking: 'Live Tracking',
+  lastUpdated: 'Last updated',
+  deliveryFee: 'Delivery Fee',
 };
 
 interface LanguageContextType {
