@@ -7,6 +7,7 @@ import { AppProvider } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AddressProvider } from "@/context/AddressContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { getRouteForRole } from "@/context/auth/authHelpers";
 import Index from "./pages/Index";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
@@ -34,7 +35,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -46,6 +47,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Customer-only pages: if a merchant/admin/delivery lands here (manual URL or stale route),
+  // deterministically redirect to their role home.
+  if (role && role !== 'customer') {
+    return <Navigate to={getRouteForRole(role)} replace />;
   }
   
   return <>{children}</>;

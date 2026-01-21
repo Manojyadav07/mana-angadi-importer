@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { User, MapPin, Phone, LogOut, Languages, Power, AlertCircle, HelpCircle, MessageCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -14,9 +15,11 @@ const SUPPORT_CONFIG = {
 export function DeliveryProfilePage() {
   const navigate = useNavigate();
   const { user, logout, updateUserAvailability } = useApp();
+  const { signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     logout();
     navigate('/');
   };

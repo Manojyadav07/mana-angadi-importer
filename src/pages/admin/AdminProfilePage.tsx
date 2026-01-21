@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { User, LogOut, Globe, Shield } from 'lucide-react';
 
@@ -8,6 +9,7 @@ export function AdminProfilePage() {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const { user, logout } = useApp();
+  const { signOut } = useAuth();
 
   const labels = {
     title: language === 'en' ? 'Admin Profile' : 'అడ్మిన్ ప్రొఫైల్',
@@ -19,7 +21,8 @@ export function AdminProfilePage() {
     adminRole: language === 'en' ? 'Super Admin' : 'సూపర్ అడ్మిన్',
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     logout();
     navigate('/');
   };

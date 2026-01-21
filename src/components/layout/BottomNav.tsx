@@ -2,11 +2,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Package, User, ShoppingBag, Wallet, Truck } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getCartItemCount, isMerchant, isDelivery } = useApp();
+  const { getCartItemCount } = useApp();
+  const { role } = useAuth();
   const { t } = useLanguage();
   const cartCount = getCartItemCount();
 
@@ -28,7 +30,7 @@ export function BottomNav() {
     { path: '/delivery/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
   ];
 
-  const navItems = isDelivery ? deliveryNavItems : isMerchant ? merchantNavItems : customerNavItems;
+  const navItems = role === 'delivery' ? deliveryNavItems : role === 'merchant' ? merchantNavItems : customerNavItems;
 
   const hiddenPaths = ['/', '/cart', '/order-success', '/delivery/onboarding'];
   if (hiddenPaths.includes(location.pathname)) {
@@ -51,7 +53,7 @@ export function BottomNav() {
             >
               <div className="relative">
                 {item.icon}
-                {!isMerchant && !isDelivery && item.path === '/home' && cartCount > 0 && (
+                {role === 'customer' && item.path === '/home' && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-2xs rounded-full flex items-center justify-center font-bold">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>

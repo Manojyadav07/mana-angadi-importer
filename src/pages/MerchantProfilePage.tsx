@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getShopsByOwner, updateShopOpenStatus } from '@/data/mockData';
 import { Switch } from '@/components/ui/switch';
@@ -11,12 +12,15 @@ import { useState } from 'react';
 export function MerchantProfilePage() {
   const navigate = useNavigate();
   const { user, logout } = useApp();
+  const { signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [, forceUpdate] = useState({});
   
   const shops = user?.shopIds ? getShopsByOwner(user.id) : [];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear backend session + any in-memory app state to prevent cross-user bleed
+    await signOut();
     logout();
     navigate('/');
   };
