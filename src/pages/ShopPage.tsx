@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { ProductRow } from '@/components/shop/ProductRow';
-import { getShopById, getProductsByShopId, getLocalizedName, getLocalizedShopType } from '@/data/mockData';
+import { useShop } from '@/hooks/useShops';
+import { useProducts } from '@/hooks/useProducts';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { ArrowLeft, ShoppingBag, Store, ChefHat, Pill } from 'lucide-react';
+import { getLocalizedName, getLocalizedShopType } from '@/types';
+import { ArrowLeft, ShoppingBag, Store, ChefHat, Pill, Loader2 } from 'lucide-react';
 
 const shopIcons = {
   'కిరాణా': Store,
@@ -19,11 +21,23 @@ export function ShopPage() {
   const { getCartItemCount, getCartTotal } = useApp();
   const { t, language } = useLanguage();
 
-  const shop = shopId ? getShopById(shopId) : undefined;
-  const products = shopId ? getProductsByShopId(shopId) : [];
+  // Fetch shop and products from database
+  const { data: shop, isLoading: shopLoading } = useShop(shopId);
+  const { data: products = [], isLoading: productsLoading } = useProducts(shopId);
 
   const cartCount = getCartItemCount();
   const cartTotal = getCartTotal();
+  const isLoading = shopLoading || productsLoading;
+
+  if (isLoading) {
+    return (
+      <MobileLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MobileLayout>
+    );
+  }
 
   if (!shop) {
     return (
