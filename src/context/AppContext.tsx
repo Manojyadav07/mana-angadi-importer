@@ -84,6 +84,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setCart([]);
     setCartShopId(null);
+    setOrders([]);
+    setLocationUpdates([]);
   }, []);
 
   const updateUserName = useCallback((name: string) => {
