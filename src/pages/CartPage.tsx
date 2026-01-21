@@ -61,6 +61,9 @@ export function CartPage() {
     setIsPlacing(true);
     
     try {
+      // Only pass address ID if it's a valid UUID (from database)
+      const isValidUUID = selectedAddress?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedAddress.id);
+      
       const order = await createOrder.mutateAsync({
         userId: user.id,
         shopId: shop.id,
@@ -82,7 +85,7 @@ export function CartPage() {
         paymentMethod,
         codChangeNeededFor: codChangeNeeded,
         upiTxnRef: paymentMethod === 'UPI' ? upiTxnRef : undefined,
-        addressId: selectedAddress?.id,
+        addressId: isValidUUID ? selectedAddress.id : undefined, // Only pass UUID format IDs
         addressTextTe: selectedAddress ? `${selectedAddress.label_te}, ${selectedAddress.landmark_te}` : undefined,
         addressTextEn: selectedAddress ? `${selectedAddress.label_en}, ${selectedAddress.landmark_en}` : undefined,
         dropLat: selectedAddress?.lat,

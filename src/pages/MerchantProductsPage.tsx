@@ -9,6 +9,7 @@ import { Product, getLocalizedName } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ProductImageUpload } from '@/components/merchant/ProductImageUpload';
 import { toast } from 'sonner';
 
 export function MerchantProductsPage() {
@@ -35,6 +36,7 @@ export function MerchantProductsPage() {
     inStock: true,
     isActive: true,
     category: '',
+    image: '' as string | undefined,
   });
 
   const resetForm = () => {
@@ -45,6 +47,7 @@ export function MerchantProductsPage() {
       inStock: true,
       isActive: true,
       category: '',
+      image: undefined,
     });
   };
 
@@ -57,6 +60,7 @@ export function MerchantProductsPage() {
       inStock: product.inStock,
       isActive: product.isActive,
       category: product.category || '',
+      image: product.image,
     });
     setShowAddSheet(true);
   };
@@ -94,6 +98,7 @@ export function MerchantProductsPage() {
             price,
             inStock: formData.inStock,
             isActive: formData.isActive,
+            image: formData.image,
           },
         });
       } else {
@@ -104,6 +109,7 @@ export function MerchantProductsPage() {
           price,
           inStock: formData.inStock,
           isActive: formData.isActive,
+          image: formData.image,
         });
       }
 
@@ -256,6 +262,21 @@ export function MerchantProductsPage() {
           </SheetHeader>
           
           <div className="py-4 space-y-4">
+            {/* Product Image */}
+            {shop && (
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  {language === 'en' ? 'Product Photo' : 'ఉత్పత్తి ఫోటో'}
+                </label>
+                <ProductImageUpload
+                  currentImage={formData.image}
+                  shopId={shop.id}
+                  onImageUploaded={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                  onImageRemoved={() => setFormData(prev => ({ ...prev, image: undefined }))}
+                />
+              </div>
+            )}
+            
             {/* Telugu Name */}
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
