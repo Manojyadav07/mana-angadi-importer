@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getShopsByOwner, getProductsByShopId, updateProduct, addProduct } from '@/data/mockData';
-import { Package, Plus, ImageIcon } from 'lucide-react';
-import { Product, getLocalizedName, Shop } from '@/types';
+import { useMerchantShop } from '@/hooks/useShops';
+import { useMerchantProducts, useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
+import { Package, Plus, ImageIcon, RefreshCw, AlertCircle } from 'lucide-react';
+import { Product, getLocalizedName } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 
 export function MerchantProductsPage() {
-  const { user } = useApp();
-  const { t, language } = useLanguage();
-  const [isLoading] = useState(false);
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const { user } = useAuth();
+  const { language, t } = useLanguage();
+  
+  // Fetch merchant's shop
+  const { data: shop, isLoading: shopLoading } = useMerchantShop(user?.id);
+  
+  // Fetch products for the shop
+  const { data: products = [], isLoading: productsLoading, refetch } = useMerchantProducts(shop?.id);
+  
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [, forceUpdate] = useState({});
-  
-  const shops = user?.shopIds ? getShopsByOwner(user.id) : [];
   
   // Form state
   const [formData, setFormData] = useState({
@@ -55,14 +61,13 @@ export function MerchantProductsPage() {
     setShowAddSheet(true);
   };
 
-  const handleAddNew = (shop: Shop) => {
-    setSelectedShop(shop);
+  const handleAddNew = () => {
     setEditingProduct(null);
     resetForm();
     setShowAddSheet(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name_te || !formData.name_en || !formData.price) {
       toast.error(language === 'en' ? 'Please fill all required fields' : 'దయచేసి అన్ని అవసరమైన ఫీల్డ్‌లను పూరించండి');
       return;
@@ -74,43 +79,59 @@ export function MerchantProductsPage() {
       return;
     }
 
-    if (editingProduct) {
-      updateProduct(editingProduct.shopId, editingProduct.id, {
-        name_te: formData.name_te,
-        name_en: formData.name_en,
-        price,
-        inStock: formData.inStock,
-        isActive: formData.isActive,
-        category: formData.category,
-      });
-    } else if (selectedShop) {
-      const newProduct: Product = {
-        id: `p_${Date.now()}`,
-        shopId: selectedShop.id,
-        name_te: formData.name_te,
-        name_en: formData.name_en,
-        price,
-        inStock: formData.inStock,
-        isActive: formData.isActive,
-        category: formData.category,
-      };
-      addProduct(selectedShop.id, newProduct);
+    if (!shop) {
+      toast.error('No shop found');
+      return;
     }
 
-    toast.success(t.productSaved);
-    setShowAddSheet(false);
-    forceUpdate({});
+    try {
+      if (editingProduct) {
+        await updateProduct.mutateAsync({
+          id: editingProduct.id,
+          updates: {
+            name_te: formData.name_te,
+            name_en: formData.name_en,
+            price,
+            inStock: formData.inStock,
+            isActive: formData.isActive,
+          },
+        });
+      } else {
+        await createProduct.mutateAsync({
+          shopId: shop.id,
+          name_te: formData.name_te,
+          name_en: formData.name_en,
+          price,
+          inStock: formData.inStock,
+          isActive: formData.isActive,
+        });
+      }
+
+      toast.success(t.productSaved);
+      setShowAddSheet(false);
+    } catch (err) {
+      console.error('Save product error:', err);
+      toast.error(language === 'en' ? 'Failed to save product' : 'ఉత్పత్తి సేవ్ చేయడంలో విఫలమైంది');
+    }
   };
 
-  const handleToggleStock = (shopId: string, productId: string, inStock: boolean) => {
-    updateProduct(shopId, productId, { inStock });
-    forceUpdate({});
+  const handleToggleStock = async (productId: string, inStock: boolean) => {
+    try {
+      await updateProduct.mutateAsync({ id: productId, updates: { inStock } });
+    } catch (err) {
+      console.error('Toggle stock error:', err);
+    }
   };
 
-  const handleToggleActive = (shopId: string, productId: string, isActive: boolean) => {
-    updateProduct(shopId, productId, { isActive });
-    forceUpdate({});
+  const handleToggleActive = async (productId: string, isActive: boolean) => {
+    try {
+      await updateProduct.mutateAsync({ id: productId, updates: { isActive } });
+    } catch (err) {
+      console.error('Toggle active error:', err);
+    }
   };
+
+  const isLoading = shopLoading || productsLoading;
 
   return (
     <MobileLayout>
@@ -129,90 +150,99 @@ export function MerchantProductsPage() {
           <SkeletonCard />
           <SkeletonCard />
         </div>
+      ) : !shop ? (
+        <div className="px-4">
+          <div className="bg-muted/50 rounded-2xl p-8 flex flex-col items-center justify-center">
+            <AlertCircle className="w-12 h-12 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground text-center">
+              {language === 'en' ? 'No shop found. Please set up your shop first.' : 'దుకాణం కనుగొనబడలేదు. దయచేసి మీ దుకాణాన్ని సెటప్ చేయండి.'}
+            </p>
+          </div>
+        </div>
       ) : (
-        <div className="px-4 pb-4 space-y-6">
-          {shops.map(shop => {
-            const products = getProductsByShopId(shop.id);
-            
-            return (
-              <div key={shop.id} className="animate-fade-in">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-foreground">
-                    {getLocalizedName(shop, language)}
-                  </h2>
-                  <button
-                    onClick={() => handleAddNew(shop)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {t.addProduct}
-                  </button>
-                </div>
-                
-                {products.length === 0 ? (
-                  <div className="bg-muted/50 rounded-2xl p-8 flex flex-col items-center justify-center">
-                    <Package className="w-12 h-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">{t.noProducts}</p>
-                    <button
-                      onClick={() => handleAddNew(shop)}
-                      className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium"
-                    >
-                      {t.addProduct}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {products.map(product => (
-                      <div
-                        key={product.id}
-                        className="bg-card rounded-xl border border-border p-3 shadow-sm"
+        <div className="px-4 pb-4 space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-foreground">
+              {getLocalizedName(shop, language)}
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refetch()}
+                className="p-2 rounded-full bg-muted/50 text-muted-foreground"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleAddNew}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                {t.addProduct}
+              </button>
+            </div>
+          </div>
+          
+          {products.length === 0 ? (
+            <div className="bg-muted/50 rounded-2xl p-8 flex flex-col items-center justify-center">
+              <Package className="w-12 h-12 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">{t.noProducts}</p>
+              <button
+                onClick={handleAddNew}
+                className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium"
+              >
+                {t.addProduct}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {products.map(product => (
+                <div
+                  key={product.id}
+                  className="bg-card rounded-xl border border-border p-3 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {product.image ? (
+                        <img src={product.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <p 
+                        className="font-medium text-foreground truncate cursor-pointer"
+                        onClick={() => handleEditProduct(product)}
                       >
-                        <div className="flex items-start gap-3">
-                          {/* Product Image */}
-                          <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {product.image ? (
-                              <img src={product.image} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                            )}
-                          </div>
-                          
-                          {/* Details */}
-                          <div className="flex-1 min-w-0">
-                            <p 
-                              className="font-medium text-foreground truncate cursor-pointer"
-                              onClick={() => handleEditProduct(product)}
-                            >
-                              {getLocalizedName(product, language)}
-                            </p>
-                            <p className="text-primary font-semibold">₹{product.price}</p>
-                          </div>
-                          
-                          {/* Toggles */}
-                          <div className="flex flex-col gap-2 items-end">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{t.inStock}</span>
-                              <Switch
-                                checked={product.inStock}
-                                onCheckedChange={(checked) => handleToggleStock(shop.id, product.id, checked)}
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{t.active}</span>
-                              <Switch
-                                checked={product.isActive}
-                                onCheckedChange={(checked) => handleToggleActive(shop.id, product.id, checked)}
-                              />
-                            </div>
-                          </div>
-                        </div>
+                        {getLocalizedName(product, language)}
+                      </p>
+                      <p className="text-primary font-semibold">₹{product.price}</p>
+                    </div>
+                    
+                    {/* Toggles */}
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{t.inStock}</span>
+                        <Switch
+                          checked={product.inStock}
+                          onCheckedChange={(checked) => handleToggleStock(product.id, checked)}
+                        />
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{t.active}</span>
+                        <Switch
+                          checked={product.isActive}
+                          onCheckedChange={(checked) => handleToggleActive(product.id, checked)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

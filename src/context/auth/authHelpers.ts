@@ -91,6 +91,7 @@ export async function updateRoleForUser(userId: string, newRole: UserRole) {
 export function getRouteForRole(role: UserRole | null) {
   switch (role) {
     case "merchant":
+      // Merchants will be redirected by MerchantWithShopRoute if they don't have a shop
       return "/merchant/orders";
     case "delivery":
       return "/delivery/onboarding";

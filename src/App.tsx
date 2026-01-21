@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { AddressProvider } from "@/context/AddressContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { getRouteForRole } from "@/context/auth/authHelpers";
+import { useMerchantShopCheck } from "@/hooks/useMerchantShopCheck";
 import Index from "./pages/Index";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
@@ -19,6 +20,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { MerchantOrdersPage } from "./pages/MerchantOrdersPage";
 import { MerchantProductsPage } from "./pages/MerchantProductsPage";
 import { MerchantProfilePage } from "./pages/MerchantProfilePage";
+import { MerchantShopSetupPage } from "./pages/MerchantShopSetupPage";
 import { DeliveryOnboardingPage } from "./pages/DeliveryOnboardingPage";
 import { DeliveryOrdersPage } from "./pages/DeliveryOrdersPage";
 import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
@@ -82,8 +84,9 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function MerchantRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
+  const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
   
-  if (isLoading) {
+  if (isLoading || shopCheckLoading) {
     return (
       <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -97,6 +100,38 @@ function MerchantRoute({ children }: { children: React.ReactNode }) {
   
   if (role !== 'merchant' && role !== 'admin') {
     return <Navigate to="/home" replace />;
+  }
+
+  // If merchant has no shop, redirect to shop setup (except if already on setup page)
+  // This check will be handled by individual routes
+  
+  return <>{children}</>;
+}
+
+// Wrapper that redirects merchants without shops to setup
+function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
+  
+  if (isLoading || shopCheckLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (role !== 'merchant' && role !== 'admin') {
+    return <Navigate to="/home" replace />;
+  }
+
+  // If merchant has no shop, redirect to shop setup
+  if (role === 'merchant' && shopCheck && !shopCheck.hasShop) {
+    return <Navigate to="/merchant/setup" replace />;
   }
   
   return <>{children}</>;
@@ -136,9 +171,10 @@ function AppRoutes() {
       <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       {/* Merchant Routes */}
-      <Route path="/merchant/orders" element={<MerchantRoute><MerchantOrdersPage /></MerchantRoute>} />
-      <Route path="/merchant/products" element={<MerchantRoute><MerchantProductsPage /></MerchantRoute>} />
-      <Route path="/merchant/profile" element={<MerchantRoute><MerchantProfilePage /></MerchantRoute>} />
+      <Route path="/merchant/setup" element={<MerchantRoute><MerchantShopSetupPage /></MerchantRoute>} />
+      <Route path="/merchant/orders" element={<MerchantWithShopRoute><MerchantOrdersPage /></MerchantWithShopRoute>} />
+      <Route path="/merchant/products" element={<MerchantWithShopRoute><MerchantProductsPage /></MerchantWithShopRoute>} />
+      <Route path="/merchant/profile" element={<MerchantWithShopRoute><MerchantProfilePage /></MerchantWithShopRoute>} />
       {/* Delivery Partner Routes */}
       <Route path="/delivery/onboarding" element={<DeliveryRoute><DeliveryOnboardingPage /></DeliveryRoute>} />
       <Route path="/delivery/orders" element={<DeliveryRoute><DeliveryOrdersPage /></DeliveryRoute>} />
