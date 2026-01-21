@@ -222,18 +222,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  // Secure: users can only set role once (no client-side role upgrades)
+  // Update user's role - allows changing from default "customer" to selected role during signup
   const setInitialRole = async (newRole: UserRole) => {
     if (!user) return { error: new Error("Not authenticated") };
 
+    // Check if user already has a non-customer role (prevent role escalation)
     const { data: existing, error: readError } = await fetchRole(user.id);
     if (readError) return { error: readError };
 
-    if (existing?.role) return { error: new Error("Role already set") };
+    // If role exists and is not "customer", don't allow changing
+    if (existing?.role && existing.role !== "customer") {
+      return { error: new Error("Role already set") };
+    }
 
-    const { error } = await sb.from("user_roles").insert({ user_id: user.id, role: newRole });
-    if (!error) setRole(newRole);
-    return { error };
+    // If no role exists, insert; otherwise update from "customer" to the new role
+    if (!existing?.role) {
+      const { error } = await sb.from("user_roles").insert({ user_id: user.id, role: newRole });
+      if (!error) setRole(newRole);
+      return { error };
+    } else {
+      // Update existing "customer" role to selected role
+      const { error } = await sb.from("user_roles").update({ role: newRole }).eq("user_id", user.id);
+      if (!error) setRole(newRole);
+      return { error };
+    }
   };
 
   return (

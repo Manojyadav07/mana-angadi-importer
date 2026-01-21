@@ -152,15 +152,26 @@ export function LoginPage() {
           return;
         }
 
-        // Only set role once; if it fails we still continue as customer
-        const { error: roleError } = await setInitialRole(selectedRole);
-        if (roleError) console.warn("Role set skipped/failed:", roleError);
-
-        // Deterministic post-login: refresh → ensure profile + role exist → route
+        // Wait for session to be established first
         const refreshed = await refresh();
         if (refreshed.error) {
           toast.error(language === "en" ? "Logged in, but app failed to load. Tap retry." : "లాగిన్ అయ్యారు, కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
           return;
+        }
+
+        // Now set the role (session is established)
+        // Only set if the user doesn't already have a role
+        if (!refreshed.role || refreshed.role === "customer") {
+          const { error: roleError } = await setInitialRole(selectedRole);
+          if (roleError) {
+            console.warn("Role set skipped/failed:", roleError);
+          } else {
+            // Refresh again to get the updated role
+            const finalRefresh = await refresh();
+            toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
+            navigate(getRouteForRole(finalRefresh.role));
+            return;
+          }
         }
 
         toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
