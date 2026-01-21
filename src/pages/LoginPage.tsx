@@ -21,7 +21,7 @@ import {
 import type { UserRole } from "@/types";
 import { toast } from "sonner";
 import { z } from "zod";
-import { getRouteForRole } from "@/context/auth/authHelpers";
+import { getRouteForRole, updateRoleForUser } from "@/context/auth/authHelpers";
 
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
@@ -154,24 +154,29 @@ export function LoginPage() {
 
         // Wait for session to be established first
         const refreshed = await refresh();
-        if (refreshed.error) {
+        if (refreshed.error || !refreshed.profile) {
           toast.error(language === "en" ? "Logged in, but app failed to load. Tap retry." : "లాగిన్ అయ్యారు, కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
           return;
         }
 
-        // Now set the role (session is established)
-        // Only set if the user doesn't already have a role
+        // Now set the role using the userId from refresh (bypasses stale context state)
+        // Only set if the user doesn't already have a non-customer role
         if (!refreshed.role || refreshed.role === "customer") {
-          const { error: roleError } = await setInitialRole(selectedRole);
+          const { role: updatedRole, error: roleError } = await updateRoleForUser(
+            refreshed.profile.user_id,
+            selectedRole
+          );
           if (roleError) {
             console.warn("Role set skipped/failed:", roleError);
-          } else {
-            // Refresh again to get the updated role
-            const finalRefresh = await refresh();
             toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
-            navigate(getRouteForRole(finalRefresh.role));
+            navigate(getRouteForRole(refreshed.role));
             return;
           }
+          // Refresh again to sync context state with the new role
+          await refresh();
+          toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
+          navigate(getRouteForRole(updatedRole));
+          return;
         }
 
         toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");

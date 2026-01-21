@@ -59,6 +59,35 @@ export async function ensureRole(userId: string, defaultRole: UserRole = "custom
   return { role: (insertRes.data?.role as UserRole | null) ?? null, error: insertRes.error };
 }
 
+// Update role from "customer" to selected role - used during signup flow
+export async function updateRoleForUser(userId: string, newRole: UserRole) {
+  const { data: existing, error: readError } = await fetchRole(userId);
+  if (readError) return { role: null as UserRole | null, error: readError };
+
+  // If role exists and is not "customer", don't allow changing (prevent escalation)
+  if (existing?.role && existing.role !== "customer") {
+    return { role: existing.role as UserRole, error: new Error("Role already set") };
+  }
+
+  // If no role exists, insert; otherwise update from "customer"
+  if (!existing?.role) {
+    const insertRes = await sb
+      .from("user_roles")
+      .insert({ user_id: userId, role: newRole })
+      .select("role")
+      .maybeSingle();
+    return { role: (insertRes.data?.role as UserRole | null) ?? null, error: insertRes.error };
+  } else {
+    const updateRes = await sb
+      .from("user_roles")
+      .update({ role: newRole })
+      .eq("user_id", userId)
+      .select("role")
+      .maybeSingle();
+    return { role: (updateRes.data?.role as UserRole | null) ?? null, error: updateRes.error };
+  }
+}
+
 export function getRouteForRole(role: UserRole | null) {
   switch (role) {
     case "merchant":
