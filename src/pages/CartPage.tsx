@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAddress } from '@/context/AddressContext';
-import { getShopById, getLocalizedName } from '@/data/mockData';
+import { useShop } from '@/hooks/useShops';
+import { useCreateOrder } from '@/hooks/useOrders';
+import { getLocalizedName } from '@/data/mockData';
 import { calculateDistanceKm, calculateDeliveryFee, calculateETA, PaymentMethod, CustomerAddress } from '@/types';
 import { ArrowLeft, Plus, Minus, Trash2, Package, MapPin, ChevronRight, Lock } from 'lucide-react';
 import { AddressPicker } from '@/components/address/AddressPicker';
 import { PaymentSelector } from '@/components/checkout/PaymentSelector';
 import { DeliveryFeeCard } from '@/components/checkout/DeliveryFeeCard';
+import { toast } from 'sonner';
 
 export function CartPage() {
   const navigate = useNavigate();
-  const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, placeOrder } = useApp();
+  const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, clearCart } = useApp();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
-  const { getSelectedAddress, getDefaultAddress } = useAddress();
+  const { getDefaultAddress } = useAddress();
   
   const [note, setNote] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
@@ -24,7 +29,10 @@ export function CartPage() {
   const [codChangeNeeded, setCodChangeNeeded] = useState<number | undefined>();
   const [upiTxnRef, setUpiTxnRef] = useState('');
 
-  const shop = cartShopId ? getShopById(cartShopId) : undefined;
+  // Fetch shop from database
+  const { data: shop } = useShop(cartShopId);
+  const createOrder = useCreateOrder();
+
   const subtotal = getCartTotal();
 
   // Calculate delivery fee and ETA
@@ -38,21 +46,63 @@ export function CartPage() {
   const total = subtotal + deliveryFee;
 
   const handlePlaceOrder = async () => {
-    if (!shop || cart.length === 0) return;
+    if (!shop || cart.length === 0 || !user) {
+      toast.error(language === 'en' ? 'Unable to place order' : 'ఆర్డర్ చేయలేకపోయాము');
+      return;
+    }
+
+    // Validation: ensure all items are from the same shop
+    const shopIds = [...new Set(cart.map(item => item.product.shopId))];
+    if (shopIds.length > 1 || (shopIds.length === 1 && shopIds[0] !== shop.id)) {
+      toast.error(language === 'en' ? 'Please order from one shop at a time' : 'ఒక దుకాణం నుండి మాత్రమే ఆర్డర్ చేయండి');
+      return;
+    }
 
     setIsPlacing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const order = placeOrder({ 
-      shop, 
-      note, 
-      address: selectedAddress,
-      paymentMethod,
-      codChangeNeeded,
-      upiTxnRef: paymentMethod === 'UPI' ? upiTxnRef : undefined,
-    });
-    setIsPlacing(false);
-    navigate('/order-success', { state: { orderId: order.id } });
+    try {
+      const order = await createOrder.mutateAsync({
+        userId: user.id,
+        shopId: shop.id,
+        shopNameTe: shop.name_te,
+        shopNameEn: shop.name_en,
+        shopPickupLat: shop.pickupLat,
+        shopPickupLng: shop.pickupLng,
+        items: cart.map(item => ({
+          productId: item.product.id,
+          productNameTe: item.product.name_te,
+          productNameEn: item.product.name_en,
+          price: item.product.price,
+          quantity: item.quantity,
+          imageUrl: item.product.image,
+        })),
+        subtotal,
+        deliveryFee,
+        total,
+        paymentMethod,
+        codChangeNeededFor: codChangeNeeded,
+        upiTxnRef: paymentMethod === 'UPI' ? upiTxnRef : undefined,
+        addressId: selectedAddress?.id,
+        addressTextTe: selectedAddress ? `${selectedAddress.label_te}, ${selectedAddress.landmark_te}` : undefined,
+        addressTextEn: selectedAddress ? `${selectedAddress.label_en}, ${selectedAddress.landmark_en}` : undefined,
+        dropLat: selectedAddress?.lat,
+        dropLng: selectedAddress?.lng,
+        deliveryInstructionsTe: selectedAddress?.deliveryInstructions_te,
+        deliveryInstructionsEn: selectedAddress?.deliveryInstructions_en,
+        approxDistanceKm: distanceKm,
+        etaMin: eta?.min,
+        etaMax: eta?.max,
+        note,
+      });
+      
+      clearCart();
+      navigate('/order-success', { state: { orderId: order.id } });
+    } catch (error: any) {
+      console.error('Order creation failed:', error);
+      toast.error(language === 'en' ? 'Failed to place order. Please try again.' : 'ఆర్డర్ విఫలమైంది. మళ్ళీ ప్రయత్నించండి.');
+    } finally {
+      setIsPlacing(false);
+    }
   };
 
   const getProductName = (product: { name_te: string; name_en: string }) => {
@@ -65,6 +115,15 @@ export function CartPage() {
     change: language === 'en' ? 'Change' : 'మార్చు',
     privacyNote: language === 'en' ? 'Your address is private' : 'మీ చిరునామా గోప్యంగా ఉంటుంది',
   };
+
+  // Show loading while shop data loads
+  if (cartShopId && !shop) {
+    return (
+      <div className="mobile-container min-h-screen flex flex-col bg-background items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">{language === 'en' ? 'Loading...' : 'లోడ్ అవుతోంది...'}</div>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (

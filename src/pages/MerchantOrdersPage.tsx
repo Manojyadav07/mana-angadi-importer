@@ -1,26 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getShopsByOwner } from '@/data/mockData';
-import { Package, Clock } from 'lucide-react';
+import { useMerchantShop } from '@/hooks/useShops';
+import { useMerchantOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
+import { Package, Clock, RefreshCw, Store } from 'lucide-react';
 import { Order, OrderStatus, getShopTypeIcon } from '@/types';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { MerchantOrderDetailSheet } from '@/components/merchant/MerchantOrderDetailSheet';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 type FilterType = 'all' | 'placed' | 'accepted' | 'ready' | 'delivered';
 
 export function MerchantOrdersPage() {
-  const { user, getOrdersByShopIds, updateOrderStatus } = useApp();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>('all');
-  const [isLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
-  const shops = user?.shopIds ? getShopsByOwner(user.id) : [];
-  const shopIds = shops.map(s => s.id);
-  const orders = getOrdersByShopIds(shopIds);
+  // Fetch merchant's shop from database
+  const { data: shop, isLoading: isLoadingShop, error: shopError } = useMerchantShop(user?.id);
+  
+  // Fetch orders for the merchant's shop
+  const { data: orders = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useMerchantOrders(shop?.id);
+  
+  const updateOrderStatus = useUpdateOrderStatus();
+
+  // Auto-refresh orders every 15 seconds
+  useEffect(() => {
+    if (!shop?.id) return;
+    
+    const interval = setInterval(() => {
+      refetchOrders();
+    }, 15000);
+    
+    return () => clearInterval(interval);
+  }, [shop?.id, refetchOrders]);
+
+  const isLoading = isLoadingShop || isLoadingOrders;
 
   const filteredOrders = filter === 'all' 
     ? orders 
@@ -55,22 +74,42 @@ export function MerchantOrdersPage() {
     { key: 'ready', label: t.statusReady },
   ];
 
-  const handleAccept = (orderId: string) => {
-    updateOrderStatus(orderId, 'accepted');
-    toast.success(t.orderAccepted);
-    setSelectedOrder(null);
+  const handleAccept = async (orderId: string) => {
+    try {
+      await updateOrderStatus.mutateAsync({ orderId, status: 'accepted' });
+      toast.success(t.orderAccepted);
+      setSelectedOrder(null);
+      refetchOrders();
+    } catch (error) {
+      toast.error(language === 'en' ? 'Failed to accept order' : 'ఆర్డర్ అంగీకరించడం విఫలమైంది');
+    }
   };
 
-  const handleReject = (orderId: string, reason_te: string, reason_en: string) => {
-    updateOrderStatus(orderId, 'rejected', reason_te, reason_en);
-    toast.error(t.orderRejected);
-    setSelectedOrder(null);
+  const handleReject = async (orderId: string, reason_te: string, reason_en: string) => {
+    try {
+      await updateOrderStatus.mutateAsync({ orderId, status: 'rejected' });
+      toast.error(t.orderRejected);
+      setSelectedOrder(null);
+      refetchOrders();
+    } catch (error) {
+      toast.error(language === 'en' ? 'Failed to reject order' : 'ఆర్డర్ తిరస్కరించడం విఫలమైంది');
+    }
   };
 
-  const handleMarkReady = (orderId: string) => {
-    updateOrderStatus(orderId, 'ready');
-    toast.success(t.orderMarkedReady);
-    setSelectedOrder(null);
+  const handleMarkReady = async (orderId: string) => {
+    try {
+      await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
+      toast.success(t.orderMarkedReady);
+      setSelectedOrder(null);
+      refetchOrders();
+    } catch (error) {
+      toast.error(language === 'en' ? 'Failed to mark order ready' : 'ఆర్డర్ రెడీగా మార్చడం విఫలమైంది');
+    }
+  };
+
+  const handleRefresh = () => {
+    refetchOrders();
+    toast.success(language === 'en' ? 'Refreshing orders...' : 'ఆర్డర్లు రిఫ్రెష్ అవుతున్నాయి...');
   };
 
   const formatTime = (date: Date) => {
@@ -85,16 +124,51 @@ export function MerchantOrdersPage() {
     return date.toLocaleDateString();
   };
 
+  // Show "No shop assigned" state if merchant has no shop
+  if (!isLoadingShop && !shop) {
+    return (
+      <MobileLayout>
+        <header className="px-4 pt-6 pb-4">
+          <h1 className="text-2xl font-bold text-foreground animate-fade-in">
+            {t.incomingOrders}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm animate-fade-in" style={{ animationDelay: '0.05s' }}>
+            {t.merchantMode}
+          </p>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Store className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground text-center text-lg mb-2">
+            {language === 'en' ? 'No shop assigned yet' : 'ఇంకా దుకాణం కేటాయించబడలేదు'}
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
+            {language === 'en' ? 'Contact admin to get your shop assigned.' : 'మీ దుకాణాన్ని కేటాయించడానికి అడ్మిన్‌ను సంప్రదించండి.'}
+          </p>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   return (
     <MobileLayout>
       {/* Header */}
-      <header className="px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-          {t.incomingOrders}
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm animate-fade-in" style={{ animationDelay: '0.05s' }}>
-          {t.merchantMode}
-        </p>
+      <header className="px-4 pt-6 pb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground animate-fade-in">
+            {t.incomingOrders}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm animate-fade-in" style={{ animationDelay: '0.05s' }}>
+            {shop ? (language === 'en' ? shop.name_en : shop.name_te) : t.merchantMode}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <RefreshCw className="w-5 h-5 text-muted-foreground" />
+        </button>
       </header>
 
       {/* Filter Chips */}
@@ -131,6 +205,12 @@ export function MerchantOrdersPage() {
           <p className="text-muted-foreground text-center text-lg">
             {t.noOrders}
           </p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium"
+          >
+            {language === 'en' ? 'Refresh' : 'రిఫ్రెష్'}
+          </button>
         </div>
       ) : (
         <div className="px-4 pb-4 space-y-3 stagger-children">
