@@ -95,7 +95,8 @@ export function DeliveryOrdersPage() {
     }
 
     sendLocationUpdate();
-    const interval = setInterval(sendLocationUpdate, 15000);
+    // GPS updates every 8 seconds (within 5-10 second requirement)
+    const interval = setInterval(sendLocationUpdate, 8000);
     return () => clearInterval(interval);
   }, [activeOrder?.id, activeOrder?.status, sendLocationUpdate, language]);
 
