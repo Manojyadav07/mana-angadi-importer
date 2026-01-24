@@ -1,23 +1,16 @@
-import { useState, useEffect } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useDeliveredOrders } from '@/hooks/useDeliveryEarnings';
 import { getShopTypeIcon } from '@/types';
-import { Wallet, TrendingUp, Package, Clock } from 'lucide-react';
+import { Wallet, TrendingUp, Package, Clock, RefreshCw } from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 
 export function DeliveryEarningsPage() {
-  const { user, getDeliveryPartnerOrders } = useApp();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const myOrders = user ? getDeliveryPartnerOrders(user.id) : [];
-  const deliveredOrders = myOrders.filter(o => o.status === 'delivered');
+  const { data: deliveredOrders = [], isLoading, refetch } = useDeliveredOrders(user?.id);
   
   // Filter today's deliveries
   const today = new Date().toDateString();
@@ -53,7 +46,15 @@ export function DeliveryEarningsPage() {
   return (
     <MobileLayout>
       <header className="screen-header">
-        <h1 className="text-xl font-bold text-foreground">{t.earnings}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">{t.earnings}</h1>
+          <button 
+            onClick={() => refetch()} 
+            className="p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <RefreshCw className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
       </header>
 
       <div className="px-4 py-4 space-y-6">

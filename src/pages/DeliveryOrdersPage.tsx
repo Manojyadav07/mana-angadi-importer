@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useDeliveryOrders, useUpdateOrderStatus, useAcceptDelivery } from '@/hooks/useOrders';
+import { useUpdateDeliveryLocation } from '@/hooks/useDeliveryLocation';
 import { Order, getShopTypeIcon } from '@/types';
-import { getShopById } from '@/data/mockData';
-import { Package, MapPin, Truck, Phone, ArrowRight, CheckCircle, Navigation } from 'lucide-react';
+import { Package, MapPin, Truck, Phone, ArrowRight, CheckCircle, Navigation, RefreshCw, Loader2 } from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { DeliveryStatusStepper } from '@/components/delivery/DeliveryStatusStepper';
 import { OrderTimeline } from '@/components/order/OrderTimeline';
@@ -13,102 +14,130 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { toast } from 'sonner';
 
 export function DeliveryOrdersPage() {
-  const { user, orders, getReadyOrders, getDeliveryPartnerOrders, acceptDelivery, updateDeliveryStatus, updateLocation } = useApp();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
 
+  // Database hooks
+  const { data: deliveryData, isLoading, refetch } = useDeliveryOrders(user?.id);
+  const updateOrderStatus = useUpdateOrderStatus();
+  const acceptDelivery = useAcceptDelivery();
+  const updateLocation = useUpdateDeliveryLocation();
+
+  const readyOrders = deliveryData?.available || [];
+  const assignedOrders = deliveryData?.assigned || [];
+  const activeOrder = assignedOrders.find(o => ['assigned', 'pickedUp', 'onTheWay'].includes(o.status));
+
+  // Auto-refresh every 15 seconds
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    const interval = setInterval(() => {
+      refetch();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
-  const readyOrders = getReadyOrders();
-  const myOrders = user ? getDeliveryPartnerOrders(user.id) : [];
-  const activeOrder = myOrders.find(o => ['assigned', 'pickedUp', 'onTheWay'].includes(o.status));
-  const completedToday = myOrders.filter(o => 
-    o.status === 'delivered' && 
-    o.deliveredAt && 
-    new Date(o.deliveredAt).toDateString() === new Date().toDateString()
-  );
-
-  // Location tracking for active delivery - START FROM ASSIGNED STATUS
+  // Location tracking for active delivery
   const sendLocationUpdate = useCallback(() => {
-    // Track from Assigned → Delivered (not just PickedUp/OnTheWay)
-    if (!activeOrder || !['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
+    if (!activeOrder || !user?.id || !['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
     
     if (!navigator.geolocation) {
-      console.log('Geolocation not supported');
       // Use mock location for demo
-      if (activeOrder) {
-        const mockLat = 18.81 + (Math.random() * 0.02);
-        const mockLng = 78.59 + (Math.random() * 0.02);
-        updateLocation(activeOrder.id, mockLat, mockLng);
-      }
+      const mockLat = 18.81 + (Math.random() * 0.02);
+      const mockLng = 78.59 + (Math.random() * 0.02);
+      updateLocation.mutate({
+        orderId: activeOrder.id,
+        deliveryPersonId: user.id,
+        lat: mockLat,
+        lng: mockLng,
+      });
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        updateLocation(activeOrder.id, position.coords.latitude, position.coords.longitude);
-        console.log('Location updated:', position.coords.latitude, position.coords.longitude);
+        updateLocation.mutate({
+          orderId: activeOrder.id,
+          deliveryPersonId: user.id,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
       },
       (error) => {
         console.log('Location error:', error.message);
-        // Use mock location for testing if real location fails
-        // Simulate movement between Metpally and Metlachittapur
-        if (activeOrder) {
-          const progress = Math.random();
-          const mockLat = 18.8305 - (progress * 0.0413); // Moving from Metpally to Metlachittapur
-          const mockLng = 78.6098 - (progress * 0.0375);
-          updateLocation(activeOrder.id, mockLat, mockLng);
-        }
+        // Use mock location for testing
+        const progress = Math.random();
+        const mockLat = 18.8305 - (progress * 0.0413);
+        const mockLng = 78.6098 - (progress * 0.0375);
+        updateLocation.mutate({
+          orderId: activeOrder.id,
+          deliveryPersonId: user.id,
+          lat: mockLat,
+          lng: mockLng,
+        });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
-  }, [activeOrder, updateLocation]);
+  }, [activeOrder, user?.id, updateLocation]);
 
-  // Request location permission and start tracking - FROM ASSIGNED STATUS
+  // Request location permission and start tracking
   useEffect(() => {
-    // Start tracking immediately when order is assigned
     if (!activeOrder || !['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status)) return;
 
-    // Request permission
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
           setLocationPermission('granted');
           toast.success(language === 'te' ? 'లొకేషన్ ట్రాకింగ్ ఆన్' : 'Location tracking on');
         },
-        () => {
-          setLocationPermission('denied');
-          // Still continue with mock data for demo
-        }
+        () => setLocationPermission('denied')
       );
     }
 
-    // Send location immediately when order becomes assigned
     sendLocationUpdate();
-
-    // Send location updates every 15 seconds while order is active
     const interval = setInterval(sendLocationUpdate, 15000);
-    
     return () => clearInterval(interval);
   }, [activeOrder?.id, activeOrder?.status, sendLocationUpdate, language]);
 
   const handleAcceptDelivery = (order: Order) => {
     if (user) {
-      acceptDelivery(order.id, user.id, user.name || 'Delivery Partner');
+      acceptDelivery.mutate(
+        { orderId: order.id, deliveryPersonId: user.id },
+        {
+          onSuccess: () => {
+            toast.success(language === 'te' ? 'డెలివరీ అంగీకరించారు!' : 'Delivery accepted!');
+            refetch();
+          },
+          onError: () => {
+            toast.error(language === 'te' ? 'అంగీకరించడంలో విఫలమైంది' : 'Failed to accept');
+          }
+        }
+      );
     }
   };
 
   const handleStatusUpdate = (status: 'pickedUp' | 'onTheWay' | 'delivered') => {
     if (activeOrder) {
-      updateDeliveryStatus(activeOrder.id, status);
-      if (status === 'delivered') {
-        setSelectedOrder(null);
-      }
+      updateOrderStatus.mutate(
+        { orderId: activeOrder.id, status },
+        {
+          onSuccess: () => {
+            const messages = {
+              pickedUp: language === 'te' ? 'పికప్ చేసారు!' : 'Picked up!',
+              onTheWay: language === 'te' ? 'డెలివరీ ప్రారంభమైంది!' : 'Delivery started!',
+              delivered: language === 'te' ? 'డెలివరీ పూర్తయింది!' : 'Delivered successfully!',
+            };
+            toast.success(messages[status]);
+            if (status === 'delivered') {
+              setSelectedOrder(null);
+            }
+            refetch();
+          },
+          onError: () => {
+            toast.error(language === 'te' ? 'అప్‌డేట్ విఫలమైంది' : 'Update failed');
+          }
+        }
+      );
     }
   };
 
@@ -137,6 +166,12 @@ export function DeliveryOrdersPage() {
     }
   };
 
+  const getAddressText = (order: Order) => {
+    return language === 'en' 
+      ? order.customerAddressText_en || 'Near Temple, Metlachittapur'
+      : order.customerAddressText_te || 'గుడి దగ్గర, మెట్లచిట్టాపూర్';
+  };
+
   if (isLoading) {
     return (
       <MobileLayout>
@@ -157,11 +192,13 @@ export function DeliveryOrdersPage() {
       <header className="screen-header">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">{t.navDeliveries}</h1>
-          {completedToday.length > 0 && (
-            <span className="badge-delivered">
-              {completedToday.length} {t.statusDelivered}
-            </span>
-          )}
+          <button 
+            onClick={() => refetch()} 
+            className="p-2 rounded-full hover:bg-muted transition-colors"
+            title={language === 'en' ? 'Refresh' : 'రిఫ్రెష్'}
+          >
+            <RefreshCw className="w-5 h-5 text-muted-foreground" />
+          </button>
         </div>
       </header>
 
@@ -193,7 +230,7 @@ export function DeliveryOrdersPage() {
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="w-4 h-4" />
-                  <span>{activeOrder.customerAddressText || 'Near Temple, Metlachittapur'}</span>
+                  <span>{getAddressText(activeOrder)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-foreground font-medium">₹{activeOrder.total}</span>
@@ -201,7 +238,7 @@ export function DeliveryOrdersPage() {
                 </div>
               </div>
 
-              {/* Location Tracking Indicator - Show from Assigned status */}
+              {/* Location Tracking Indicator */}
               {['assigned', 'pickedUp', 'onTheWay'].includes(activeOrder.status) && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-primary">
                   <span className="relative flex h-2 w-2">
@@ -220,9 +257,14 @@ export function DeliveryOrdersPage() {
                     e.stopPropagation();
                     getNextAction()?.action();
                   }}
-                  className={`w-full mt-4 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${getNextAction()?.color} active:scale-98 transition-transform`}
+                  disabled={updateOrderStatus.isPending}
+                  className={`w-full mt-4 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${getNextAction()?.color} active:scale-98 transition-transform disabled:opacity-70`}
                 >
-                  <CheckCircle className="w-5 h-5" />
+                  {updateOrderStatus.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5" />
+                  )}
                   {getNextAction()?.label}
                 </button>
               )}
@@ -244,46 +286,47 @@ export function DeliveryOrdersPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {readyOrders.map(order => {
-                const shop = getShopById(order.shopId);
-                return (
-                  <div 
-                    key={order.id}
-                    className="bg-card rounded-2xl border border-border p-4 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{getShopTypeIcon(order.shopType)}</span>
-                        <span className="font-semibold text-foreground">
-                          {language === 'en' ? order.shopName_en : order.shopName_te}
-                        </span>
-                      </div>
-                      <span className="badge-ready">{t.statusReady}</span>
+              {readyOrders.map(order => (
+                <div 
+                  key={order.id}
+                  className="bg-card rounded-2xl border border-border p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{getShopTypeIcon(order.shopType)}</span>
+                      <span className="font-semibold text-foreground">
+                        {language === 'en' ? order.shopName_en : order.shopName_te}
+                      </span>
                     </div>
-
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <MapPin className="w-4 h-4" />
-                      <span>{order.customerAddressText || 'Near Temple, Metlachittapur'}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-foreground font-medium">₹{order.total}</span>
-                        {order.deliveryFee && (
-                          <span className="text-sm text-primary ml-2">+₹{order.deliveryFee} {t.deliveryFee}</span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleAcceptDelivery(order)}
-                        disabled={!!activeOrder}
-                        className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
-                      >
-                        {t.acceptDelivery}
-                      </button>
-                    </div>
+                    <span className="badge-ready">{t.statusReady}</span>
                   </div>
-                );
-              })}
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <MapPin className="w-4 h-4" />
+                    <span>{getAddressText(order)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-foreground font-medium">₹{order.total}</span>
+                      {order.deliveryFee && (
+                        <span className="text-sm text-primary ml-2">+₹{order.deliveryFee} {t.deliveryFee}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleAcceptDelivery(order)}
+                      disabled={!!activeOrder || acceptDelivery.isPending}
+                      className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
+                    >
+                      {acceptDelivery.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        t.acceptDelivery
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
@@ -295,7 +338,7 @@ export function DeliveryOrdersPage() {
           <SheetHeader>
             <div className="flex items-center justify-between">
               <SheetTitle className="text-left">
-                {t.orderId} #{selectedOrder?.id}
+                {t.orderId} #{selectedOrder?.id.slice(0, 8)}
               </SheetTitle>
               {selectedOrder && <HelpSupportButton orderId={selectedOrder.id} />}
             </div>
@@ -330,7 +373,7 @@ export function DeliveryOrdersPage() {
                   {t.dropoff}
                 </h4>
                 <p className="text-foreground">
-                  {selectedOrder.customerAddressText || 'Near Temple, Metlachittapur'}
+                  {getAddressText(selectedOrder)}
                 </p>
                 <button className="flex items-center gap-2 text-primary mt-2 text-sm">
                   <Phone className="w-4 h-4" />
@@ -361,9 +404,14 @@ export function DeliveryOrdersPage() {
               {getNextAction() && (
                 <button
                   onClick={() => getNextAction()?.action()}
-                  className={`w-full py-4 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${getNextAction()?.color} active:scale-98 transition-transform`}
+                  disabled={updateOrderStatus.isPending}
+                  className={`w-full py-4 rounded-xl text-white font-semibold flex items-center justify-center gap-2 ${getNextAction()?.color} active:scale-98 transition-transform disabled:opacity-70`}
                 >
-                  <CheckCircle className="w-5 h-5" />
+                  {updateOrderStatus.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5" />
+                  )}
                   {getNextAction()?.label}
                 </button>
               )}
