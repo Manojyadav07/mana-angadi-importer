@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateShop } from '@/hooks/useShops';
 import { supabase } from '@/integrations/supabase/client';
-import { Store, Briefcase, Pill, UtensilsCrossed, ArrowRight, Loader2 } from 'lucide-react';
+import { Store, Briefcase, Pill, UtensilsCrossed, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ShopType } from '@/types';
 import { getShopNamePair, containsTelugu } from '@/lib/transliterate';
@@ -165,15 +165,29 @@ export function MerchantShopSetupPage() {
 
   return (
     <MobileLayout showNav={false}>
-      <div className="flex flex-col min-h-screen px-4 py-6">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Briefcase className="w-8 h-8 text-primary" />
+      <div className="flex flex-col min-h-screen">
+        {/* Back Navigation Header */}
+        <header className="screen-header">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+              aria-label={language === 'en' ? 'Go back' : 'వెనుకకు వెళ్ళు'}
+            >
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="font-bold text-lg text-foreground">{labels.title}</h1>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">{labels.title}</h1>
-          <p className="text-muted-foreground mt-1">{labels.subtitle}</p>
-        </div>
+        </header>
+
+        <div className="px-4 py-6 flex flex-col flex-1">
+          {/* Header Content */}
+          <div className="mb-8 animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <Briefcase className="w-8 h-8 text-primary" />
+            </div>
+            <p className="text-muted-foreground">{labels.subtitle}</p>
+          </div>
 
         {/* Shop Type Selection */}
         <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -254,6 +268,7 @@ export function MerchantShopSetupPage() {
               </>
             )}
           </button>
+        </div>
         </div>
       </div>
     </MobileLayout>
