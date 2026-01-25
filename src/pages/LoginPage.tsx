@@ -26,6 +26,7 @@ import { getRouteForRole } from "@/context/auth/authHelpers";
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
 type AuthTab = "signIn" | "signUp";
+type SignupState = "form" | "success";
 
 // Validation schemas
 const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
@@ -61,6 +62,7 @@ export function LoginPage() {
 
   const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+  const [signupState, setSignupState] = useState<SignupState>("form");
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem(WELCOME_SHOWN_KEY);
@@ -77,6 +79,10 @@ export function LoginPage() {
       nameLabel: language === "en" ? "Your Name" : "మీ పేరు",
       forgotPassword: language === "en" ? "Forgot password?" : "పాస్‌వర్డ్ మర్చిపోయారా?",
       accountExists: language === "en" ? "Account already exists. Please Sign In." : "ఖాతా ఇప్పటికే ఉంది. దయచేసి లాగిన్ అవ్వండి.",
+      backToLogin: language === "en" ? "Back to Login" : "లాగిన్‌కి తిరిగి వెళ్ళండి",
+      signupSuccess: language === "en" ? "Account Created!" : "ఖాతా సృష్టించబడింది!",
+      continueBtn: language === "en" ? "Continue" : "కొనసాగించు",
+      successMessage: language === "en" ? "Your account has been created successfully." : "మీ ఖాతా విజయవంతంగా సృష్టించబడింది.",
     };
   }, [language]);
 
@@ -166,11 +172,8 @@ export function LoginPage() {
           return;
         }
 
-        toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
-        
-        // Navigate based on role and merchant status
-        const merchantStatus = refreshed.profile?.merchant_status;
-        navigate(getRouteForRole(refreshed.role, merchantStatus));
+        // Show success state instead of immediate navigation
+        setSignupState("success");
       } else {
         const { error } = await signIn(email.trim(), password);
         if (error) {
@@ -227,6 +230,56 @@ export function LoginPage() {
         <button type="button" onClick={retryHydration} className="btn-accent w-full">
           {language === "en" ? "Retry" : "మళ్లీ ప్రయత్నించండి"}
         </button>
+      </div>
+    );
+  }
+
+  // Signup success state
+  if (signupState === "success") {
+    const handleContinue = () => {
+      const merchantStatus = profile?.merchant_status;
+      navigate(getRouteForRole(role, merchantStatus));
+    };
+
+    const handleBackToLogin = () => {
+      setSignupState("form");
+      setTab("signIn");
+      setEmail("");
+      setPassword("");
+      setDisplayName("");
+    };
+
+    return (
+      <div className="mobile-container min-h-screen flex flex-col items-center justify-center bg-background px-6">
+        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6 animate-scale-in">
+          <Store className="w-10 h-10 text-primary" />
+        </div>
+        
+        <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">
+          {labels.signupSuccess}
+        </h1>
+        <p className="text-muted-foreground text-center mt-2 text-sm animate-fade-in">
+          {labels.successMessage}
+        </p>
+
+        <div className="w-full max-w-sm mt-8 space-y-3">
+          <button
+            type="button"
+            onClick={handleContinue}
+            className="btn-accent w-full flex items-center justify-center gap-2"
+          >
+            {labels.continueBtn}
+            <ArrowRight className="w-5 h-5" />
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleBackToLogin}
+            className="btn-secondary w-full"
+          >
+            {labels.backToLogin}
+          </button>
+        </div>
       </div>
     );
   }
@@ -474,6 +527,22 @@ export function LoginPage() {
           <div className="text-center">
             <button type="button" onClick={handleForgotPassword} className="text-sm text-primary hover:underline">
               {labels.forgotPassword}
+            </button>
+          </div>
+        )}
+
+        {/* Back to Login (signup only) */}
+        {tab === "signUp" && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setTab("signIn");
+                setErrors({});
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+            >
+              {labels.backToLogin}
             </button>
           </div>
         )}
