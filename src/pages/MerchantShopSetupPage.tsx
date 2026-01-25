@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Store, Briefcase, Pill, UtensilsCrossed, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ShopType } from '@/types';
+import { getShopNamePair, containsTelugu } from '@/lib/transliterate';
 
 // Sample products to seed based on shop type
 const SAMPLE_PRODUCTS: Record<ShopType, Array<{ name_te: string; name_en: string; price: number }>> = {
@@ -56,9 +57,19 @@ export function MerchantShopSetupPage() {
   const createShop = useCreateShop();
 
   const [shopType, setShopType] = useState<ShopType | null>(null);
-  const [nameTe, setNameTe] = useState('');
-  const [nameEn, setNameEn] = useState('');
+  const [shopName, setShopName] = useState('');
+  const [transliteratedName, setTransliteratedName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-transliterate when shop name changes
+  useEffect(() => {
+    if (shopName.trim()) {
+      const { english } = getShopNamePair(shopName);
+      setTransliteratedName(english);
+    } else {
+      setTransliteratedName('');
+    }
+  }, [shopName]);
 
   const labels = {
     title: language === 'en' ? 'Set Up Your Shop' : 'మీ దుకాణం సెటప్ చేయండి',
@@ -67,10 +78,9 @@ export function MerchantShopSetupPage() {
     kirana: language === 'en' ? 'Grocery' : 'కిరాణా',
     restaurant: language === 'en' ? 'Restaurant' : 'హోటల్',
     medical: language === 'en' ? 'Medical' : 'మెడికల్',
-    shopNameTe: language === 'en' ? 'Shop Name (Telugu)' : 'దుకాణం పేరు (తెలుగు)',
-    shopNameEn: language === 'en' ? 'Shop Name (English)' : 'దుకాణం పేరు (ఆంగ్లం)',
-    teluguPlaceholder: 'తెలుగులో పేరు',
-    englishPlaceholder: 'Name in English',
+    shopName: language === 'en' ? 'Shop Name' : 'దుకాణం పేరు',
+    shopNamePlaceholder: language === 'en' ? 'Enter shop name' : 'దుకాణం పేరు నమోదు చేయండి',
+    transliteratedPreview: language === 'en' ? 'English name' : 'ఆంగ్ల పేరు',
     createShop: language === 'en' ? 'Create Shop' : 'దుకాణం సృష్టించండి',
     creating: language === 'en' ? 'Creating...' : 'సృష్టిస్తోంది...',
     required: language === 'en' ? 'Required' : 'అవసరం',
@@ -87,7 +97,7 @@ export function MerchantShopSetupPage() {
   ];
 
   const handleSubmit = async () => {
-    if (!shopType || !nameTe.trim() || !nameEn.trim()) {
+    if (!shopType || !shopName.trim()) {
       toast.error(labels.fillAll);
       return;
     }
@@ -100,11 +110,14 @@ export function MerchantShopSetupPage() {
     setIsSubmitting(true);
 
     try {
-      // Create the shop
+      // Get both original and transliterated names
+      const { original, english } = getShopNamePair(shopName);
+      
+      // Create the shop - store original in name_te, transliterated in name_en
       const newShop = await createShop.mutateAsync({
         ownerId: user.id,
-        name_te: nameTe.trim(),
-        name_en: nameEn.trim(),
+        name_te: original,
+        name_en: english,
         type: shopType,
         isOpen: true,
         isActive: true,
@@ -148,7 +161,7 @@ export function MerchantShopSetupPage() {
     }
   };
 
-  const isValid = shopType && nameTe.trim() && nameEn.trim();
+  const isValid = shopType && shopName.trim();
 
   return (
     <MobileLayout showNav={false}>
@@ -198,32 +211,27 @@ export function MerchantShopSetupPage() {
           </div>
         </div>
 
-        {/* Shop Names */}
+        {/* Shop Name - Single Field with Auto Transliteration */}
         <div className="space-y-4 mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {labels.shopNameTe} <span className="text-destructive">*</span>
+              {labels.shopName} <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
-              value={nameTe}
-              onChange={(e) => setNameTe(e.target.value)}
-              placeholder={labels.teluguPlaceholder}
+              value={shopName}
+              onChange={(e) => setShopName(e.target.value)}
+              placeholder={labels.shopNamePlaceholder}
               className="input-village"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              {labels.shopNameEn} <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={nameEn}
-              onChange={(e) => setNameEn(e.target.value)}
-              placeholder={labels.englishPlaceholder}
-              className="input-village"
-            />
+            
+            {/* Show transliterated preview when typing Telugu */}
+            {shopName.trim() && containsTelugu(shopName) && transliteratedName && (
+              <div className="mt-2 px-3 py-2 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">{labels.transliteratedPreview}:</p>
+                <p className="text-sm text-foreground">{transliteratedName}</p>
+              </div>
+            )}
           </div>
         </div>
 
