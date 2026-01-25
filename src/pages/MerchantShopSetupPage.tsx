@@ -4,6 +4,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateShop } from '@/hooks/useShops';
+import { useMerchantShopCheck } from '@/hooks/useMerchantShopCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { Store, Briefcase, Pill, UtensilsCrossed, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -53,8 +54,9 @@ const SAMPLE_PRODUCTS: Record<ShopType, Array<{ name_te: string; name_en: string
 export function MerchantShopSetupPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, role, signOut } = useAuth();
   const createShop = useCreateShop();
+  const { data: shopCheck } = useMerchantShopCheck(user?.id);
 
   const [shopType, setShopType] = useState<ShopType | null>(null);
   const [shopName, setShopName] = useState('');
@@ -89,20 +91,57 @@ export function MerchantShopSetupPage() {
     fillAll: language === 'en' ? 'Please fill all required fields' : 'దయచేసి అన్ని అవసరమైన ఫీల్డ్‌లను పూరించండి',
     sampleProductsAdded: language === 'en' ? 'Sample products added!' : 'నమూనా ఉత్పత్తులు జోడించబడ్డాయి!',
     back: language === 'en' ? 'Back' : 'వెనుకకు',
-    signOut: language === 'en' ? 'Sign Out' : 'సైన్ అవుట్',
+    backToHome: language === 'en' ? 'Back to Home' : 'హోమ్‌కు వెళ్ళండి',
+    backToLogin: language === 'en' ? 'Back to Login' : 'లాగిన్‌కు వెళ్ళండి',
+    exitSetup: language === 'en' ? 'Exit Setup' : 'సెటప్ నుంచి బయటకు',
   };
 
   // Role-aware back navigation
-  const handleBack = () => {
+  const handleBackToLogin = async () => {
+    // Important: if a merchant is logged in without a shop, going to /login will bounce back to /merchant/setup
+    // due to role-based routing. So we sign out first to make /login stable.
+    if (user && role === 'merchant' && shopCheck && !shopCheck.hasShop) {
+      await signOut();
+    }
+    navigate('/login', { replace: true });
+  };
+
+  const handleBackToHome = async () => {
     if (!user) {
-      // Not authenticated - go to login
       navigate('/login', { replace: true });
       return;
     }
-    // For merchants on setup page, go to login (they can't access other merchant pages without a shop)
-    // This is a fresh signup flow - signing out is the cleanest exit
-    navigate('/login', { replace: true });
+
+    // Merchant without a shop: safe exit (sign out) + go to login
+    if (role === 'merchant' && shopCheck && !shopCheck.hasShop) {
+      await signOut();
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // Merchant with shop
+    if (role === 'merchant') {
+      navigate('/merchant/orders', { replace: true });
+      return;
+    }
+
+    // Customer
+    if (role === 'customer') {
+      navigate('/home', { replace: true });
+      return;
+    }
+
+    // Fallback
+    navigate('/', { replace: true });
   };
+
+  const backToHomeLabel = (() => {
+    if (!user) return labels.backToLogin;
+    if (role === 'merchant' && shopCheck && !shopCheck.hasShop) return labels.exitSetup;
+    if (role === 'merchant') return labels.backToHome;
+    if (role === 'customer') return labels.backToHome;
+    return labels.back;
+  })();
 
   const shopTypes: { type: ShopType; icon: React.ReactNode; label: string }[] = [
     { type: 'kirana', icon: <Store className="w-6 h-6" />, label: labels.kirana },
@@ -184,17 +223,11 @@ export function MerchantShopSetupPage() {
         <header className="screen-header">
           <div className="flex items-center gap-3">
             <button
-              onClick={handleBack}
+              onClick={handleBackToLogin}
               className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
               aria-label={labels.back}
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <button
-              onClick={handleBack}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              {labels.back}
             </button>
           </div>
           <h1 className="font-bold text-lg text-foreground ml-auto">{labels.title}</h1>
@@ -207,6 +240,17 @@ export function MerchantShopSetupPage() {
               <Briefcase className="w-8 h-8 text-primary" />
             </div>
             <p className="text-muted-foreground">{labels.subtitle}</p>
+
+            {/* Exit / Back to Home */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleBackToHome}
+                className="btn-secondary"
+              >
+                {backToHomeLabel}
+              </button>
+            </div>
           </div>
 
         {/* Shop Type Selection */}

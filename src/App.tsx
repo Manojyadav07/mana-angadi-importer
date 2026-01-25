@@ -216,6 +216,8 @@ const App = () => (
             <AddressProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
+                {/* Explicit login route (alias of /) to avoid 404s */}
+                <Route path="/login" element={<Index />} />
                 <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                 <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
                 <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
