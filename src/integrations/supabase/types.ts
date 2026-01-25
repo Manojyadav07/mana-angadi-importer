@@ -482,6 +482,7 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           id: string
+          merchant_status: Database["public"]["Enums"]["merchant_status"] | null
           phone: string | null
           preferred_language: string | null
           updated_at: string | null
@@ -492,6 +493,9 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          merchant_status?:
+            | Database["public"]["Enums"]["merchant_status"]
+            | null
           phone?: string | null
           preferred_language?: string | null
           updated_at?: string | null
@@ -502,6 +506,9 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          merchant_status?:
+            | Database["public"]["Enums"]["merchant_status"]
+            | null
           phone?: string | null
           preferred_language?: string | null
           updated_at?: string | null
@@ -662,6 +669,7 @@ export type Database = {
     }
     Enums: {
       app_role: "customer" | "merchant" | "delivery" | "admin"
+      merchant_status: "pending" | "approved" | "rejected"
       order_status:
         | "placed"
         | "accepted"
@@ -802,6 +810,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["customer", "merchant", "delivery", "admin"],
+      merchant_status: ["pending", "approved", "rejected"],
       order_status: [
         "placed",
         "accepted",

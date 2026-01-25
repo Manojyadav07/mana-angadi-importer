@@ -21,6 +21,7 @@ import { MerchantOrdersPage } from "./pages/MerchantOrdersPage";
 import { MerchantProductsPage } from "./pages/MerchantProductsPage";
 import { MerchantProfilePage } from "./pages/MerchantProfilePage";
 import { MerchantShopSetupPage } from "./pages/MerchantShopSetupPage";
+import { MerchantPendingPage } from "./pages/MerchantPendingPage";
 import { DeliveryOnboardingPage } from "./pages/DeliveryOnboardingPage";
 import { DeliveryOrdersPage } from "./pages/DeliveryOrdersPage";
 import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
@@ -37,7 +38,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -54,7 +55,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Customer-only pages: if a merchant/admin/delivery lands here (manual URL or stale route),
   // deterministically redirect to their role home.
   if (role && role !== 'customer') {
-    return <Navigate to={getRouteForRole(role)} replace />;
+    return <Navigate to={getRouteForRole(role, profile?.merchant_status)} replace />;
   }
   
   return <>{children}</>;
@@ -83,7 +84,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function MerchantRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
   
   if (isLoading || shopCheckLoading) {
@@ -102,15 +103,22 @@ function MerchantRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/home" replace />;
   }
 
-  // If merchant has no shop, redirect to shop setup (except if already on setup page)
-  // This check will be handled by individual routes
+  // If merchant is pending approval, redirect to pending page
+  if (role === 'merchant' && profile?.merchant_status === 'pending') {
+    return <Navigate to="/merchant/pending" replace />;
+  }
+
+  // If merchant is rejected, also redirect to pending page (which shows rejection)
+  if (role === 'merchant' && profile?.merchant_status === 'rejected') {
+    return <Navigate to="/merchant/pending" replace />;
+  }
   
   return <>{children}</>;
 }
 
 // Wrapper that redirects merchants without shops to setup
 function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
   
   if (isLoading || shopCheckLoading) {
@@ -129,9 +137,47 @@ function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/home" replace />;
   }
 
+  // If merchant is pending approval, redirect to pending page
+  if (role === 'merchant' && profile?.merchant_status === 'pending') {
+    return <Navigate to="/merchant/pending" replace />;
+  }
+
+  // If merchant is rejected, redirect to pending page
+  if (role === 'merchant' && profile?.merchant_status === 'rejected') {
+    return <Navigate to="/merchant/pending" replace />;
+  }
+
   // If merchant has no shop, redirect to shop setup
   if (role === 'merchant' && shopCheck && !shopCheck.hasShop) {
     return <Navigate to="/merchant/setup" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Route for pending merchants only
+function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, profile, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  if (role !== 'merchant') {
+    return <Navigate to="/home" replace />;
+  }
+
+  // If merchant is approved, redirect to orders
+  if (profile?.merchant_status === 'approved' || profile?.merchant_status === null) {
+    return <Navigate to="/merchant/orders" replace />;
   }
   
   return <>{children}</>;
@@ -171,6 +217,7 @@ function AppRoutes() {
       <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       {/* Merchant Routes */}
+      <Route path="/merchant/pending" element={<MerchantPendingRoute><MerchantPendingPage /></MerchantPendingRoute>} />
       <Route path="/merchant/setup" element={<MerchantRoute><MerchantShopSetupPage /></MerchantRoute>} />
       <Route path="/merchant/orders" element={<MerchantWithShopRoute><MerchantOrdersPage /></MerchantWithShopRoute>} />
       <Route path="/merchant/products" element={<MerchantWithShopRoute><MerchantProductsPage /></MerchantWithShopRoute>} />

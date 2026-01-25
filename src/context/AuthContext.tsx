@@ -7,7 +7,10 @@ import {
   ensureRole,
   fetchProfile,
   fetchRole,
+  createRoleForUser,
+  updateMerchantStatus,
   type ProfileRow,
+  type MerchantStatus,
 } from "@/context/auth/authHelpers";
 
 // Avoid build breaks if generated DB types temporarily desync
@@ -28,6 +31,8 @@ interface AuthContextType {
   setInitialRole: (role: UserRole) => Promise<{ error: Error | null }>;
   refresh: () => Promise<{ error: Error | null; profile: ProfileRow | null; role: UserRole | null }>;
   retryHydration: () => Promise<void>;
+  // New: signup with role in one atomic flow
+  signUpWithRole: (email: string, password: string, displayName: string, selectedRole: UserRole) => Promise<{ error: Error | null; userId?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,15 +51,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setAuthError(null);
 
-      // Ensure profile + role exist (never store role on profile)
-      const [{ data: ensuredProfile, error: profileError }, { role: ensuredRole, error: roleError }] =
-        await Promise.all([ensureProfile(nextUser), ensureRole(nextUser.id, "customer")]);
+      // Fetch existing profile and role first (don't auto-create here)
+      const [{ data: existingProfile, error: profileError }, { data: existingRole, error: roleError }] =
+        await Promise.all([fetchProfile(nextUser.id), fetchRole(nextUser.id)]);
 
-      if (profileError) throw profileError;
-      if (roleError) throw roleError;
+      if (profileError && !profileError.message?.includes("No rows")) {
+        console.error("Profile fetch error:", profileError);
+      }
+      if (roleError && !roleError.message?.includes("No rows")) {
+        console.error("Role fetch error:", roleError);
+      }
 
-      setProfile(ensuredProfile);
-      setRole(ensuredRole);
+      // If profile doesn't exist, create it now (for existing users or edge cases)
+      let finalProfile = existingProfile as ProfileRow | null;
+      if (!finalProfile) {
+        const ensured = await ensureProfile(nextUser);
+        if (ensured.error) throw ensured.error;
+        finalProfile = ensured.data;
+      }
+
+      // If role doesn't exist, create default customer role
+      let finalRole = existingRole?.role as UserRole | null;
+      if (!finalRole) {
+        const ensured = await ensureRole(nextUser.id, "customer");
+        if (ensured.error) throw ensured.error;
+        finalRole = ensured.role;
+      }
+
+      setProfile(finalProfile);
+      setRole(finalRole);
     } catch (e: any) {
       console.error("Auth hydration failed:", e);
       setAuthError(e?.message ?? "Failed to load account data");
@@ -139,6 +164,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     return { error };
+  };
+
+  // New: Atomic signup that creates profile + role together
+  const signUpWithRole = async (
+    email: string, 
+    password: string, 
+    displayName: string, 
+    selectedRole: UserRole
+  ): Promise<{ error: Error | null; userId?: string }> => {
+    // 1. Create auth user
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { display_name: displayName || email.split("@")[0] },
+      },
+    });
+
+    if (signUpError) return { error: signUpError };
+    
+    const newUser = signUpData.user;
+    if (!newUser) return { error: new Error("Signup succeeded but no user returned") };
+
+    // 2. Wait for session to be fully established
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 3. Create profile with merchant_status if merchant
+    const merchantStatus: MerchantStatus = selectedRole === "merchant" ? "pending" : null;
+    const { data: newProfile, error: profileError } = await ensureProfile(
+      newUser,
+      merchantStatus
+    );
+    
+    if (profileError) {
+      console.error("Profile creation failed:", profileError);
+      // Don't fail signup, profile can be created on next hydration
+    }
+
+    // 4. Create role directly with selected role
+    const { role: createdRole, error: roleError } = await createRoleForUser(newUser.id, selectedRole);
+    
+    if (roleError) {
+      console.error("Role creation failed:", roleError);
+      // Don't fail signup, role can be created on next hydration
+    }
+
+    // 5. Update local state
+    if (newProfile) setProfile(newProfile);
+    if (createdRole) setRole(createdRole);
+
+    return { error: null, userId: newUser.id };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -258,6 +335,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         authError,
         signUp,
+        signUpWithRole,
         signIn,
         signOut,
         resetPassword,
@@ -277,4 +355,3 @@ export function useAuth() {
   if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
-

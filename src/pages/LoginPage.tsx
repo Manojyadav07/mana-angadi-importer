@@ -21,7 +21,7 @@ import {
 import type { UserRole } from "@/types";
 import { toast } from "sonner";
 import { z } from "zod";
-import { getRouteForRole, updateRoleForUser } from "@/context/auth/authHelpers";
+import { getRouteForRole } from "@/context/auth/authHelpers";
 
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
@@ -44,7 +44,7 @@ function isAccountExistsError(message: string) {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signUp, setInitialRole, refresh, resetPassword, user, role, isLoading: authLoading, authError, retryHydration } =
+  const { signIn, signUpWithRole, refresh, resetPassword, user, role, profile, isLoading: authLoading, authError, retryHydration } =
     useAuth();
   const { t, language, setLanguage } = useLanguage();
 
@@ -83,9 +83,9 @@ export function LoginPage() {
   // If already logged in AND we know the role, route deterministically.
   useEffect(() => {
     if (!authLoading && user && role) {
-      navigate(getRouteForRole(role));
+      navigate(getRouteForRole(role, profile?.merchant_status));
     }
-  }, [authLoading, user, role, navigate]);
+  }, [authLoading, user, role, profile?.merchant_status, navigate]);
 
   const handleWelcomeDismiss = () => {
     localStorage.setItem(WELCOME_SHOWN_KEY, "true");
@@ -141,7 +141,14 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       if (isSignUp) {
-        const { error } = await signUp(email.trim(), password, displayName.trim());
+        // Use atomic signup that creates profile + role together
+        const { error } = await signUpWithRole(
+          email.trim(), 
+          password, 
+          displayName.trim(), 
+          selectedRole
+        );
+        
         if (error) {
           if (isAccountExistsError(error.message)) {
             toast.error(labels.accountExists);
@@ -152,35 +159,18 @@ export function LoginPage() {
           return;
         }
 
-        // Wait for session to be established first
+        // Refresh to ensure context is synced
         const refreshed = await refresh();
-        if (refreshed.error || !refreshed.profile) {
-          toast.error(language === "en" ? "Logged in, but app failed to load. Tap retry." : "లాగిన్ అయ్యారు, కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
-          return;
-        }
-
-        // Now set the role using the userId from refresh (bypasses stale context state)
-        // Only set if the user doesn't already have a non-customer role
-        if (!refreshed.role || refreshed.role === "customer") {
-          const { role: updatedRole, error: roleError } = await updateRoleForUser(
-            refreshed.profile.user_id,
-            selectedRole
-          );
-          if (roleError) {
-            console.warn("Role set skipped/failed:", roleError);
-            toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
-            navigate(getRouteForRole(refreshed.role));
-            return;
-          }
-          // Refresh again to sync context state with the new role
-          await refresh();
-          toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
-          navigate(getRouteForRole(updatedRole));
+        if (refreshed.error) {
+          toast.error(language === "en" ? "Account created but failed to load. Tap retry." : "ఖాతా సృష్టించబడింది కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
           return;
         }
 
         toast.success(language === "en" ? "Account created!" : "ఖాతా సృష్టించబడింది!");
-        navigate(getRouteForRole(refreshed.role));
+        
+        // Navigate based on role and merchant status
+        const merchantStatus = refreshed.profile?.merchant_status;
+        navigate(getRouteForRole(refreshed.role, merchantStatus));
       } else {
         const { error } = await signIn(email.trim(), password);
         if (error) {
@@ -200,7 +190,8 @@ export function LoginPage() {
         }
 
         toast.success(language === "en" ? "Logged in!" : "లాగిన్ అయ్యారు!");
-        navigate(getRouteForRole(refreshed.role));
+        const merchantStatus = refreshed.profile?.merchant_status;
+        navigate(getRouteForRole(refreshed.role, merchantStatus));
       }
     } catch (err: any) {
       console.error("Auth submit failed:", err);

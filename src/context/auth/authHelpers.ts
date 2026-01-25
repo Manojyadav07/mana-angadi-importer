@@ -6,6 +6,8 @@ import type { UserRole } from "@/types";
 // if generated DB types momentarily desync.
 const sb = supabase as any;
 
+export type MerchantStatus = "pending" | "approved" | "rejected" | null;
+
 export type ProfileRow = {
   id: string;
   user_id: string;
@@ -13,13 +15,14 @@ export type ProfileRow = {
   phone: string | null;
   avatar_url: string | null;
   preferred_language: "te" | "en" | null;
+  merchant_status: MerchantStatus;
 };
 
 export async function fetchProfile(userId: string) {
   return sb.from("profiles").select("*").eq("user_id", userId).maybeSingle();
 }
 
-export async function ensureProfile(user: User) {
+export async function ensureProfile(user: User, merchantStatus?: MerchantStatus) {
   const { data, error } = await fetchProfile(user.id);
   if (error) return { data: null as ProfileRow | null, error };
   if (data) return { data: data as ProfileRow, error: null };
@@ -34,6 +37,7 @@ export async function ensureProfile(user: User) {
       user_id: user.id,
       display_name: displayName,
       preferred_language: "te",
+      merchant_status: merchantStatus ?? null,
     })
     .select("*")
     .maybeSingle();
@@ -53,6 +57,27 @@ export async function ensureRole(userId: string, defaultRole: UserRole = "custom
   const insertRes = await sb
     .from("user_roles")
     .insert({ user_id: userId, role: defaultRole })
+    .select("role")
+    .maybeSingle();
+
+  return { role: (insertRes.data?.role as UserRole | null) ?? null, error: insertRes.error };
+}
+
+// Create role directly with specific role (for signup flow)
+export async function createRoleForUser(userId: string, role: UserRole) {
+  // First check if role already exists
+  const { data: existing, error: readError } = await fetchRole(userId);
+  if (readError) return { role: null as UserRole | null, error: readError };
+  
+  // If role already exists, return it (don't overwrite)
+  if (existing?.role) {
+    return { role: existing.role as UserRole, error: null };
+  }
+
+  // Insert the new role directly
+  const insertRes = await sb
+    .from("user_roles")
+    .insert({ user_id: userId, role })
     .select("role")
     .maybeSingle();
 
@@ -88,9 +113,22 @@ export async function updateRoleForUser(userId: string, newRole: UserRole) {
   }
 }
 
-export function getRouteForRole(role: UserRole | null) {
+// Update merchant status
+export async function updateMerchantStatus(userId: string, status: MerchantStatus) {
+  const { error } = await sb
+    .from("profiles")
+    .update({ merchant_status: status })
+    .eq("user_id", userId);
+  return { error };
+}
+
+export function getRouteForRole(role: UserRole | null, merchantStatus?: MerchantStatus) {
   switch (role) {
     case "merchant":
+      // If merchant is pending approval, show pending page
+      if (merchantStatus === "pending") {
+        return "/merchant/pending";
+      }
       // Merchants will be redirected by MerchantWithShopRoute if they don't have a shop
       return "/merchant/orders";
     case "delivery":
