@@ -533,16 +533,16 @@ export function LoginPage() {
 
         {/* Back to Login (signup only) */}
         {tab === "signUp" && (
-          <div className="text-center">
+          <div className="text-center pt-2">
             <button
               type="button"
               onClick={() => {
                 setTab("signIn");
                 setErrors({});
               }}
-              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+              className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1"
             >
-              {labels.backToLogin}
+              ← {labels.backToLogin}
             </button>
           </div>
         )}
