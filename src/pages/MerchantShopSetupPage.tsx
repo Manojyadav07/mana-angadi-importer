@@ -88,6 +88,20 @@ export function MerchantShopSetupPage() {
     error: language === 'en' ? 'Failed to create shop' : 'దుకాణం సృష్టించడంలో విఫలమైంది',
     fillAll: language === 'en' ? 'Please fill all required fields' : 'దయచేసి అన్ని అవసరమైన ఫీల్డ్‌లను పూరించండి',
     sampleProductsAdded: language === 'en' ? 'Sample products added!' : 'నమూనా ఉత్పత్తులు జోడించబడ్డాయి!',
+    back: language === 'en' ? 'Back' : 'వెనుకకు',
+    signOut: language === 'en' ? 'Sign Out' : 'సైన్ అవుట్',
+  };
+
+  // Role-aware back navigation
+  const handleBack = () => {
+    if (!user) {
+      // Not authenticated - go to login
+      navigate('/login', { replace: true });
+      return;
+    }
+    // For merchants on setup page, go to login (they can't access other merchant pages without a shop)
+    // This is a fresh signup flow - signing out is the cleanest exit
+    navigate('/login', { replace: true });
   };
 
   const shopTypes: { type: ShopType; icon: React.ReactNode; label: string }[] = [
@@ -170,14 +184,20 @@ export function MerchantShopSetupPage() {
         <header className="screen-header">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
-              aria-label={language === 'en' ? 'Go back' : 'వెనుకకు వెళ్ళు'}
+              aria-label={labels.back}
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
-            <h1 className="font-bold text-lg text-foreground">{labels.title}</h1>
+            <button
+              onClick={handleBack}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              {labels.back}
+            </button>
           </div>
+          <h1 className="font-bold text-lg text-foreground ml-auto">{labels.title}</h1>
         </header>
 
         <div className="px-4 py-6 flex flex-col flex-1">
