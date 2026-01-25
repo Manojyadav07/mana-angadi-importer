@@ -21,7 +21,7 @@ import {
 import type { UserRole } from "@/types";
 import { toast } from "sonner";
 import { z } from "zod";
-import { getRouteForRole } from "@/context/auth/authHelpers";
+import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
 
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
@@ -86,12 +86,15 @@ export function LoginPage() {
     };
   }, [language]);
 
-  // If already logged in AND we know the role, route deterministically.
+  // If already logged in AND we know the role, route deterministically using postAuthRedirect.
   useEffect(() => {
     if (!authLoading && user && role) {
-      navigate(getRouteForRole(role, profile?.merchant_status));
+      // Use async redirect to properly check merchant shop status
+      postAuthRedirect().then(({ route }) => {
+        navigate(route, { replace: true });
+      });
     }
-  }, [authLoading, user, role, profile?.merchant_status, navigate]);
+  }, [authLoading, user, role, navigate]);
 
   const handleWelcomeDismiss = () => {
     localStorage.setItem(WELCOME_SHOWN_KEY, "true");
@@ -186,15 +189,10 @@ export function LoginPage() {
           return;
         }
 
-        const refreshed = await refresh();
-        if (refreshed.error) {
-          toast.error(language === "en" ? "Signed in, but app failed to load. Tap retry." : "లాగిన్ అయ్యారు, కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
-          return;
-        }
-
+        // Use postAuthRedirect for proper role-based routing with shop check
         toast.success(language === "en" ? "Logged in!" : "లాగిన్ అయ్యారు!");
-        const merchantStatus = refreshed.profile?.merchant_status;
-        navigate(getRouteForRole(refreshed.role, merchantStatus));
+        const { route } = await postAuthRedirect();
+        navigate(route, { replace: true });
       }
     } catch (err: any) {
       console.error("Auth submit failed:", err);
@@ -236,9 +234,10 @@ export function LoginPage() {
 
   // Signup success state
   if (signupState === "success") {
-    const handleContinue = () => {
-      const merchantStatus = profile?.merchant_status;
-      navigate(getRouteForRole(role, merchantStatus));
+    const handleContinue = async () => {
+      // Use postAuthRedirect for proper role-based routing with shop check
+      const { route } = await postAuthRedirect();
+      navigate(route, { replace: true });
     };
 
     const handleBackToLogin = () => {

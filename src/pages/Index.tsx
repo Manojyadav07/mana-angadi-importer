@@ -2,18 +2,21 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LoginPage } from "./LoginPage";
 import { useAuth } from "@/context/AuthContext";
-import { getRouteForRole } from "@/context/auth/authHelpers";
+import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, role, profile, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
 
   useEffect(() => {
     if (isLoading) return;
     if (user && role) {
-      navigate(getRouteForRole(role, profile?.merchant_status));
+      // Use postAuthRedirect for proper role-based routing with shop check
+      postAuthRedirect().then(({ route }) => {
+        navigate(route, { replace: true });
+      });
     }
-  }, [isLoading, user, role, profile?.merchant_status, navigate]);
+  }, [isLoading, user, role, navigate]);
 
   return <LoginPage />;
 };

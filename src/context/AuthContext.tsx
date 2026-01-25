@@ -37,7 +37,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+interface AuthProviderProps {
+  children: React.ReactNode;
+  onSignOut?: () => void;
+}
+
+export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
@@ -231,6 +236,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null);
     setAuthError(null);
     hydrationInFlightRef.current = null;
+    // Call the onSignOut callback to clear external caches (e.g., React Query)
+    onSignOut?.();
   };
 
   const resetPassword = async (email: string) => {
