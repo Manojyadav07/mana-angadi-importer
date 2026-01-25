@@ -6,12 +6,14 @@ import { getRouteForRole } from "@/context/auth/authHelpers";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
 
   useEffect(() => {
     if (isLoading) return;
-    if (user && role) navigate(getRouteForRole(role));
-  }, [isLoading, user, role, navigate]);
+    if (user && role) {
+      navigate(getRouteForRole(role, profile?.merchant_status));
+    }
+  }, [isLoading, user, role, profile?.merchant_status, navigate]);
 
   return <LoginPage />;
 };
