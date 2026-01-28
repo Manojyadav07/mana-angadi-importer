@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateShop } from '@/hooks/useShops';
 import { useMerchantShopCheck } from '@/hooks/useMerchantShopCheck';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import { Store, Briefcase, Pill, UtensilsCrossed, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ShopType } from '@/types';

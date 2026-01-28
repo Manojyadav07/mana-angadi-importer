@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import type { User } from "@supabase/supabase-js";
 import type { UserRole } from "@/types";
 
