@@ -19,3 +19,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     autoRefreshToken: true,
   },
 });
+
+// Log the connected Supabase project on app load
+console.log(`[Supabase] Connected to: ${SUPABASE_URL}`);
