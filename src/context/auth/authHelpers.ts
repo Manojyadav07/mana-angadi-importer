@@ -48,68 +48,68 @@ export async function fetchRole(userId: string) {
   return sb.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
 }
 
-export async function ensureRole(userId: string, defaultRole: UserRole = "customer") {
-  // Use upsert with onConflict to handle existing rows gracefully
-  // ignoreDuplicates: true means if role exists, don't update it (keep existing)
-  const upsertRes = await sb
-    .from("user_roles")
-    .upsert(
-      { user_id: userId, role: defaultRole },
-      { onConflict: "user_id", ignoreDuplicates: true }
-    )
-    .select("role")
-    .maybeSingle();
-
-  if (upsertRes.error) {
-    // Fallback: if upsert fails, try fetching existing role
-    console.warn("Role upsert failed, attempting fetch:", upsertRes.error.message);
-    const { data: existing, error: fetchErr } = await fetchRole(userId);
-    if (fetchErr) return { role: null as UserRole | null, error: fetchErr };
-    if (existing?.role) return { role: existing.role as UserRole, error: null };
-    
-    // If still no role, return the original error
-    return { role: null as UserRole | null, error: upsertRes.error };
-  }
-
-  // If upsert succeeded but returned no data (ignoreDuplicates case), fetch existing
-  if (!upsertRes.data) {
-    const { data: existing } = await fetchRole(userId);
-    return { role: (existing?.role as UserRole | null) ?? defaultRole, error: null };
-  }
-
-  return { role: (upsertRes.data?.role as UserRole | null) ?? null, error: null };
+ // Ensure role exists - only creates if missing, never duplicates
+ export async function ensureRole(userId: string, defaultRole: UserRole = "customer") {
+   // First check if role already exists
+   const { data: existing, error: fetchErr } = await fetchRole(userId);
+   if (fetchErr && !fetchErr.message?.includes("No rows")) {
+     return { role: null as UserRole | null, error: fetchErr };
+   }
+ 
+   // If role exists, return it (don't create duplicate)
+   if (existing?.role) {
+     return { role: existing.role as UserRole, error: null };
+   }
+ 
+   // No role exists, insert new one
+   const { data, error } = await sb
+     .from("user_roles")
+     .insert({ user_id: userId, role: defaultRole })
+     .select("role")
+     .single();
+ 
+   if (error) {
+     // Could be race condition duplicate, try fetching again
+     if (error.message?.includes("duplicate") || error.code === "23505") {
+       const { data: refetch } = await fetchRole(userId);
+       if (refetch?.role) return { role: refetch.role as UserRole, error: null };
+     }
+     return { role: null as UserRole | null, error };
+   }
+ 
+   return { role: (data?.role as UserRole | null) ?? defaultRole, error: null };
 }
 
-// Create role directly with specific role (for signup flow)
+ // Create role directly with specific role (for signup flow) - only if not exists
 export async function createRoleForUser(userId: string, role: UserRole) {
-  // Use upsert with ignoreDuplicates: true to preserve existing roles
-  // This prevents overwriting if user already has a role
-  const upsertRes = await sb
+   // First check if role already exists
+   const { data: existing, error: fetchErr } = await fetchRole(userId);
+   if (fetchErr && !fetchErr.message?.includes("No rows")) {
+     return { role: null as UserRole | null, error: fetchErr };
+   }
+ 
+   // If role already exists, return it (don't create duplicate)
+   if (existing?.role) {
+     return { role: existing.role as UserRole, error: null };
+   }
+ 
+   // No role exists, insert new one
+   const { data, error } = await sb
     .from("user_roles")
-    .upsert(
-      { user_id: userId, role },
-      { onConflict: "user_id", ignoreDuplicates: true }
-    )
+     .insert({ user_id: userId, role })
     .select("role")
-    .maybeSingle();
+     .single();
 
-  if (upsertRes.error) {
-    // Fallback: if upsert fails, try fetching existing role
-    console.warn("Role creation failed, attempting fetch:", upsertRes.error.message);
-    const { data: existing, error: fetchErr } = await fetchRole(userId);
-    if (fetchErr) return { role: null as UserRole | null, error: fetchErr };
-    if (existing?.role) return { role: existing.role as UserRole, error: null };
-    
-    return { role: null as UserRole | null, error: upsertRes.error };
+   if (error) {
+     // Could be race condition duplicate, try fetching again
+     if (error.message?.includes("duplicate") || error.code === "23505") {
+       const { data: refetch } = await fetchRole(userId);
+       if (refetch?.role) return { role: refetch.role as UserRole, error: null };
+     }
+     return { role: null as UserRole | null, error };
   }
 
-  // If ignoreDuplicates returned no data, fetch existing role
-  if (!upsertRes.data) {
-    const { data: existing } = await fetchRole(userId);
-    return { role: (existing?.role as UserRole | null) ?? role, error: null };
-  }
-
-  return { role: (upsertRes.data?.role as UserRole | null) ?? null, error: null };
+   return { role: (data?.role as UserRole | null) ?? role, error: null };
 }
 
 // Update role from "customer" to selected role - used during signup flow
