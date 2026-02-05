@@ -112,6 +112,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const retryHydration = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
+   setAuthError(null);
     await hydrateUser(user);
   }, [hydrateUser, user]);
 
@@ -178,6 +179,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     displayName: string, 
     selectedRole: UserRole
   ): Promise<{ error: Error | null; userId?: string }> => {
+   setAuthError(null);
     // 1. Create auth user
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -224,6 +226,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   };
 
   const signIn = async (email: string, password: string) => {
+   setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
