@@ -27,17 +27,19 @@ export async function ensureProfile(user: User, merchantStatus?: MerchantStatus)
     (user.user_metadata?.display_name as string | undefined) ||
     (user.email ? user.email.split("@")[0] : null);
 
-  // Use upsert with onConflict to handle existing rows gracefully
+  // Use upsert with onConflict: 'id' to handle existing rows gracefully
+  // Set id = user.id so profile PK matches auth user id
   const upsertRes = await sb
     .from("profiles")
     .upsert(
       {
+        id: user.id,
         user_id: user.id,
         display_name: displayName,
         preferred_language: "te",
         merchant_status: merchantStatus ?? null,
       },
-      { onConflict: "user_id", ignoreDuplicates: false }
+      { onConflict: "id", ignoreDuplicates: false }
     )
     .select("*")
     .maybeSingle();
