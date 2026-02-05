@@ -1,18 +1,13 @@
-// Custom Supabase client for connecting to YOUR Supabase project
-// This overrides the Lovable Cloud-managed client
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Missing Supabase environment variables. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
-  );
-}
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+ // Supabase client for Mana Angadi project
+ // Hardcoded to bypass Cloud-managed environment variables
+ import { createClient } from '@supabase/supabase-js';
+ import type { Database } from '@/integrations/supabase/types';
+ 
+ // Mana Angadi Supabase project credentials
+ const SUPABASE_URL = 'https://yrqxuwttnqcewivcfmgu.supabase.co';
+ const SUPABASE_ANON_KEY = 'sb_publishable_lkEVcieLZBOPHqM3lXENww_CYQSP9Eh';
+ 
+ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
