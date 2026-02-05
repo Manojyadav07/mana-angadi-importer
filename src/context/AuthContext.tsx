@@ -3,12 +3,12 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import type { UserRole } from "@/types";
 import {
-  ensureProfile,
   ensureRole,
   fetchProfile,
   fetchRole,
   createRoleForUser,
   updateMerchantStatus,
+   waitForProfile,
   type ProfileRow,
   type MerchantStatus,
 } from "@/context/auth/authHelpers";
@@ -56,27 +56,28 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     try {
       setAuthError(null);
 
-      // Fetch existing profile and role first (don't auto-create here)
-      const [{ data: existingProfile, error: profileError }, { data: existingRole, error: roleError }] =
-        await Promise.all([fetchProfile(nextUser.id), fetchRole(nextUser.id)]);
+       // Fetch existing profile and role (profile created by database trigger)
+       const [profileResult, roleResult] = await Promise.all([
+         fetchProfile(nextUser.id),
+         fetchRole(nextUser.id),
+       ]);
 
-      if (profileError && !profileError.message?.includes("No rows")) {
-        console.error("Profile fetch error:", profileError);
+       if (profileResult.error && !profileResult.error.message?.includes("No rows")) {
+         console.error("Profile fetch error:", profileResult.error);
       }
-      if (roleError && !roleError.message?.includes("No rows")) {
-        console.error("Role fetch error:", roleError);
+       if (roleResult.error && !roleResult.error.message?.includes("No rows")) {
+         console.error("Role fetch error:", roleResult.error);
       }
 
-      // If profile doesn't exist, create it now (for existing users or edge cases)
-      let finalProfile = existingProfile as ProfileRow | null;
+       // Profile should exist from trigger; if not found, wait briefly for propagation
+       let finalProfile = profileResult.data as ProfileRow | null;
       if (!finalProfile) {
-        const ensured = await ensureProfile(nextUser);
-        if (ensured.error) throw ensured.error;
-        finalProfile = ensured.data;
+         const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+         finalProfile = retriedProfile;
       }
 
       // If role doesn't exist, create default customer role
-      let finalRole = existingRole?.role as UserRole | null;
+       let finalRole = roleResult.data?.role as UserRole | null;
       if (!finalRole) {
         const ensured = await ensureRole(nextUser.id, "customer");
         if (ensured.error) throw ensured.error;
@@ -195,19 +196,19 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     const newUser = signUpData.user;
     if (!newUser) return { error: new Error("Signup succeeded but no user returned") };
 
-    // 2. Wait for session to be fully established
-    await new Promise(resolve => setTimeout(resolve, 500));
+     // 2. Wait for profile to be created by database trigger
+     const { data: newProfile, error: profileError } = await waitForProfile(newUser.id, 5, 400);
+     
+     if (profileError) {
+       console.warn("Profile not found after signup:", profileError.message);
+       // Continue anyway - profile may still be created
+     }
 
-    // 3. Create profile with merchant_status if merchant
+     // 3. Update profile with merchant_status if merchant (profile created by trigger)
     const merchantStatus: MerchantStatus = selectedRole === "merchant" ? "pending" : null;
-    const { data: newProfile, error: profileError } = await ensureProfile(
-      newUser,
-      merchantStatus
-    );
-    
-    if (profileError) {
-      console.error("Profile creation failed:", profileError);
-      // Don't fail signup, profile can be created on next hydration
+     if (newProfile && merchantStatus) {
+       await updateMerchantStatus(newUser.id, merchantStatus);
+       newProfile.merchant_status = merchantStatus;
     }
 
     // 4. Create role directly with selected role
@@ -274,11 +275,11 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         fetchRole(nextUser.id),
       ]);
 
+       // Profile should exist from trigger; if not, wait briefly
       let finalProfile = (prof as ProfileRow | null) ?? null;
       if (!finalProfile) {
-        const ensured = await ensureProfile(nextUser);
-        if (ensured.error) throw ensured.error;
-        finalProfile = ensured.data;
+         const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+         finalProfile = retriedProfile;
       }
 
       let finalRole = (roleRow?.role as UserRole | null) ?? null;

@@ -22,40 +22,26 @@ export async function fetchProfile(userId: string) {
   return sb.from("profiles").select("*").eq("user_id", userId).maybeSingle();
 }
 
-export async function ensureProfile(user: User, merchantStatus?: MerchantStatus) {
-  const displayName =
-    (user.user_metadata?.display_name as string | undefined) ||
-    (user.email ? user.email.split("@")[0] : null);
-
-  // Use upsert with onConflict: 'id' to handle existing rows gracefully
-  // Set id = user.id so profile PK matches auth user id
-  const upsertRes = await sb
-    .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        user_id: user.id,
-        display_name: displayName,
-        preferred_language: "te",
-        merchant_status: merchantStatus ?? null,
-      },
-      { onConflict: "id", ignoreDuplicates: false }
-    )
-    .select("*")
-    .maybeSingle();
-
-  if (upsertRes.error) {
-    // Fallback: if upsert fails (e.g., conflict issue), try fetching existing
-    console.warn("Profile upsert failed, attempting fetch:", upsertRes.error.message);
-    const { data: existing, error: fetchErr } = await fetchProfile(user.id);
-    if (fetchErr) return { data: null as ProfileRow | null, error: fetchErr };
-    if (existing) return { data: existing as ProfileRow, error: null };
-    
-    // If still no profile, return the original error
-    return { data: null as ProfileRow | null, error: upsertRes.error };
-  }
-
-  return { data: (upsertRes.data as ProfileRow | null) ?? null, error: null };
+ // Wait for profile created by database trigger (with retry for propagation delay)
+ export async function waitForProfile(userId: string, maxAttempts = 5, delayMs = 300): Promise<{ data: ProfileRow | null; error: Error | null }> {
+   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+     const { data, error } = await fetchProfile(userId);
+     
+     if (data) {
+       return { data: data as ProfileRow, error: null };
+     }
+     
+     if (error && !error.message?.includes("No rows")) {
+       return { data: null, error };
+     }
+     
+     // Profile not ready yet, wait and retry
+     if (attempt < maxAttempts) {
+       await new Promise(resolve => setTimeout(resolve, delayMs));
+     }
+   }
+   
+   return { data: null, error: new Error("Profile not found after signup - trigger may have failed") };
 }
 
 export async function fetchRole(userId: string) {
