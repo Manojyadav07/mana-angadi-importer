@@ -1,13 +1,13 @@
 import { useLanguage } from '@/context/LanguageContext';
-import { useApp } from '@/context/AppContext';
-import { getShops } from '@/data/mockData';
+import { useAdminOrders } from '@/hooks/useAdminOrders';
+import { useShops } from '@/hooks/useShops';
 import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
-import { Package, Store, Users, Truck, TrendingUp, Clock } from 'lucide-react';
+import { Package, Store, Users, Truck, TrendingUp, Clock, Loader2 } from 'lucide-react';
 
 export function AdminDashboardPage() {
   const { language } = useLanguage();
-  const { orders } = useApp();
-  const shops = getShops();
+  const { data: orders = [], isLoading } = useAdminOrders();
+  const { data: shops = [] } = useShops();
 
   const labels = {
     title: language === 'en' ? 'Admin Dashboard' : 'అడ్మిన్ డాష్‌బోర్డ్',
@@ -27,14 +27,12 @@ export function AdminDashboardPage() {
     delivered: language === 'en' ? 'Delivered' : 'డెలివరీ అయింది',
   };
 
-  // Calculate stats
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayOrders = orders.filter(o => new Date(o.createdAt) >= today);
   const activeShops = shops.filter(s => s.isActive && s.isOpen);
   const inDeliveryOrders = orders.filter(o => ['assigned', 'pickedUp', 'onTheWay'].includes(o.status));
 
-  // Order status counts
   const statusCounts = {
     placed: orders.filter(o => o.status === 'placed').length,
     accepted: orders.filter(o => o.status === 'accepted').length,
@@ -45,30 +43,10 @@ export function AdminDashboardPage() {
   };
 
   const statCards = [
-    {
-      icon: Package,
-      label: labels.todayOrders,
-      value: todayOrders.length,
-      color: 'bg-blue-500/10 text-blue-600',
-    },
-    {
-      icon: Store,
-      label: labels.activeShops,
-      value: activeShops.length,
-      color: 'bg-green-500/10 text-green-600',
-    },
-    {
-      icon: Users,
-      label: labels.pendingOnboarding,
-      value: 3, // Mock value
-      color: 'bg-orange-500/10 text-orange-600',
-    },
-    {
-      icon: Truck,
-      label: labels.inDelivery,
-      value: inDeliveryOrders.length,
-      color: 'bg-purple-500/10 text-purple-600',
-    },
+    { icon: Package, label: labels.todayOrders, value: todayOrders.length, color: 'bg-blue-500/10 text-blue-600' },
+    { icon: Store, label: labels.activeShops, value: activeShops.length, color: 'bg-green-500/10 text-green-600' },
+    { icon: Users, label: labels.pendingOnboarding, value: 0, color: 'bg-orange-500/10 text-orange-600' },
+    { icon: Truck, label: labels.inDelivery, value: inDeliveryOrders.length, color: 'bg-purple-500/10 text-purple-600' },
   ];
 
   const statusItems = [
@@ -80,9 +58,17 @@ export function AdminDashboardPage() {
     { label: labels.delivered, count: statusCounts.delivered, color: 'bg-green-500' },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="mobile-container min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <AdminBottomNav />
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-container min-h-screen bg-background pb-24">
-      {/* Header */}
       <header className="screen-header">
         <div>
           <h1 className="font-bold text-xl text-foreground">{labels.title}</h1>
@@ -91,7 +77,6 @@ export function AdminDashboardPage() {
       </header>
 
       <div className="px-4 space-y-6">
-        {/* Quick Stats */}
         <section>
           <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -110,7 +95,6 @@ export function AdminDashboardPage() {
           </div>
         </section>
 
-        {/* Orders by Status */}
         <section>
           <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary" />
@@ -131,7 +115,6 @@ export function AdminDashboardPage() {
           </div>
         </section>
 
-        {/* Recent Orders Preview */}
         <section>
           <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <Package className="w-5 h-5 text-primary" />
@@ -141,7 +124,7 @@ export function AdminDashboardPage() {
             {orders.slice(0, 3).map((order) => (
               <div key={order.id} className="bg-card rounded-xl border border-border p-3 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-foreground">{order.id}</p>
+                  <p className="font-medium text-foreground">{order.id.slice(0, 8)}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === 'en' ? order.shopName_en : order.shopName_te}
                   </p>
