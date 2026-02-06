@@ -30,6 +30,7 @@ import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
 import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
 import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
+import { ChooseRolePage } from "./pages/ChooseRolePage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -48,9 +49,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  // Customer-only pages: if a merchant/admin/delivery lands here (manual URL or stale route),
-  // deterministically redirect to their role home.
-  if (role && role !== 'customer') {
+  // No role assigned yet — send to choose-role
+  if (!role) {
+    return <Navigate to="/choose-role" replace />;
+  }
+
+  // Customer-only pages: if a merchant/admin/delivery lands here, redirect to their role home.
+  if (role !== 'customer') {
     return <Navigate to={getRouteForRoleSync(role, profile?.merchant_status)} replace />;
   }
   
@@ -212,6 +217,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               {/* Explicit login route (alias of /) to avoid 404s */}
               <Route path="/login" element={<Index />} />
+              <Route path="/choose-role" element={<ChooseRolePage />} />
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
               <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />

@@ -61,23 +61,20 @@ export async function fetchRole(userId: string) {
      return { role: existing.role as UserRole, error: null };
    }
  
-   // No role exists, insert new one
-   const { data, error } = await sb
-     .from("user_roles")
-     .insert({ user_id: userId, role: defaultRole })
-     .select("role")
-     .single();
- 
-   if (error) {
-     // Could be race condition duplicate, try fetching again
-     if (error.message?.includes("duplicate") || error.code === "23505") {
-       const { data: refetch } = await fetchRole(userId);
-       if (refetch?.role) return { role: refetch.role as UserRole, error: null };
-     }
-     return { role: null as UserRole | null, error };
-   }
- 
-   return { role: (data?.role as UserRole | null) ?? defaultRole, error: null };
+  // No role exists, upsert to prevent duplicates
+  const { data, error } = await sb
+    .from("user_roles")
+    .upsert({ user_id: userId, role: defaultRole }, { onConflict: "user_id" })
+    .select("role")
+    .single();
+
+  if (error) {
+    const { data: refetch } = await fetchRole(userId);
+    if (refetch?.role) return { role: refetch.role as UserRole, error: null };
+    return { role: null as UserRole | null, error };
+  }
+
+  return { role: (data?.role as UserRole | null) ?? defaultRole, error: null };
 }
 
  // Create role directly with specific role (for signup flow) - only if not exists
@@ -93,23 +90,20 @@ export async function createRoleForUser(userId: string, role: UserRole) {
      return { role: existing.role as UserRole, error: null };
    }
  
-   // No role exists, insert new one
-   const { data, error } = await sb
+  // Upsert to prevent duplicates (unique on user_id)
+  const { data, error } = await sb
     .from("user_roles")
-     .insert({ user_id: userId, role })
+    .upsert({ user_id: userId, role }, { onConflict: "user_id" })
     .select("role")
-     .single();
+    .single();
 
-   if (error) {
-     // Could be race condition duplicate, try fetching again
-     if (error.message?.includes("duplicate") || error.code === "23505") {
-       const { data: refetch } = await fetchRole(userId);
-       if (refetch?.role) return { role: refetch.role as UserRole, error: null };
-     }
-     return { role: null as UserRole | null, error };
+  if (error) {
+    const { data: refetch } = await fetchRole(userId);
+    if (refetch?.role) return { role: refetch.role as UserRole, error: null };
+    return { role: null as UserRole | null, error };
   }
 
-   return { role: (data?.role as UserRole | null) ?? role, error: null };
+  return { role: (data?.role as UserRole | null) ?? role, error: null };
 }
 
 // Update role from "customer" to selected role - used during signup flow
@@ -122,33 +116,19 @@ export async function updateRoleForUser(userId: string, newRole: UserRole) {
     return { role: existing.role as UserRole, error: new Error("Role already set") };
   }
 
-  // If no role exists, upsert; otherwise update from "customer"
-  if (!existing?.role) {
-    const upsertRes = await sb
-      .from("user_roles")
-      .upsert(
-        { user_id: userId, role: newRole },
-        { onConflict: "user_id" }
-      )
-      .select("role")
-      .maybeSingle();
-    
-    if (upsertRes.error) {
-      // Fallback on failure
-      const { data: refetch } = await fetchRole(userId);
-      if (refetch?.role) return { role: refetch.role as UserRole, error: null };
-      return { role: null as UserRole | null, error: upsertRes.error };
-    }
-    return { role: (upsertRes.data?.role as UserRole | null) ?? null, error: null };
-  } else {
-    const updateRes = await sb
-      .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", userId)
-      .select("role")
-      .maybeSingle();
-    return { role: (updateRes.data?.role as UserRole | null) ?? null, error: updateRes.error };
+  // Upsert role (works whether row exists or not)
+  const upsertRes = await sb
+    .from("user_roles")
+    .upsert({ user_id: userId, role: newRole }, { onConflict: "user_id" })
+    .select("role")
+    .maybeSingle();
+
+  if (upsertRes.error) {
+    const { data: refetch } = await fetchRole(userId);
+    if (refetch?.role) return { role: refetch.role as UserRole, error: null };
+    return { role: null as UserRole | null, error: upsertRes.error };
   }
+  return { role: (upsertRes.data?.role as UserRole | null) ?? newRole, error: null };
 }
 
 // Update merchant status

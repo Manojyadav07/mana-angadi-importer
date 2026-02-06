@@ -44,8 +44,8 @@ export async function postAuthRedirect(
   }
 
   if (!role) {
-    // Default to customer if role still not found
-    role = "customer";
+    // No role found — send to choose-role page
+    return { route: "/choose-role" };
   }
 
   // 3. Route based on role
@@ -96,7 +96,7 @@ export function getRouteForRoleSync(
   merchantStatus?: MerchantStatus,
   hasShop?: boolean
 ): string {
-  if (!role) return "/login";
+  if (!role) return "/choose-role";
 
   switch (role) {
     case "admin":
