@@ -11,8 +11,9 @@ const Index = () => {
 
   useEffect(() => {
     if (isLoading) return;
-    if (user && role) {
-      // Use postAuthRedirect for proper role-based routing with shop check
+    if (user && !role) {
+      navigate("/choose-role", { replace: true });
+    } else if (user && role) {
       postAuthRedirect().then(({ route }) => {
         navigate(route, { replace: true });
       });
@@ -29,8 +30,7 @@ const Index = () => {
    }
  
    // Show loading state when authenticated user is about to be redirected
-   // This prevents React DOM conflicts during navigation
-   if (user && role) {
+   if (user) {
      return (
        <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
          <Loader2 className="w-8 h-8 animate-spin text-primary" />

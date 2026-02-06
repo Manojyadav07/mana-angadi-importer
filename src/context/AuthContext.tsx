@@ -76,13 +76,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
          finalProfile = retriedProfile;
       }
 
-      // If role doesn't exist, create default customer role
-       let finalRole = roleResult.data?.role as UserRole | null;
-      if (!finalRole) {
-        const ensured = await ensureRole(nextUser.id, "customer");
-        if (ensured.error) throw ensured.error;
-        finalRole = ensured.role;
-      }
+      // If no role exists, leave it null — user will be sent to ChooseRolePage
+      let finalRole = roleResult.data?.role as UserRole | null;
 
       setProfile(finalProfile);
       setRole(finalRole);
@@ -282,12 +277,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
          finalProfile = retriedProfile;
       }
 
+      // If no role exists, leave null — ChooseRolePage will handle
       let finalRole = (roleRow?.role as UserRole | null) ?? null;
-      if (!finalRole) {
-        const ensured = await ensureRole(nextUser.id, "customer");
-        if (ensured.error) throw ensured.error;
-        finalRole = ensured.role;
-      }
 
       setProfile(finalProfile);
       setRole(finalRole);
@@ -310,30 +301,24 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
-  // Update user's role - allows changing from default "customer" to selected role during signup
   const setInitialRole = async (newRole: UserRole) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    // Check if user already has a non-customer role (prevent role escalation)
-    const { data: existing, error: readError } = await fetchRole(user.id);
-    if (readError) return { error: readError };
-
-    // If role exists and is not "customer", don't allow changing
-    if (existing?.role && existing.role !== "customer") {
-      return { error: new Error("Role already set") };
+    // Upsert role (onConflict: user_id)
+    const { error } = await sb
+      .from("user_roles")
+      .upsert({ user_id: user.id, role: newRole }, { onConflict: "user_id" });
+    
+    if (error) return { error };
+    
+    // Update merchant_status if merchant
+    if (newRole === "merchant") {
+      await sb.from("profiles").update({ merchant_status: "pending" }).eq("user_id", user.id);
+      setProfile((prev: ProfileRow | null) => prev ? { ...prev, merchant_status: "pending" as MerchantStatus } : prev);
     }
-
-    // If no role exists, insert; otherwise update from "customer" to the new role
-    if (!existing?.role) {
-      const { error } = await sb.from("user_roles").insert({ user_id: user.id, role: newRole });
-      if (!error) setRole(newRole);
-      return { error };
-    } else {
-      // Update existing "customer" role to selected role
-      const { error } = await sb.from("user_roles").update({ role: newRole }).eq("user_id", user.id);
-      if (!error) setRole(newRole);
-      return { error };
-    }
+    
+    setRole(newRole);
+    return { error: null };
   };
 
   return (

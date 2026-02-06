@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -214,22 +214,9 @@ export function LoginPage() {
     );
   }
 
-  if (user && !role) {
-    // Authenticated but role not loaded yet (or missing). Provide deterministic retry.
-    return (
-      <div className="mobile-container min-h-screen flex flex-col items-center justify-center bg-background px-6 text-center gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">
-          {language === "en" ? "Finishing login…" : "లాగిన్ పూర్తవుతోంది…"}
-        </p>
-        {authError && (
-          <p className="text-sm text-destructive">{authError}</p>
-        )}
-        <button type="button" onClick={retryHydration} className="btn-accent w-full">
-          {language === "en" ? "Retry" : "మళ్లీ ప్రయత్నించండి"}
-        </button>
-      </div>
-    );
+  if (user && !role && !authLoading) {
+    // Authenticated but no role — redirect to choose-role
+    return <Navigate to="/choose-role" replace />;
   }
 
   // Signup success state
