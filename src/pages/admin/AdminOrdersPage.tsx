@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useApp } from '@/context/AppContext';
+import { useAdminOrders } from '@/hooks/useAdminOrders';
 import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { Order, OrderStatus } from '@/types';
-import { Package, Clock, AlertTriangle, ChevronRight, Filter } from 'lucide-react';
+import { Package, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 
 export function AdminOrdersPage() {
   const { language } = useLanguage();
-  const { orders } = useApp();
+  const { data: orders = [], isLoading } = useAdminOrders();
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
 
   const labels = {
@@ -45,7 +45,6 @@ export function AdminOrdersPage() {
     statusFilter === 'all' || o.status === statusFilter
   );
 
-  // Check if order is delayed (more than 30 mins on the way)
   const isDelayed = (order: Order) => {
     if (order.status !== 'onTheWay' || !order.onTheWayAt) return false;
     const minutesOnWay = (Date.now() - new Date(order.onTheWayAt).getTime()) / (1000 * 60);
@@ -91,7 +90,6 @@ export function AdminOrdersPage() {
 
   return (
     <div className="mobile-container min-h-screen bg-background pb-24">
-      {/* Header */}
       <header className="screen-header">
         <div>
           <h1 className="font-bold text-xl text-foreground">{labels.title}</h1>
@@ -100,7 +98,6 @@ export function AdminOrdersPage() {
       </header>
 
       <div className="px-4 space-y-4">
-        {/* Filter Chips */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {statusFilters.map((f) => (
             <button
@@ -117,7 +114,6 @@ export function AdminOrdersPage() {
           ))}
         </div>
 
-        {/* Stats Summary */}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-card rounded-xl border border-border p-3 text-center">
             <p className="text-lg font-bold text-foreground">
@@ -139,8 +135,11 @@ export function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* Order List */}
-        {filteredOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <Package className="w-8 h-8 text-muted-foreground" />
@@ -159,7 +158,7 @@ export function AdminOrdersPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-foreground">{order.id}</p>
+                      <p className="font-semibold text-foreground">{order.id.slice(0, 8)}</p>
                       {isDelayed(order) && (
                         <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-600">
                           <AlertTriangle className="w-3 h-3" />
