@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderItem, OrderStatus, PaymentMethod, PaymentStatus, ShopType } from '@/types';
 
 // Map DB status to app status

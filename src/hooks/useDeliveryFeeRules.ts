@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { DeliveryFeeRule } from '@/types';
 
 // Convert DB rule to app DeliveryFeeRule type
