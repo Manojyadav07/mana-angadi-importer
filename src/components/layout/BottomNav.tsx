@@ -32,7 +32,7 @@ export function BottomNav() {
 
   const navItems = userMode === 'delivery' ? deliveryNavItems : userMode === 'merchant' ? merchantNavItems : customerNavItems;
 
-  const hiddenPaths = ['/', '/cart', '/order-success', '/delivery/onboarding'];
+  const hiddenPaths = ['/', '/login', '/cart', '/order-success', '/delivery/onboarding'];
   if (hiddenPaths.includes(location.pathname)) {
     return null;
   }

@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getRouteForRoleSync } from "@/context/auth/postAuthRedirect";
 import { useMerchantShopCheck } from "@/hooks/useMerchantShopCheck";
 import Index from "./pages/Index";
+import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
 import { CartPage } from "./pages/CartPage";
@@ -45,11 +46,28 @@ function LoadingScreen() {
   );
 }
 
+/** Auth guard: redirects unauthenticated users to /login */
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+/** Login route guard: redirects authenticated users to /home */
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (user && role) return <Navigate to="/home" replace />;
+  if (user && !role) return <Navigate to="/choose-role" replace />;
+  return <>{children}</>;
+}
+
 /** Customer-only routes */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/choose-role" replace />;
   if (role !== "customer") return <Navigate to={getRouteForRoleSync(role)} replace />;
   return <>{children}</>;
@@ -59,7 +77,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "admin") return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
@@ -68,7 +86,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function MerchantRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "merchant") {
     if (!onboardingStatus) return <Navigate to="/apply" replace />;
@@ -82,7 +100,7 @@ function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
   if (isLoading || shopCheckLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "merchant") {
     if (!onboardingStatus) return <Navigate to="/apply" replace />;
@@ -96,7 +114,7 @@ function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
 function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant") return <Navigate to="/home" replace />;
   if (onboardingStatus === "approved") return <Navigate to="/merchant/orders" replace />;
   if (!onboardingStatus) return <Navigate to="/apply" replace />;
@@ -107,7 +125,7 @@ function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
 function DeliveryRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "delivery" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "delivery") {
     if (!onboardingStatus) return <Navigate to="/apply" replace />;
@@ -120,7 +138,7 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
 function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (role !== "delivery") return <Navigate to="/home" replace />;
   if (onboardingStatus === "approved") return <Navigate to="/delivery/orders" replace />;
   if (!onboardingStatus) return <Navigate to="/apply" replace />;
@@ -131,7 +149,7 @@ function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
 function ApplyRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (!role) return <Navigate to="/choose-role" replace />;
   if (role === "customer" || role === "admin") return <Navigate to={getRouteForRoleSync(role)} replace />;
   // If already has an application, go to pending page
@@ -151,7 +169,7 @@ const App = () => (
             <AddressProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Index />} />
+                <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
                 <Route path="/choose-role" element={<ChooseRolePage />} />
                 <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                 <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
