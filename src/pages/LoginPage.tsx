@@ -1,90 +1,65 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
-import {
-  Store,
-  ArrowRight,
-  Loader2,
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-import type { UserRole } from "@/types";
+import { Store, ArrowRight, Loader2, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
-type AuthTab = "signIn" | "signUp";
-type SignupState = "form" | "success";
+type AuthStep = "send" | "verify";
 
-// Validation schemas
-const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
-const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" }).max(100);
-const nameSchema = z.string().trim().min(2, { message: "Name must be at least 2 characters" }).max(100);
+function isEmail(value: string) {
+  return value.includes("@");
+}
 
-function isAccountExistsError(message: string) {
-  const m = message.toLowerCase();
-  return (
-    m.includes("already registered") ||
-    m.includes("already exists") ||
-    m.includes("user already") ||
-    m.includes("duplicate")
-  );
+function isValidE164(value: string) {
+  return /^\+\d{10,15}$/.test(value);
 }
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signUpWithRole, refresh, resetPassword, user, role, profile, isLoading: authLoading, authError, retryHydration } =
-    useAuth();
+  const { signInWithOtp, verifyOtp, user, role, isLoading: authLoading } = useAuth();
   const { t, language, setLanguage } = useLanguage();
 
-  const [tab, setTab] = useState<AuthTab>("signIn");
-  const isSignUp = tab === "signUp";
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
+  const [step, setStep] = useState<AuthStep>("send");
+  const [credential, setCredential] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const selectedRole: UserRole = "customer";
-  const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
-  const [signupState, setSignupState] = useState<SignupState>("form");
+  // Resend timer
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem(WELCOME_SHOWN_KEY);
     if (!hasSeenWelcome) setShowWelcome(true);
   }, []);
 
-  const labels = useMemo(() => {
-    return {
-      adminLabel: language === "en" ? "Admin" : "అడ్మిన్",
-      signUpLabel: language === "en" ? "Create Account" : "ఖాతా సృష్టించండి",
-      signInLabel: language === "en" ? "Sign In" : "లాగిన్",
-      emailLabel: language === "en" ? "Email" : "ఇమెయిల్",
-      passwordLabel: language === "en" ? "Password" : "పాస్‌వర్డ్",
-      nameLabel: language === "en" ? "Your Name" : "మీ పేరు",
-      forgotPassword: language === "en" ? "Forgot password?" : "పాస్‌వర్డ్ మర్చిపోయారా?",
-      accountExists: language === "en" ? "Account already exists. Please Sign In." : "ఖాతా ఇప్పటికే ఉంది. దయచేసి లాగిన్ అవ్వండి.",
-      backToLogin: language === "en" ? "Back to Login" : "లాగిన్‌కి తిరిగి వెళ్ళండి",
-      signupSuccess: language === "en" ? "Account Created!" : "ఖాతా సృష్టించబడింది!",
-      continueBtn: language === "en" ? "Continue" : "కొనసాగించు",
-      successMessage: language === "en" ? "Your account has been created successfully." : "మీ ఖాతా విజయవంతంగా సృష్టించబడింది.",
-    };
-  }, [language]);
+  const labels = useMemo(() => ({
+    sendCode: language === "en" ? "Send Code" : "కోడ్ పంపండి",
+    verify: language === "en" ? "Verify" : "నిర్ధారించు",
+    resendIn: language === "en" ? "Resend in" : "మళ్ళీ పంపండి",
+    resend: language === "en" ? "Resend Code" : "కోడ్ మళ్ళీ పంపండి",
+    placeholder: language === "en" ? "Email or Phone number" : "ఇమెయిల్ లేదా ఫోన్ నంబర్",
+    enterOtp: language === "en" ? "Enter the 6-digit code" : "6-అంకెల కోడ్ నమోదు చేయండి",
+    sentTo: language === "en" ? "Code sent to" : "కోడ్ పంపబడింది",
+    changeCredential: language === "en" ? "Change" : "మార్చు",
+  }), [language]);
 
-  // If already logged in AND we know the role, route deterministically using postAuthRedirect.
+  // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user && role) {
-      // Use async redirect to properly check merchant shop status
       postAuthRedirect().then(({ route }) => {
         navigate(route, { replace: true });
       });
@@ -96,105 +71,92 @@ export function LoginPage() {
     setShowWelcome(false);
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: { email?: string; password?: string; name?: string } = {};
+  const handleSendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError(null);
+    const trimmed = credential.trim();
 
-    try {
-      emailSchema.parse(email);
-    } catch (e) {
-      if (e instanceof z.ZodError) newErrors.email = e.errors[0]?.message;
-    }
-
-    try {
-      passwordSchema.parse(password);
-    } catch (e) {
-      if (e instanceof z.ZodError) newErrors.password = e.errors[0]?.message;
-    }
-
-    if (isSignUp) {
-      try {
-        nameSchema.parse(displayName);
-      } catch (e) {
-        if (e instanceof z.ZodError) newErrors.name = e.errors[0]?.message;
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      toast.error(language === "en" ? "Enter your email first" : "ముందు ఇమెయిల్ నమోదు చేయండి");
+    if (!trimmed) {
+      setError(language === "en" ? "Please enter email or phone number" : "దయచేసి ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి");
       return;
     }
 
-    const { error } = await resetPassword(email.trim());
-    if (error) {
-      toast.error(error.message);
+    if (!isEmail(trimmed) && !isValidE164(trimmed)) {
+      setError(
+        language === "en"
+          ? "Enter a valid email or phone number (e.g. +91xxxxxxxxxx)"
+          : "సరైన ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి (ఉదా. +91xxxxxxxxxx)"
+      );
       return;
     }
-
-    toast.success(language === "en" ? "Password reset email sent" : "పాస్‌వర్డ్ రీసెట్ ఇమెయిల్ పంపబడింది");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      if (isSignUp) {
-        // Use atomic signup that creates profile + role together
-        const { error } = await signUpWithRole(
-          email.trim(), 
-          password, 
-          displayName.trim(), 
-          selectedRole
-        );
-        
-        if (error) {
-          if (isAccountExistsError(error.message)) {
-            toast.error(labels.accountExists);
-            setTab("signIn");
-            return;
-          }
-          toast.error(error.message);
-          return;
+      const { error: otpError } = await signInWithOtp(trimmed);
+      if (otpError) {
+        const msg = otpError.message.toLowerCase();
+        if (msg.includes("rate") || msg.includes("limit")) {
+          toast.error(language === "en" ? "Too many attempts. Please wait and try again." : "చాలా ప్రయత్నాలు. దయచేసి కొంచెం ఆగి మళ్ళీ ప్రయత్నించండి.");
+        } else {
+          toast.error(otpError.message);
         }
-
-        // Refresh to ensure context is synced
-        const refreshed = await refresh();
-        if (refreshed.error) {
-          toast.error(language === "en" ? "Account created but failed to load. Tap retry." : "ఖాతా సృష్టించబడింది కానీ లోడ్ కాలేదు. రీట్రై చేయండి.");
-          return;
-        }
-
-        // Show success state instead of immediate navigation
-        setSignupState("success");
-      } else {
-        const { error } = await signIn(email.trim(), password);
-        if (error) {
-          const msg = error.message.toLowerCase();
-          if (msg.includes("email") && msg.includes("confirm")) {
-            toast.error(language === "en" ? "Please confirm your email, then sign in." : "ముందుగా ఇమెయిల్ నిర్ధారించండి, తర్వాత లాగిన్ అవ్వండి.");
-          } else {
-            toast.error(language === "en" ? "Invalid email or password" : "తప్పు ఇమెయిల్ లేదా పాస్‌వర్డ్");
-          }
-          return;
-        }
-
-        // Use postAuthRedirect for proper role-based routing with shop check
-        toast.success(language === "en" ? "Logged in!" : "లాగిన్ అయ్యారు!");
-        const { route } = await postAuthRedirect();
-        navigate(route, { replace: true });
+        return;
       }
-    } catch (err: any) {
-      console.error("Auth submit failed:", err);
+      setStep("verify");
+      setResendCountdown(45);
+      toast.success(language === "en" ? "Code sent!" : "కోడ్ పంపబడింది!");
+    } catch {
       toast.error(language === "en" ? "Something went wrong" : "ఏదో తప్పు జరిగింది");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleVerify = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError(null);
+
+    if (otpCode.length !== 6) {
+      setError(language === "en" ? "Enter the 6-digit code" : "6-అంకెల కోడ్ నమోదు చేయండి");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error: verifyError } = await verifyOtp(credential.trim(), otpCode);
+      if (verifyError) {
+        const msg = verifyError.message.toLowerCase();
+        if (msg.includes("expired") || msg.includes("invalid")) {
+          toast.error(language === "en" ? "Invalid or expired code. Try again." : "చెల్లని లేదా గడువు ముగిసిన కోడ్. మళ్ళీ ప్రయత్నించండి.");
+        } else if (msg.includes("rate") || msg.includes("limit")) {
+          toast.error(language === "en" ? "Too many attempts. Please wait." : "చాలా ప్రయత్నాలు. దయచేసి ఆగండి.");
+        } else {
+          toast.error(verifyError.message);
+        }
+        return;
+      }
+
+      toast.success(language === "en" ? "Logged in!" : "లాగిన్ అయ్యారు!");
+      // Auth state change listener will handle hydration; navigate after
+      const { route } = await postAuthRedirect();
+      navigate(route, { replace: true });
+    } catch {
+      toast.error(language === "en" ? "Something went wrong" : "ఏదో తప్పు జరిగింది");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = () => {
+    if (resendCountdown > 0) return;
+    setOtpCode("");
+    handleSendCode();
+  };
+
+  const handleChangeCredential = () => {
+    setStep("send");
+    setOtpCode("");
+    setError(null);
   };
 
   if (showWelcome) {
@@ -210,62 +172,14 @@ export function LoginPage() {
   }
 
   if (user && !role && !authLoading) {
-    // Authenticated but no role — redirect to choose-role
     return <Navigate to="/choose-role" replace />;
   }
 
-  // Signup success state
-  if (signupState === "success") {
-    const handleContinue = async () => {
-      navigate("/home", { replace: true });
-    };
-
-    const handleBackToLogin = () => {
-      setSignupState("form");
-      setTab("signIn");
-      setEmail("");
-      setPassword("");
-      setDisplayName("");
-    };
-
-    return (
-      <div className="mobile-container min-h-screen flex flex-col items-center justify-center bg-background px-6">
-        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6 animate-scale-in">
-          <Store className="w-10 h-10 text-primary" />
-        </div>
-        
-        <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">
-          {labels.signupSuccess}
-        </h1>
-        <p className="text-muted-foreground text-center mt-2 text-sm animate-fade-in">
-          {labels.successMessage}
-        </p>
-
-        <div className="w-full max-w-sm mt-8 space-y-3">
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="btn-accent w-full flex items-center justify-center gap-2"
-          >
-            {labels.continueBtn}
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          
-          <button
-            type="button"
-            onClick={handleBackToLogin}
-            className="btn-secondary w-full"
-          >
-            {labels.backToLogin}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const inputIsEmail = isEmail(credential);
 
   return (
     <div className="mobile-container min-h-screen flex flex-col bg-background">
-      {/* Language Toggle - Top Right */}
+      {/* Language Toggle */}
       <div className="absolute top-4 right-4 z-10">
         <div className="flex items-center gap-1 bg-muted rounded-full p-1">
           <button
@@ -301,135 +215,111 @@ export function LoginPage() {
 
         <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">{t.welcome}</h1>
         <p className="text-muted-foreground text-center mt-1 text-sm animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          {tab === "signIn" ? labels.signInLabel : labels.signUpLabel}
+          {step === "send"
+            ? (language === "en" ? "Sign in or create an account" : "లాగిన్ అవ్వండి లేదా ఖాతా సృష్టించండి")
+            : labels.enterOtp}
         </p>
-
-        {/* Tabs */}
-        <div className="mt-6 w-full max-w-sm bg-muted rounded-2xl p-1 flex">
-          <button
-            type="button"
-            onClick={() => {
-              setTab("signIn");
-              setErrors({});
-            }}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-              tab === "signIn" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {labels.signInLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab("signUp");
-              setErrors({});
-            }}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-              tab === "signUp" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {labels.signUpLabel}
-          </button>
-        </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 animate-slide-up">
-
-        {/* Name (signup only) */}
-        {isSignUp && (
+      {/* Step A: Send Code */}
+      {step === "send" && (
+        <form onSubmit={handleSendCode} className="px-6 pb-6 space-y-4 animate-slide-up">
           <div className="space-y-1">
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              {inputIsEmail ? (
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              ) : (
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              )}
               <input
                 type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder={labels.nameLabel}
+                value={credential}
+                onChange={(e) => { setCredential(e.target.value); setError(null); }}
+                placeholder={labels.placeholder}
                 className="input-village pl-12"
-                autoComplete="name"
+                autoComplete="email tel"
+                autoFocus
               />
             </div>
-            {errors.name && <p className="text-xs text-destructive px-1">{errors.name}</p>}
+            {error && <p className="text-xs text-destructive px-1">{error}</p>}
           </div>
-        )}
 
-        {/* Email */}
-        <div className="space-y-1">
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={labels.emailLabel}
-              className="input-village pl-12"
-              autoComplete="email"
-            />
-          </div>
-          {errors.email && <p className="text-xs text-destructive px-1">{errors.email}</p>}
-        </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+              <>
+                {labels.sendCode}
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </form>
+      )}
 
-        {/* Password */}
-        <div className="space-y-1">
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={labels.passwordLabel}
-              className="input-village pl-12 pr-12"
-              autoComplete={isSignUp ? "new-password" : "current-password"}
-            />
+      {/* Step B: Verify OTP */}
+      {step === "verify" && (
+        <form onSubmit={handleVerify} className="px-6 pb-6 space-y-5 animate-slide-up">
+          <div className="text-center space-y-1">
+            <p className="text-sm text-muted-foreground">
+              {labels.sentTo}{" "}
+              <span className="font-medium text-foreground">{credential.trim()}</span>
+            </p>
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={handleChangeCredential}
+              className="text-xs text-primary hover:underline"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {labels.changeCredential}
             </button>
           </div>
-          {errors.password && <p className="text-xs text-destructive px-1">{errors.password}</p>}
-        </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>
-            {tab === "signIn" ? labels.signInLabel : labels.signUpLabel}
-            <ArrowRight className="w-5 h-5" />
-          </>}
-        </button>
+          <div className="flex justify-center">
+            <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          {error && <p className="text-xs text-destructive text-center">{error}</p>}
 
-        {/* Forgot password (sign-in only) */}
-        {tab === "signIn" && (
+          <button
+            type="submit"
+            disabled={isSubmitting || otpCode.length !== 6}
+            className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+              <>
+                {labels.verify}
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+
           <div className="text-center">
-            <button type="button" onClick={handleForgotPassword} className="text-sm text-primary hover:underline">
-              {labels.forgotPassword}
-            </button>
+            {resendCountdown > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {labels.resendIn} {resendCountdown}s
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                className="text-sm text-primary hover:underline"
+              >
+                {labels.resend}
+              </button>
+            )}
           </div>
-        )}
-
-        {/* Back to Login (signup only) */}
-        {tab === "signUp" && (
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setTab("signIn");
-                setErrors({});
-              }}
-              className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1"
-            >
-              ← {labels.backToLogin}
-            </button>
-          </div>
-        )}
-      </form>
+        </form>
+      )}
 
       <div className="px-6 pb-6 text-center">
         <span className="trust-badge">{t.villageBadge}</span>
@@ -437,4 +327,3 @@ export function LoginPage() {
     </div>
   );
 }
-
