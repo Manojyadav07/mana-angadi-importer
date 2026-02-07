@@ -3,6 +3,8 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useUserMode } from '@/context/UserModeContext';
+import { SwitchModeMenu } from '@/components/SwitchModeMenu';
 import { User, MapPin, Phone, LogOut, Languages, Power, AlertCircle, HelpCircle, MessageCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
@@ -17,8 +19,10 @@ export function DeliveryProfilePage() {
   const { user, logout, updateUserAvailability } = useApp();
   const { signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { resetMode } = useUserMode();
 
   const handleLogout = async () => {
+    resetMode();
     await signOut();
     logout();
     navigate('/');
@@ -30,8 +34,9 @@ export function DeliveryProfilePage() {
 
   return (
     <MobileLayout>
-      <header className="screen-header">
+      <header className="screen-header flex items-center justify-between px-4">
         <h1 className="text-xl font-bold text-foreground">{t.navProfile}</h1>
+        <SwitchModeMenu />
       </header>
 
       <div className="px-4 py-4 space-y-4">

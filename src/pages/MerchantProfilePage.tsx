@@ -3,6 +3,8 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useUserMode } from '@/context/UserModeContext';
+import { SwitchModeMenu } from '@/components/SwitchModeMenu';
 import { getShopsByOwner, updateShopOpenStatus } from '@/data/mockData';
 import { Switch } from '@/components/ui/switch';
 import { Store, LogOut, Settings } from 'lucide-react';
@@ -14,12 +16,13 @@ export function MerchantProfilePage() {
   const { user, logout } = useApp();
   const { signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { resetMode } = useUserMode();
   const [, forceUpdate] = useState({});
   
   const shops = user?.shopIds ? getShopsByOwner(user.id) : [];
 
   const handleLogout = async () => {
-    // Clear backend session + any in-memory app state to prevent cross-user bleed
+    resetMode();
     await signOut();
     logout();
     navigate('/');
@@ -43,6 +46,8 @@ export function MerchantProfilePage() {
               {t.merchantMode}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <SwitchModeMenu />
           
           {/* Language Toggle */}
           <div className="flex items-center bg-muted rounded-full p-0.5">
@@ -66,6 +71,7 @@ export function MerchantProfilePage() {
             >
               EN
             </button>
+          </div>
           </div>
         </div>
       </header>

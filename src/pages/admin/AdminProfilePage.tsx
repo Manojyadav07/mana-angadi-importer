@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { useUserMode } from '@/context/UserModeContext';
+import { SwitchModeMenu } from '@/components/SwitchModeMenu';
 import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { User, LogOut, Globe, Shield } from 'lucide-react';
 
@@ -20,8 +22,10 @@ export function AdminProfilePage() {
     logout: t.logout,
     adminRole: language === 'en' ? 'Super Admin' : 'సూపర్ అడ్మిన్',
   };
+  const { resetMode } = useUserMode();
 
   const handleLogout = async () => {
+    resetMode();
     await signOut();
     logout();
     navigate('/');
@@ -30,8 +34,9 @@ export function AdminProfilePage() {
   return (
     <div className="mobile-container min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="screen-header">
+      <header className="screen-header flex items-center justify-between px-4">
         <h1 className="font-bold text-xl text-foreground">{labels.title}</h1>
+        <SwitchModeMenu />
       </header>
 
       <div className="px-4 space-y-4">

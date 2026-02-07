@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useUserMode } from '@/context/UserModeContext';
+import { SwitchModeMenu } from '@/components/SwitchModeMenu';
 import { User, Phone, MapPin, LogOut, Edit2, Check, Shield, Globe, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -10,6 +12,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { user, profile, signOut, updateProfile, isLoading } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { resetMode } = useUserMode();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -21,6 +24,7 @@ export function ProfilePage() {
   }, [profile?.display_name]);
 
   const handleLogout = async () => {
+    resetMode();
     await signOut();
     navigate('/');
   };
@@ -67,9 +71,12 @@ export function ProfilePage() {
     <MobileLayout>
       {/* Header */}
       <header className="px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-          {t.myDetails}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground animate-fade-in">
+            {t.myDetails}
+          </h1>
+          <SwitchModeMenu />
+        </div>
       </header>
 
       <div className="px-4 pb-4 space-y-4">
