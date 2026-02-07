@@ -5,8 +5,16 @@ import type { OnboardingStatus } from "./authHelpers";
 const sb = supabase as any;
 
 /**
+ * Get user_mode from localStorage (default: "customer").
+ */
+function getUserMode(): string {
+  return localStorage.getItem("mana-angadi-user-mode") || "customer";
+}
+
+/**
  * Single source of truth for post-auth navigation.
- * Checks role + onboarding_applications status for merchant/delivery.
+ * Routes based on user_mode (localStorage), NOT the DB role.
+ * Admin dashboard is only reached via explicit mode switch.
  */
 export async function postAuthRedirect(
   maxRetries = 2
@@ -18,6 +26,7 @@ export async function postAuthRedirect(
 
   const userId = sessionData.session.user.id;
 
+  // Check if user has any role at all
   let role: UserRole | null = null;
   let retryCount = 0;
 
@@ -33,58 +42,87 @@ export async function postAuthRedirect(
 
   if (!role) return { route: "/choose-role" };
 
-  // Customer and admin don't need onboarding approval
-  if (role === "customer") return { route: "/home" };
-  if (role === "admin") return { route: "/admin/dashboard" };
+  // Route based on user_mode from localStorage
+  const mode = getUserMode();
 
-  // Merchant/delivery: check onboarding_applications
-  const { data: application } = await sb
-    .from("onboarding_applications")
-    .select("status")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  const onboardingStatus = (application?.status as OnboardingStatus) ?? null;
-
-  if (!onboardingStatus) return { route: "/apply" };
-  if (onboardingStatus === "pending" || onboardingStatus === "rejected") {
-    return { route: role === "merchant" ? "/merchant/pending" : "/delivery/pending" };
+  if (mode === "admin" && role === "admin") {
+    return { route: "/admin/dashboard" };
   }
 
-  // Approved
-  if (role === "merchant") {
-    const { data: shops } = await supabase.from("shops").select("id").eq("owner_id", userId).limit(1);
-    if (!shops || shops.length === 0) return { route: "/merchant/setup" };
-    return { route: "/merchant/orders" };
+  if (mode === "merchant") {
+    // Must be merchant or admin role with approved onboarding
+    if (role === "merchant" || role === "admin") {
+      if (role === "merchant") {
+        const { data: application } = await sb
+          .from("onboarding_applications")
+          .select("status")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const status = (application?.status as OnboardingStatus) ?? null;
+        if (!status) return { route: "/apply" };
+        if (status === "pending" || status === "rejected") return { route: "/merchant/pending" };
+        // Approved - check shop
+        const { data: shops } = await supabase.from("shops").select("id").eq("owner_id", userId).limit(1);
+        if (!shops || shops.length === 0) return { route: "/merchant/setup" };
+        return { route: "/merchant/orders" };
+      }
+      return { route: "/merchant/orders" };
+    }
+    // Not a merchant, fall through to customer
   }
 
-  return { route: "/delivery/orders" };
+  if (mode === "delivery") {
+    if (role === "delivery" || role === "admin") {
+      if (role === "delivery") {
+        const { data: application } = await sb
+          .from("onboarding_applications")
+          .select("status")
+          .eq("user_id", userId)
+          .maybeSingle();
+        const status = (application?.status as OnboardingStatus) ?? null;
+        if (!status) return { route: "/apply" };
+        if (status === "pending" || status === "rejected") return { route: "/delivery/pending" };
+        return { route: "/delivery/orders" };
+      }
+      return { route: "/delivery/orders" };
+    }
+  }
+
+  // Default: customer mode
+  return { route: "/home" };
 }
 
 /**
- * Synchronous version for use with already-fetched data
+ * Synchronous version — always returns customer home.
+ * For mode-based routing, use postAuthRedirect() instead.
  */
 export function getRouteForRoleSync(
   role: UserRole | null,
   onboardingStatus?: OnboardingStatus,
   hasShop?: boolean
 ): string {
+  const mode = getUserMode();
+
   if (!role) return "/choose-role";
 
-  switch (role) {
-    case "admin":
-      return "/admin/dashboard";
-    case "merchant":
+  if (mode === "admin" && role === "admin") return "/admin/dashboard";
+
+  if (mode === "merchant" && (role === "merchant" || role === "admin")) {
+    if (role === "merchant") {
       if (!onboardingStatus) return "/apply";
       if (onboardingStatus === "pending" || onboardingStatus === "rejected") return "/merchant/pending";
       if (hasShop === false) return "/merchant/setup";
-      return "/merchant/orders";
-    case "delivery":
+    }
+    return "/merchant/orders";
+  }
+
+  if (mode === "delivery" && (role === "delivery" || role === "admin")) {
+    if (role === "delivery") {
       if (!onboardingStatus) return "/apply";
       if (onboardingStatus === "pending" || onboardingStatus === "rejected") return "/delivery/pending";
-      return "/delivery/orders";
-    case "customer":
-    default:
-      return "/home";
+    }
+    return "/delivery/orders";
   }
+
+  return "/home";
 }
