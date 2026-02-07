@@ -12,8 +12,6 @@ const Index = () => {
     if (isLoading) return;
     if (!user) {
       navigate("/login", { replace: true });
-    } else if (!role) {
-      navigate("/choose-role", { replace: true });
     } else {
       postAuthRedirect().then(({ route }) => {
         navigate(route, { replace: true });

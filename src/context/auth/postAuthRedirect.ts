@@ -29,8 +29,6 @@ export async function postAuthRedirect(
     if (retryCount <= maxRetries) await new Promise(r => setTimeout(r, 500));
   }
 
-  if (!role) return { route: "/choose-role" };
-
   return { route: "/home" };
 }
 
@@ -42,6 +40,5 @@ export function getRouteForRoleSync(
   _onboardingStatus?: OnboardingStatus,
   _hasShop?: boolean
 ): string {
-  if (!role) return "/choose-role";
   return "/home";
 }
