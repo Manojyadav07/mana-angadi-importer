@@ -44,6 +44,8 @@ export function ChooseRolePage() {
         toast.error(error.message);
         return;
       }
+      // For merchant/delivery, setInitialRole already creates the onboarding application
+      // refresh to sync context
       await refresh();
       const { route } = await postAuthRedirect();
       navigate(route, { replace: true });
