@@ -8,12 +8,15 @@ import {
   fetchRole,
   createRoleForUser,
   updateMerchantStatus,
-   waitForProfile,
+  waitForProfile,
+  fetchOnboardingApplication,
+  createOnboardingApplication,
   type ProfileRow,
   type MerchantStatus,
+  type OnboardingStatus,
+  type OnboardingApplicationRow,
 } from "@/context/auth/authHelpers";
 
-// Avoid build breaks if generated DB types temporarily desync
 const sb = supabase as any;
 
 interface AuthContextType {
@@ -21,6 +24,7 @@ interface AuthContextType {
   session: Session | null;
   profile: ProfileRow | null;
   role: UserRole | null;
+  onboardingStatus: OnboardingStatus;
   isLoading: boolean;
   authError: string | null;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
@@ -31,7 +35,6 @@ interface AuthContextType {
   setInitialRole: (role: UserRole) => Promise<{ error: Error | null }>;
   refresh: () => Promise<{ error: Error | null; profile: ProfileRow | null; role: UserRole | null }>;
   retryHydration: () => Promise<void>;
-  // New: signup with role in one atomic flow
   signUpWithRole: (email: string, password: string, displayName: string, selectedRole: UserRole) => Promise<{ error: Error | null; userId?: string }>;
 }
 
@@ -47,6 +50,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -56,37 +60,42 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     try {
       setAuthError(null);
 
-       // Fetch existing profile and role (profile created by database trigger)
-       const [profileResult, roleResult] = await Promise.all([
-         fetchProfile(nextUser.id),
-         fetchRole(nextUser.id),
-       ]);
+      const [profileResult, roleResult] = await Promise.all([
+        fetchProfile(nextUser.id),
+        fetchRole(nextUser.id),
+      ]);
 
-       if (profileResult.error && !profileResult.error.message?.includes("No rows")) {
-         console.error("Profile fetch error:", profileResult.error);
+      if (profileResult.error && !profileResult.error.message?.includes("No rows")) {
+        console.error("Profile fetch error:", profileResult.error);
       }
-       if (roleResult.error && !roleResult.error.message?.includes("No rows")) {
-         console.error("Role fetch error:", roleResult.error);
+      if (roleResult.error && !roleResult.error.message?.includes("No rows")) {
+        console.error("Role fetch error:", roleResult.error);
       }
 
-       // Profile should exist from trigger; if not found, wait briefly for propagation
-       let finalProfile = profileResult.data as ProfileRow | null;
+      let finalProfile = profileResult.data as ProfileRow | null;
       if (!finalProfile) {
-         const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
-         finalProfile = retriedProfile;
+        const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+        finalProfile = retriedProfile;
       }
 
-      // If no role exists, leave it null — user will be sent to ChooseRolePage
       let finalRole = roleResult.data?.role as UserRole | null;
+
+      // Fetch onboarding status for merchant/delivery
+      let finalOnboardingStatus: OnboardingStatus = null;
+      if (finalRole === "merchant" || finalRole === "delivery") {
+        const { data: app } = await fetchOnboardingApplication(nextUser.id);
+        finalOnboardingStatus = (app?.status as OnboardingStatus) ?? null;
+      }
 
       setProfile(finalProfile);
       setRole(finalRole);
+      setOnboardingStatus(finalOnboardingStatus);
     } catch (e: any) {
       console.error("Auth hydration failed:", e);
       setAuthError(e?.message ?? "Failed to load account data");
-      // Still allow app to continue: role/profile might be null, but user is authenticated.
       setProfile(null);
       setRole(null);
+      setOnboardingStatus(null);
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +103,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
 
   const startHydration = useCallback(
     (nextUser: User) => {
-      // Prevent duplicate race-condition hydrations
       if (!hydrationInFlightRef.current) {
         hydrationInFlightRef.current = hydrateUser(nextUser).finally(() => {
           hydrationInFlightRef.current = null;
@@ -108,23 +116,22 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const retryHydration = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
-   setAuthError(null);
+    setAuthError(null);
     await hydrateUser(user);
   }, [hydrateUser, user]);
 
-  // SINGLE source of truth for auth state
   useEffect(() => {
     let isMounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!isMounted) return;
-
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
       if (!newSession?.user) {
         setProfile(null);
         setRole(null);
+        setOnboardingStatus(null);
         setAuthError(null);
         setIsLoading(false);
         return;
@@ -134,10 +141,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       void startHydration(newSession.user);
     });
 
-    // Initial session hydration
     supabase.auth.getSession().then(({ data }) => {
       if (!isMounted) return;
-
       setSession(data?.session ?? null);
       setUser(data?.session?.user ?? null);
 
@@ -168,15 +173,13 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
-  // New: Atomic signup that creates profile + role together
   const signUpWithRole = async (
-    email: string, 
-    password: string, 
-    displayName: string, 
+    email: string,
+    password: string,
+    displayName: string,
     selectedRole: UserRole
   ): Promise<{ error: Error | null; userId?: string }> => {
-   setAuthError(null);
-    // 1. Create auth user
+    setAuthError(null);
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -187,42 +190,38 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     });
 
     if (signUpError) return { error: signUpError };
-    
     const newUser = signUpData.user;
     if (!newUser) return { error: new Error("Signup succeeded but no user returned") };
 
-     // 2. Wait for profile to be created by database trigger
-     const { data: newProfile, error: profileError } = await waitForProfile(newUser.id, 5, 400);
-     
-     if (profileError) {
-       console.warn("Profile not found after signup:", profileError.message);
-       // Continue anyway - profile may still be created
-     }
+    const { data: newProfile } = await waitForProfile(newUser.id, 5, 400);
 
-     // 3. Update profile with merchant_status if merchant (profile created by trigger)
-    const merchantStatus: MerchantStatus = selectedRole === "merchant" ? "pending" : null;
-     if (newProfile && merchantStatus) {
-       await updateMerchantStatus(newUser.id, merchantStatus);
-       newProfile.merchant_status = merchantStatus;
-    }
-
-    // 4. Create role directly with selected role
+    // Create role
     const { role: createdRole, error: roleError } = await createRoleForUser(newUser.id, selectedRole);
-    
-    if (roleError) {
-      console.error("Role creation failed:", roleError);
-      // Don't fail signup, role can be created on next hydration
+    if (roleError) console.error("Role creation failed:", roleError);
+
+    // For merchant/delivery, create onboarding application
+    let finalOnboardingStatus: OnboardingStatus = null;
+    if (selectedRole === "merchant" || selectedRole === "delivery") {
+      const { data: app, error: appError } = await createOnboardingApplication(newUser.id, selectedRole);
+      if (appError) console.error("Onboarding application creation failed:", appError);
+      finalOnboardingStatus = (app?.status as OnboardingStatus) ?? "pending";
+      
+      // Also update merchant_status on profile for backward compatibility
+      if (selectedRole === "merchant" && newProfile) {
+        await updateMerchantStatus(newUser.id, "pending");
+        newProfile.merchant_status = "pending";
+      }
     }
 
-    // 5. Update local state
     if (newProfile) setProfile(newProfile);
     if (createdRole) setRole(createdRole);
+    setOnboardingStatus(finalOnboardingStatus);
 
     return { error: null, userId: newUser.id };
   };
 
   const signIn = async (email: string, password: string) => {
-   setAuthError(null);
+    setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
@@ -233,9 +232,9 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     setSession(null);
     setProfile(null);
     setRole(null);
+    setOnboardingStatus(null);
     setAuthError(null);
     hydrationInFlightRef.current = null;
-    // Call the onSignOut callback to clear external caches (e.g., React Query)
     onSignOut?.();
   };
 
@@ -261,6 +260,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       if (!nextUser) {
         setProfile(null);
         setRole(null);
+        setOnboardingStatus(null);
         setIsLoading(false);
         return { error: null, profile: null, role: null };
       }
@@ -270,18 +270,23 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         fetchRole(nextUser.id),
       ]);
 
-       // Profile should exist from trigger; if not, wait briefly
       let finalProfile = (prof as ProfileRow | null) ?? null;
       if (!finalProfile) {
-         const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
-         finalProfile = retriedProfile;
+        const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+        finalProfile = retriedProfile;
       }
 
-      // If no role exists, leave null — ChooseRolePage will handle
       let finalRole = (roleRow?.role as UserRole | null) ?? null;
+
+      let finalOnboardingStatus: OnboardingStatus = null;
+      if (finalRole === "merchant" || finalRole === "delivery") {
+        const { data: app } = await fetchOnboardingApplication(nextUser.id);
+        finalOnboardingStatus = (app?.status as OnboardingStatus) ?? null;
+      }
 
       setProfile(finalProfile);
       setRole(finalRole);
+      setOnboardingStatus(finalOnboardingStatus);
       setIsLoading(false);
 
       return { error: null, profile: finalProfile, role: finalRole };
@@ -295,7 +300,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
 
   const updateProfile = async (updates: Partial<ProfileRow>) => {
     if (!user) return { error: new Error("Not authenticated") };
-
     const { error } = await sb.from("profiles").update(updates).eq("user_id", user.id);
     if (!error) setProfile((prev: ProfileRow | null) => (prev ? { ...prev, ...updates } : prev));
     return { error };
@@ -304,19 +308,23 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const setInitialRole = async (newRole: UserRole) => {
     if (!user) return { error: new Error("Not authenticated") };
 
-    // Upsert role (onConflict: user_id)
     const { error } = await sb
       .from("user_roles")
       .upsert({ user_id: user.id, role: newRole }, { onConflict: "user_id" });
-    
+
     if (error) return { error };
-    
-    // Update merchant_status if merchant
-    if (newRole === "merchant") {
-      await sb.from("profiles").update({ merchant_status: "pending" }).eq("user_id", user.id);
-      setProfile((prev: ProfileRow | null) => prev ? { ...prev, merchant_status: "pending" as MerchantStatus } : prev);
+
+    // For merchant/delivery, create onboarding application
+    if (newRole === "merchant" || newRole === "delivery") {
+      const { data: app } = await createOnboardingApplication(user.id, newRole);
+      setOnboardingStatus((app?.status as OnboardingStatus) ?? "pending");
+
+      if (newRole === "merchant") {
+        await sb.from("profiles").update({ merchant_status: "pending" }).eq("user_id", user.id);
+        setProfile((prev: ProfileRow | null) => prev ? { ...prev, merchant_status: "pending" as MerchantStatus } : prev);
+      }
     }
-    
+
     setRole(newRole);
     return { error: null };
   };
@@ -328,6 +336,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         session,
         profile,
         role,
+        onboardingStatus,
         isLoading,
         authError,
         signUp,

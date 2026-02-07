@@ -24,6 +24,8 @@ import { DeliveryOnboardingPage } from "./pages/DeliveryOnboardingPage";
 import { DeliveryOrdersPage } from "./pages/DeliveryOrdersPage";
 import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
+import { DeliveryPendingPage } from "./pages/DeliveryPendingPage";
+import { ApplyPage } from "./pages/ApplyPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminOnboardingPage } from "./pages/admin/AdminOnboardingPage";
 import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
@@ -34,175 +36,107 @@ import { ChooseRolePage } from "./pages/ChooseRolePage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
+function LoadingScreen() {
+  return (
+    <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
+/** Customer-only routes */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, profile, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-
-  // No role assigned yet — send to choose-role
-  if (!role) {
-    return <Navigate to="/choose-role" replace />;
-  }
-
-  // Customer-only pages: if a merchant/admin/delivery lands here, redirect to their role home.
-  if (role !== 'customer') {
-    return <Navigate to={getRouteForRoleSync(role, profile?.merchant_status)} replace />;
-  }
-  
+  const { user, role, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (!role) return <Navigate to="/choose-role" replace />;
+  if (role !== "customer") return <Navigate to={getRouteForRoleSync(role)} replace />;
   return <>{children}</>;
 }
 
+/** Admin-only routes */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-  
-  if (role !== 'admin') {
-    return <Navigate to="/home" replace />;
-  }
-  
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "admin") return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
+/** Merchant routes requiring approved onboarding */
 function MerchantRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, profile, isLoading } = useAuth();
-  const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
-  
-  if (isLoading || shopCheckLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+  const { user, role, onboardingStatus, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
+  if (role === "merchant") {
+    if (!onboardingStatus) return <Navigate to="/apply" replace />;
+    if (onboardingStatus === "pending" || onboardingStatus === "rejected") return <Navigate to="/merchant/pending" replace />;
   }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-  
-  if (role !== 'merchant' && role !== 'admin') {
-    return <Navigate to="/home" replace />;
-  }
-
-  // If merchant is pending approval, redirect to pending page
-  if (role === 'merchant' && profile?.merchant_status === 'pending') {
-    return <Navigate to="/merchant/pending" replace />;
-  }
-
-  // If merchant is rejected, also redirect to pending page (which shows rejection)
-  if (role === 'merchant' && profile?.merchant_status === 'rejected') {
-    return <Navigate to="/merchant/pending" replace />;
-  }
-  
   return <>{children}</>;
 }
 
-// Wrapper that redirects merchants without shops to setup
+/** Merchant routes requiring approved onboarding + shop */
 function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, profile, isLoading } = useAuth();
+  const { user, role, onboardingStatus, isLoading } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
-  
-  if (isLoading || shopCheckLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+  if (isLoading || shopCheckLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
+  if (role === "merchant") {
+    if (!onboardingStatus) return <Navigate to="/apply" replace />;
+    if (onboardingStatus === "pending" || onboardingStatus === "rejected") return <Navigate to="/merchant/pending" replace />;
+    if (shopCheck && !shopCheck.hasShop) return <Navigate to="/merchant/setup" replace />;
   }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-  
-  if (role !== 'merchant' && role !== 'admin') {
-    return <Navigate to="/home" replace />;
-  }
-
-  // If merchant is pending approval, redirect to pending page
-  if (role === 'merchant' && profile?.merchant_status === 'pending') {
-    return <Navigate to="/merchant/pending" replace />;
-  }
-
-  // If merchant is rejected, redirect to pending page
-  if (role === 'merchant' && profile?.merchant_status === 'rejected') {
-    return <Navigate to="/merchant/pending" replace />;
-  }
-
-  // If merchant has no shop, redirect to shop setup
-  if (role === 'merchant' && shopCheck && !shopCheck.hasShop) {
-    return <Navigate to="/merchant/setup" replace />;
-  }
-  
   return <>{children}</>;
 }
 
-// Route for pending merchants only
+/** Merchant pending page — only for merchants with pending/rejected applications */
 function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, profile, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-  
-  if (role !== 'merchant') {
-    return <Navigate to="/home" replace />;
-  }
-
-  // If merchant is approved, redirect to orders
-  if (profile?.merchant_status === 'approved' || profile?.merchant_status === null) {
-    return <Navigate to="/merchant/orders" replace />;
-  }
-  
+  const { user, role, onboardingStatus, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "merchant") return <Navigate to="/home" replace />;
+  if (onboardingStatus === "approved") return <Navigate to="/merchant/orders" replace />;
+  if (!onboardingStatus) return <Navigate to="/apply" replace />;
   return <>{children}</>;
 }
 
+/** Delivery routes requiring approved onboarding */
 function DeliveryRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+  const { user, role, onboardingStatus, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "delivery" && role !== "admin") return <Navigate to="/home" replace />;
+  if (role === "delivery") {
+    if (!onboardingStatus) return <Navigate to="/apply" replace />;
+    if (onboardingStatus === "pending" || onboardingStatus === "rejected") return <Navigate to="/delivery/pending" replace />;
   }
-  
-  if (!user) {
-    return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+/** Delivery pending page */
+function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, onboardingStatus, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (role !== "delivery") return <Navigate to="/home" replace />;
+  if (onboardingStatus === "approved") return <Navigate to="/delivery/orders" replace />;
+  if (!onboardingStatus) return <Navigate to="/apply" replace />;
+  return <>{children}</>;
+}
+
+/** Apply page — for merchant/delivery without an application */
+function ApplyRoute({ children }: { children: React.ReactNode }) {
+  const { user, role, onboardingStatus, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (!role) return <Navigate to="/choose-role" replace />;
+  if (role === "customer" || role === "admin") return <Navigate to={getRouteForRoleSync(role)} replace />;
+  // If already has an application, go to pending page
+  if (onboardingStatus) {
+    return <Navigate to={role === "merchant" ? "/merchant/pending" : "/delivery/pending"} replace />;
   }
-  
-  if (role !== 'delivery' && role !== 'admin') {
-    return <Navigate to="/home" replace />;
-  }
-  
   return <>{children}</>;
 }
 
@@ -215,9 +149,9 @@ const App = () => (
           <AddressProvider>
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* Explicit login route (alias of /) to avoid 404s */}
               <Route path="/login" element={<Index />} />
               <Route path="/choose-role" element={<ChooseRolePage />} />
+              <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
               <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
@@ -232,6 +166,7 @@ const App = () => (
               <Route path="/merchant/products" element={<MerchantWithShopRoute><MerchantProductsPage /></MerchantWithShopRoute>} />
               <Route path="/merchant/profile" element={<MerchantWithShopRoute><MerchantProfilePage /></MerchantWithShopRoute>} />
               {/* Delivery Partner Routes */}
+              <Route path="/delivery/pending" element={<DeliveryPendingRoute><DeliveryPendingPage /></DeliveryPendingRoute>} />
               <Route path="/delivery/onboarding" element={<DeliveryRoute><DeliveryOnboardingPage /></DeliveryRoute>} />
               <Route path="/delivery/orders" element={<DeliveryRoute><DeliveryOrdersPage /></DeliveryRoute>} />
               <Route path="/delivery/earnings" element={<DeliveryRoute><DeliveryEarningsPage /></DeliveryRoute>} />

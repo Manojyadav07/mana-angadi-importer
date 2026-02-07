@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboardingApplication } from "@/hooks/useOnboardingApplication";
-import { Clock, LogOut, RefreshCw, Store } from "lucide-react";
+import { Clock, LogOut, RefreshCw, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function MerchantPendingPage() {
+export function DeliveryPendingPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { language } = useLanguage();
@@ -22,7 +22,7 @@ export function MerchantPendingPage() {
   const handleRefresh = async () => {
     const result = await refetch();
     if (result.data?.status === "approved") {
-      navigate("/merchant/orders", { replace: true });
+      navigate("/delivery/orders", { replace: true });
     }
   };
 
@@ -31,7 +31,7 @@ export function MerchantPendingPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
           {isRejected ? (
-            <Store className="w-12 h-12 text-destructive" />
+            <Truck className="w-12 h-12 text-destructive" />
           ) : (
             <Clock className="w-12 h-12 text-primary animate-pulse" />
           )}
@@ -46,11 +46,11 @@ export function MerchantPendingPage() {
         <p className="text-muted-foreground text-center text-sm max-w-xs mb-8">
           {isRejected
             ? language === "en"
-              ? "Your merchant application was not approved. Please contact support for more information."
-              : "మీ వ్యాపారి దరఖాస్తు ఆమోదించబడలేదు. మరింత సమాచారం కోసం సపోర్ట్‌ను సంప్రదించండి."
+              ? "Your delivery partner application was not approved. Please contact support."
+              : "మీ డెలివరీ పార్ట్‌నర్ దరఖాస్తు ఆమోదించబడలేదు. సపోర్ట్‌ను సంప్రదించండి."
             : language === "en"
-              ? "Your merchant account is being reviewed. We'll notify you once it's approved."
-              : "మీ వ్యాపారి ఖాతా సమీక్షించబడుతోంది. ఆమోదించిన తర్వాత మేము మీకు తెలియజేస్తాము."}
+              ? "Your delivery partner application is being reviewed. We'll notify you once approved."
+              : "మీ డెలివరీ పార్ట్‌నర్ దరఖాస్తు సమీక్షించబడుతోంది. ఆమోదించిన తర్వాత తెలియజేస్తాము."}
         </p>
 
         <Card className="w-full max-w-sm mb-6">
