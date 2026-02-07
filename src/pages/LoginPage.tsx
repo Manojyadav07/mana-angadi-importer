@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -57,14 +57,6 @@ export function LoginPage() {
     changeCredential: language === "en" ? "Change" : "మార్చు",
   }), [language]);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user && role) {
-      postAuthRedirect().then(({ route }) => {
-        navigate(route, { replace: true });
-      });
-    }
-  }, [authLoading, user, role, navigate]);
 
   const handleWelcomeDismiss = () => {
     localStorage.setItem(WELCOME_SHOWN_KEY, "true");
@@ -171,9 +163,6 @@ export function LoginPage() {
     );
   }
 
-  if (user && !role && !authLoading) {
-    return <Navigate to="/choose-role" replace />;
-  }
 
   const inputIsEmail = isEmail(credential);
 
