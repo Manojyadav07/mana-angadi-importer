@@ -53,6 +53,9 @@ export function LoginPage() {
     resend: language === "en" ? "Resend Code" : "కోడ్ మళ్ళీ పంపండి",
     placeholder: language === "en" ? "Email or Phone number" : "ఇమెయిల్ లేదా ఫోన్ నంబర్",
     enterOtp: language === "en" ? "Enter the 6-digit code" : "6-అంకెల కోడ్ నమోదు చేయండి",
+    emailLinkSent: language === "en"
+      ? "We sent you a secure login link to your email. Open it to continue."
+      : "మీ ఇమెయిల్‌కు సురక్షిత లాగిన్ లింక్ పంపబడింది. కొనసాగించడానికి దాన్ని తెరవండి.",
     sentTo: language === "en" ? "Code sent to" : "కోడ్ పంపబడింది",
     changeCredential: language === "en" ? "Change" : "మార్చు",
   }), [language]);
@@ -206,7 +209,9 @@ export function LoginPage() {
         <p className="text-muted-foreground text-center mt-1 text-sm animate-fade-in" style={{ animationDelay: "0.1s" }}>
           {step === "send"
             ? (language === "en" ? "Sign in or create an account" : "లాగిన్ అవ్వండి లేదా ఖాతా సృష్టించండి")
-            : labels.enterOtp}
+            : inputIsEmail
+              ? labels.emailLinkSent
+              : labels.enterOtp}
         </p>
       </div>
 
@@ -248,8 +253,28 @@ export function LoginPage() {
         </form>
       )}
 
-      {/* Step B: Verify OTP */}
-      {step === "verify" && (
+      {/* Step B: Email magic link sent */}
+      {step === "verify" && inputIsEmail && (
+        <div className="px-6 pb-6 space-y-5 animate-slide-up text-center">
+          <Mail className="w-12 h-12 text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {labels.emailLinkSent}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {credential.trim()}
+          </p>
+          <button
+            type="button"
+            onClick={handleChangeCredential}
+            className="text-xs text-primary hover:underline"
+          >
+            {labels.changeCredential}
+          </button>
+        </div>
+      )}
+
+      {/* Step B: Phone OTP verify */}
+      {step === "verify" && !inputIsEmail && (
         <form onSubmit={handleVerify} className="px-6 pb-6 space-y-5 animate-slide-up">
           <div className="text-center space-y-1">
             <p className="text-sm text-muted-foreground">
