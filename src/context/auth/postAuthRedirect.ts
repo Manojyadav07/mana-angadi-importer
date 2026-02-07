@@ -2,9 +2,21 @@ import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types";
 import type { OnboardingStatus } from "./authHelpers";
 
+const USER_MODE_KEY = "mana-angadi-user-mode";
+
+function resolveRoute(): string {
+  const mode = localStorage.getItem(USER_MODE_KEY);
+  if (mode === "merchant") return "/merchant/orders";
+  if (mode === "delivery") return "/delivery/orders";
+  if (mode === "admin") return "/admin/dashboard";
+  // Default: ensure localStorage is set
+  localStorage.setItem(USER_MODE_KEY, "customer");
+  return "/home";
+}
+
 /**
- * Post-auth navigation: always sends users to /home.
- * Other dashboards are reached via the Switch Mode menu.
+ * Post-auth navigation: route based on user_mode in localStorage.
+ * Defaults to customer / /home if user_mode is missing.
  */
 export async function postAuthRedirect(
   maxRetries = 2
@@ -14,31 +26,16 @@ export async function postAuthRedirect(
     return { route: "/login", error: sessionError?.message };
   }
 
-  const userId = sessionData.session.user.id;
-
-  let role: UserRole | null = null;
-  let retryCount = 0;
-
-  while (retryCount <= maxRetries) {
-    const roleResult = await supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
-    if (roleResult.data?.role) {
-      role = roleResult.data.role as UserRole;
-      break;
-    }
-    retryCount++;
-    if (retryCount <= maxRetries) await new Promise(r => setTimeout(r, 500));
-  }
-
-  return { route: "/home" };
+  return { route: resolveRoute() };
 }
 
 /**
- * Synchronous fallback — always /home unless no role.
+ * Synchronous fallback — route based on user_mode localStorage.
  */
 export function getRouteForRoleSync(
-  role: UserRole | null,
+  _role: UserRole | null,
   _onboardingStatus?: OnboardingStatus,
   _hasShop?: boolean
 ): string {
-  return "/home";
+  return resolveRoute();
 }
