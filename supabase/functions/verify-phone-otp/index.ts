@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function phoneToEmail(phone: string): string {
+  return `phone_${phone.replace(/\+/g, "")}@auth.local`;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -58,18 +62,31 @@ serve(async (req: Request) => {
       .delete()
       .eq("phone", phone);
 
-    // Find or create user by phone
-    const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers();
+    const fakeEmail = phoneToEmail(phone);
     let userId: string;
     let isNew = false;
 
-    const existingUser = existingUsers?.find((u: any) => u.phone === phone);
+    // Find existing user by the fake email (primary identifier)
+    const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = allUsers?.find(
+      (u: any) => u.email === fakeEmail || u.phone === phone
+    );
 
     if (existingUser) {
       userId = existingUser.id;
+
+      // Ensure the user has the fake email set (for magic link to work)
+      if (!existingUser.email || existingUser.email !== fakeEmail) {
+        await supabaseAdmin.auth.admin.updateUser(userId, {
+          email: fakeEmail,
+          email_confirm: true,
+        });
+      }
     } else {
-      // Create new user with phone
+      // Create new user with fake email as primary + phone
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: fakeEmail,
+        email_confirm: true,
         phone,
         phone_confirm: true,
         user_metadata: { display_name: phone },
@@ -93,31 +110,26 @@ serve(async (req: Request) => {
       );
     }
 
-    // Generate a session token via admin
-    // We use generateLink with magiclink type to get a session
-    // But since we need a direct session, let's use a custom approach
-    // Sign the user in by generating an invite link that auto-confirms
-    
-    // Actually the cleanest way: use admin to get a session directly
-    // Supabase doesn't have a direct "create session" admin API, 
-    // so we generate a magic link and extract the token
-    
-    // For phone users, the best approach is to use Supabase's built-in phone sign-in
-    // since we've already verified the OTP ourselves
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generate magic link for the fake email – user exists with this email so it works
+    const { data: signInData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
-      email: `phone_${phone.replace(/\+/g, "")}@auth.local`,
+      email: fakeEmail,
     });
 
-    // Return the verification_token so the client can exchange it
+    if (linkError || !signInData?.properties?.hashed_token) {
+      console.error("Generate link error:", linkError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create session" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         user_id: userId,
         is_new: isNew,
-        // The client will need to use verifyOtp with the token_hash
-        token_hash: signInData?.properties?.hashed_token,
-        redirect_url: signInData?.properties?.action_link,
+        token_hash: signInData.properties.hashed_token,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
