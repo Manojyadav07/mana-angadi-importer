@@ -231,33 +231,73 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const signInWithOtp = async (credential: string) => {
     setAuthError(null);
     const isEmailCred = credential.includes("@");
-    const { error } = await supabase.auth.signInWithOtp(
-      isEmailCred ? { email: credential } : { phone: credential }
-    );
-    return { error };
+
+    if (isEmailCred) {
+      const { error } = await supabase.auth.signInWithOtp({ email: credential });
+      return { error };
+    } else {
+      // Phone OTP via edge function + Twilio
+      try {
+        const res = await supabase.functions.invoke("send-phone-otp", {
+          body: { phone: credential },
+        });
+        if (res.error) return { error: new Error(res.error.message || "Failed to send code") };
+        const data = res.data as any;
+        if (data?.error) return { error: new Error(data.error) };
+        return { error: null };
+      } catch (e: any) {
+        return { error: new Error(e?.message || "Failed to send code") };
+      }
+    }
   };
 
   const verifyOtp = async (credential: string, token: string) => {
     setAuthError(null);
     const isEmailCred = credential.includes("@");
-    const { error } = await supabase.auth.verifyOtp(
-      isEmailCred
-        ? { email: credential, token, type: "email" }
-        : { phone: credential, token, type: "sms" }
-    );
-    if (!error) {
-      // Ensure customer role for new OTP users
-      const { data: sessionData } = await supabase.auth.getSession();
-      const otpUser = sessionData.session?.user;
-      if (otpUser) {
-        const { data: existingRole } = await fetchRole(otpUser.id);
-        if (!existingRole?.role) {
-          await createRoleForUser(otpUser.id, "customer");
-          setRole("customer");
+
+    if (isEmailCred) {
+      const { error } = await supabase.auth.verifyOtp({
+        email: credential,
+        token,
+        type: "email",
+      });
+      if (!error) {
+        // Ensure customer role for new OTP users
+        const { data: sessionData } = await supabase.auth.getSession();
+        const otpUser = sessionData.session?.user;
+        if (otpUser) {
+          const { data: existingRole } = await fetchRole(otpUser.id);
+          if (!existingRole?.role) {
+            await createRoleForUser(otpUser.id, "customer");
+            setRole("customer");
+          }
         }
       }
+      return { error };
+    } else {
+      // Phone OTP verification via edge function
+      try {
+        const res = await supabase.functions.invoke("verify-phone-otp", {
+          body: { phone: credential, code: token },
+        });
+        if (res.error) return { error: new Error(res.error.message || "Verification failed") };
+        const data = res.data as any;
+        if (data?.error) return { error: new Error(data.error) };
+
+        if (data?.token_hash) {
+          // Exchange the token hash for a session
+          const { error: verifyErr } = await supabase.auth.verifyOtp({
+            token_hash: data.token_hash,
+            type: "magiclink",
+          });
+          if (verifyErr) return { error: verifyErr };
+        }
+
+        return { error: null };
+      } catch (e: any) {
+        return { error: new Error(e?.message || "Verification failed") };
+      }
     }
-    return { error };
   };
 
   const signOut = async () => {
