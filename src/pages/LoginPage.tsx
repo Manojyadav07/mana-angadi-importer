@@ -7,16 +7,11 @@ import {
   Store,
   ArrowRight,
   Loader2,
-  ShoppingBag,
-  Briefcase,
-  Truck,
-  Shield,
   Mail,
   Lock,
   User,
   Eye,
   EyeOff,
-  Globe,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { toast } from "sonner";
@@ -60,7 +55,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
+  const selectedRole: UserRole = "customer";
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const [signupState, setSignupState] = useState<SignupState>("form");
 
@@ -222,9 +217,7 @@ export function LoginPage() {
   // Signup success state
   if (signupState === "success") {
     const handleContinue = async () => {
-      // Use postAuthRedirect for proper role-based routing with shop check
-      const { route } = await postAuthRedirect();
-      navigate(route, { replace: true });
+      navigate("/home", { replace: true });
     };
 
     const handleBackToLogin = () => {
@@ -342,102 +335,6 @@ export function LoginPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 animate-slide-up">
-        {/* Role Selection (signup only) */}
-        {isSignUp && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">{t.loginAs || "I am a"}</p>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedRole("customer")}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                  selectedRole === "customer"
-                    ? "border-primary bg-primary/10 shadow-sm"
-                    : "border-border bg-card hover:border-muted-foreground/30"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    selectedRole === "customer" ? "bg-primary/20" : "bg-muted"
-                  }`}
-                >
-                  <ShoppingBag
-                    className={`w-5 h-5 ${selectedRole === "customer" ? "text-primary" : "text-muted-foreground"}`}
-                  />
-                </div>
-                <span className={`text-xs font-medium ${selectedRole === "customer" ? "text-primary" : "text-muted-foreground"}`}>
-                  {t.customer || "Customer"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedRole("merchant")}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                  selectedRole === "merchant"
-                    ? "border-primary bg-primary/10 shadow-sm"
-                    : "border-border bg-card hover:border-muted-foreground/30"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    selectedRole === "merchant" ? "bg-primary/20" : "bg-muted"
-                  }`}
-                >
-                  <Briefcase
-                    className={`w-5 h-5 ${selectedRole === "merchant" ? "text-primary" : "text-muted-foreground"}`}
-                  />
-                </div>
-                <span className={`text-xs font-medium ${selectedRole === "merchant" ? "text-primary" : "text-muted-foreground"}`}>
-                  {t.merchant}
-                </span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedRole("delivery")}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all ${
-                  selectedRole === "delivery"
-                    ? "border-primary bg-primary/10 shadow-sm"
-                    : "border-border bg-card hover:border-muted-foreground/30"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    selectedRole === "delivery" ? "bg-primary/20" : "bg-muted"
-                  }`}
-                >
-                  <Truck className={`w-4 h-4 ${selectedRole === "delivery" ? "text-primary" : "text-muted-foreground"}`} />
-                </div>
-                <span className={`text-xs font-medium ${selectedRole === "delivery" ? "text-primary" : "text-muted-foreground"}`}>
-                  {t.delivery}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedRole("admin")}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all ${
-                  selectedRole === "admin" ? "border-primary bg-primary/10 shadow-sm" : "border-border bg-card hover:border-muted-foreground/30"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    selectedRole === "admin" ? "bg-primary/20" : "bg-muted"
-                  }`}
-                >
-                  <Shield className={`w-4 h-4 ${selectedRole === "admin" ? "text-primary" : "text-muted-foreground"}`} />
-                </div>
-                <span className={`text-xs font-medium ${selectedRole === "admin" ? "text-primary" : "text-muted-foreground"}`}>
-                  {labels.adminLabel}
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Name (signup only) */}
         {isSignUp && (
