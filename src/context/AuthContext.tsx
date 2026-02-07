@@ -29,6 +29,8 @@ interface AuthContextType {
   authError: string | null;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithOtp: (credential: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (credential: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<ProfileRow>) => Promise<{ error: Error | null }>;
@@ -226,6 +228,38 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
+  const signInWithOtp = async (credential: string) => {
+    setAuthError(null);
+    const isEmailCred = credential.includes("@");
+    const { error } = await supabase.auth.signInWithOtp(
+      isEmailCred ? { email: credential } : { phone: credential }
+    );
+    return { error };
+  };
+
+  const verifyOtp = async (credential: string, token: string) => {
+    setAuthError(null);
+    const isEmailCred = credential.includes("@");
+    const { error } = await supabase.auth.verifyOtp(
+      isEmailCred
+        ? { email: credential, token, type: "email" }
+        : { phone: credential, token, type: "sms" }
+    );
+    if (!error) {
+      // Ensure customer role for new OTP users
+      const { data: sessionData } = await supabase.auth.getSession();
+      const otpUser = sessionData.session?.user;
+      if (otpUser) {
+        const { data: existingRole } = await fetchRole(otpUser.id);
+        if (!existingRole?.role) {
+          await createRoleForUser(otpUser.id, "customer");
+          setRole("customer");
+        }
+      }
+    }
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -342,6 +376,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         signUp,
         signUpWithRole,
         signIn,
+        signInWithOtp,
+        verifyOtp,
         signOut,
         resetPassword,
         updateProfile,
