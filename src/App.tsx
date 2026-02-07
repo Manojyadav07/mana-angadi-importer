@@ -34,7 +34,7 @@ import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
 import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
 import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
-import { ChooseRolePage } from "./pages/ChooseRolePage";
+
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -58,8 +58,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (user && role) return <Navigate to="/home" replace />;
-  if (user && !role) return <Navigate to="/choose-role" replace />;
+  if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
@@ -68,8 +67,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!role) return <Navigate to="/choose-role" replace />;
-  if (role !== "customer") return <Navigate to={getRouteForRoleSync(role)} replace />;
+  if (role && role !== "customer") return <Navigate to={getRouteForRoleSync(role)} replace />;
   return <>{children}</>;
 }
 
@@ -150,7 +148,6 @@ function ApplyRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!role) return <Navigate to="/choose-role" replace />;
   if (role === "customer" || role === "admin") return <Navigate to={getRouteForRoleSync(role)} replace />;
   // If already has an application, go to pending page
   if (onboardingStatus) {
@@ -182,7 +179,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-                  <Route path="/choose-role" element={<ChooseRolePage />} />
+                  <Route path="/choose-role" element={<Navigate to="/home" replace />} />
                   <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                   <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                   <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />

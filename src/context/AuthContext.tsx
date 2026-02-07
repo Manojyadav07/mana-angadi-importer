@@ -82,6 +82,12 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
 
       let finalRole = roleResult.data?.role as UserRole | null;
 
+      // Auto-assign customer role if none exists
+      if (!finalRole) {
+        const { role: created } = await createRoleForUser(nextUser.id, "customer");
+        finalRole = created ?? "customer";
+      }
+
       // Fetch onboarding status for merchant/delivery
       let finalOnboardingStatus: OnboardingStatus = null;
       if (finalRole === "merchant" || finalRole === "delivery") {
@@ -351,6 +357,12 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       }
 
       let finalRole = (roleRow?.role as UserRole | null) ?? null;
+
+      // Auto-assign customer role if none exists
+      if (!finalRole) {
+        const { role: created } = await createRoleForUser(nextUser.id, "customer");
+        finalRole = created ?? "customer";
+      }
 
       let finalOnboardingStatus: OnboardingStatus = null;
       if (finalRole === "merchant" || finalRole === "delivery") {
