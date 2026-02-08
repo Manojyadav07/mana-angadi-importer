@@ -16,7 +16,7 @@ export function BottomNav() {
   const customerNavItems = [
     { path: '/home', icon: <Home className="w-6 h-6" />, label: t.navHome },
     { path: '/favorites', icon: <Heart className="w-6 h-6" />, label: null },
-    { path: '/cart', icon: <GampaIcon className="w-6 h-6" />, label: null, badge: cartCount },
+    { path: '/cart', icon: <GampaIcon className="w-6 h-6 scale-110" />, label: null, badge: cartCount, emphasized: true },
     { path: '/orders', icon: <Package className="w-6 h-6" />, label: t.navOrders },
     { path: '/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
   ];
@@ -57,7 +57,7 @@ export function BottomNav() {
               onClick={() => navigate(item.path)}
               className={isActive ? 'bottom-nav-item-active' : 'bottom-nav-item'}
             >
-              <div className="relative">
+              <div className={`relative ${'emphasized' in item && (item as any).emphasized ? 'bg-primary/10 p-2 rounded-full -mt-1' : ''}`}>
                 {item.icon}
                 {'badge' in item && (item as any).badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-2xs rounded-full flex items-center justify-center font-bold">
