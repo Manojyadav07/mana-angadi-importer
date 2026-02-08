@@ -40,9 +40,9 @@ export function AvailabilityStrip() {
   };
 
   return (
-    <section className="px-4 mt-5">
+    <section className="px-4 mt-6">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
-        {language === 'en' ? 'Available Now' : 'ఇప్పుడు అందుబాటులో'}
+        {language === 'en' ? 'Available Today' : 'ఈరోజు అందుబాటులో'}
       </p>
       <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
         {items.map((item) => (
