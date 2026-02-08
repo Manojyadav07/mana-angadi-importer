@@ -35,6 +35,7 @@ import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
 import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
 
+import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -179,7 +180,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-                  {/* /choose-role removed — roles obtained via Apply + Admin approval */}
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                   <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                   <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
