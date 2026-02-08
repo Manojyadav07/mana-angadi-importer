@@ -14,7 +14,7 @@ export function VillageShops() {
   return (
     <section className="px-5 pt-4 pb-6">
       <p className="text-xs font-semibold text-muted-foreground tracking-wide mb-3">
-        {language === 'en' ? 'Mana ooru angadulu' : 'మన ఊరు అంగడులు'}
+        {language === 'en' ? 'Local shops near you' : 'మీ దగ్గర అంగడులు'}
       </p>
       <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-1">
         {visibleShops.map((shop) => {

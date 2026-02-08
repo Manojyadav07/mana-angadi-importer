@@ -16,7 +16,7 @@ export function BottomNav() {
   const customerNavItems = [
     { path: '/home', icon: <Home className="w-5 h-5" strokeWidth={1.5} />, label: t.navHome },
     { path: '/favorites', icon: <Heart className="w-5 h-5" strokeWidth={1.5} />, label: null },
-    { path: '/cart', icon: <GampaIcon className="w-6 h-6" strokeWidth={1.4} />, label: null, badge: cartCount, emphasized: true },
+    { path: '/cart', icon: <GampaIcon className="w-7 h-7" strokeWidth={1.3} />, label: null, badge: cartCount, emphasized: true },
     { path: '/orders', icon: <Package className="w-5 h-5" strokeWidth={1.5} />, label: t.navOrders },
     { path: '/profile', icon: <User className="w-5 h-5" strokeWidth={1.5} />, label: t.navProfile },
   ];

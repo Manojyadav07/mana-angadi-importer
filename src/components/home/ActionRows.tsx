@@ -38,7 +38,7 @@ export function ActionRows() {
   return (
     <section className="px-5 pt-4 pb-2">
       <p className="text-xs font-semibold text-muted-foreground tracking-wide mb-2">
-        {language === 'en' ? 'Mana Angadi panulu' : 'మన అంగడి పనులు'}
+        {language === 'en' ? 'Choose what you need' : 'మీకు కావలసింది ఎంచుకోండి'}
       </p>
       <div className="border-t border-border">
         {items.map((item) => (

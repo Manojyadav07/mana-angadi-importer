@@ -11,9 +11,7 @@ export function TopBar() {
     || user?.user_metadata?.full_name
     || (user?.email ? user.email.split('@')[0] : null);
 
-  const greeting = displayName
-    ? `${displayName} gaaru`
-    : language === 'en' ? 'Welcome' : 'స్వాగతం';
+  const nameDisplay = displayName || (language === 'en' ? 'Mana Angadi' : 'మన అంగడి');
 
   const location = language === 'en' ? 'Metlachittapur' : 'మెట్లచిట్టాపూర్';
 
@@ -27,7 +25,7 @@ export function TopBar() {
       {/* Center: name + village */}
       <div className="flex-1 mx-3 text-center">
         <p className="text-base font-bold text-primary-foreground leading-tight truncate">
-          {greeting}
+          {nameDisplay}
         </p>
         <p className="text-2xs text-primary-foreground/60 leading-tight truncate mt-0.5">
           {location}
