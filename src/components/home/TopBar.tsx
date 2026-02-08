@@ -1,12 +1,12 @@
-import { Leaf, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { GampaIcon } from './GampaIcon';
 
 export function TopBar() {
   const { language } = useLanguage();
   const { user } = useAuth();
 
-  // Extract display name from user metadata or email
   const displayName = user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || (user?.email ? user.email.split('@')[0] : null);
@@ -19,24 +19,24 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-20 bg-primary px-4 py-3 flex items-center justify-between">
-      {/* Leaf branding */}
-      <div className="w-10 h-10 rounded-full bg-primary-foreground/15 flex items-center justify-center flex-shrink-0">
-        <Leaf className="w-5 h-5 text-primary-foreground" />
+      {/* Mana Angadi icon */}
+      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-primary-foreground opacity-80">
+        <GampaIcon className="w-6 h-6" strokeWidth={1.8} />
       </div>
 
-      {/* Center: location + name */}
+      {/* Center: name + village */}
       <div className="flex-1 mx-3 text-center">
-        <p className="text-xs text-primary-foreground/70 leading-tight truncate">
-          {location}
-        </p>
         <p className="text-base font-bold text-primary-foreground leading-tight truncate">
           {greeting}
+        </p>
+        <p className="text-2xs text-primary-foreground/60 leading-tight truncate mt-0.5">
+          {location}
         </p>
       </div>
 
       {/* Notification bell */}
-      <button className="w-10 h-10 rounded-full bg-primary-foreground/15 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform">
-        <Bell className="w-5 h-5 text-primary-foreground" />
+      <button className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-primary-foreground opacity-70 active:opacity-100 transition-opacity">
+        <Bell className="w-5 h-5" strokeWidth={1.5} />
       </button>
     </header>
   );

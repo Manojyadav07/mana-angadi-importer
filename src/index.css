@@ -22,46 +22,46 @@
 
 @layer base {
   :root {
-    /* Warm, earthy village palette */
-    --background: 45 30% 97%;
-    --foreground: 25 20% 20%;
+    /* Warm cloth-tone off-white — like painted village board */
+    --background: 36 47% 97%;
+    --foreground: 25 25% 18%;
 
-    --card: 45 40% 99%;
-    --card-foreground: 25 20% 20%;
+    --card: 36 40% 98%;
+    --card-foreground: 25 25% 18%;
 
-    --popover: 45 40% 99%;
-    --popover-foreground: 25 20% 20%;
+    --popover: 36 40% 98%;
+    --popover-foreground: 25 25% 18%;
 
-    /* Soft sage green - trust, nature, freshness */
-    --primary: 145 35% 42%;
-    --primary-foreground: 45 40% 99%;
+    /* Muted leaf green — calm, not app-bright */
+    --primary: 150 28% 38%;
+    --primary-foreground: 36 47% 97%;
 
-    /* Warm cream */
-    --secondary: 40 30% 94%;
-    --secondary-foreground: 25 20% 25%;
+    /* Warm cream / clay */
+    --secondary: 33 25% 92%;
+    --secondary-foreground: 25 20% 28%;
 
-    /* Muted earthy tones */
-    --muted: 40 20% 92%;
-    --muted-foreground: 25 15% 45%;
+    /* Mud-brown earthy muted tones */
+    --muted: 30 18% 90%;
+    --muted-foreground: 25 12% 48%;
 
-    /* Terracotta accent for CTAs */
-    --accent: 18 70% 55%;
-    --accent-foreground: 45 40% 99%;
+    /* Earthy terracotta accent — very soft */
+    --accent: 18 55% 50%;
+    --accent-foreground: 36 47% 97%;
 
     /* Status colors */
-    --success: 145 50% 45%;
-    --success-foreground: 45 40% 99%;
-    
-    --warning: 35 90% 55%;
+    --success: 145 40% 42%;
+    --success-foreground: 36 47% 97%;
+
+    --warning: 40 75% 52%;
     --warning-foreground: 25 20% 15%;
 
-    --destructive: 0 65% 55%;
-    --destructive-foreground: 45 40% 99%;
+    --destructive: 0 55% 52%;
+    --destructive-foreground: 36 47% 97%;
 
-    /* Borders and inputs */
-    --border: 35 25% 88%;
-    --input: 35 25% 88%;
-    --ring: 145 35% 42%;
+    /* Borders — soft earthy line */
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 150 28% 38%;
 
     --radius: 0.75rem;
 
@@ -87,34 +87,34 @@
   }
 
   .dark {
-    /* Keep same palette for now - village users prefer consistency */
-    --background: 45 30% 97%;
-    --foreground: 25 20% 20%;
-    --card: 45 40% 99%;
-    --card-foreground: 25 20% 20%;
-    --popover: 45 40% 99%;
-    --popover-foreground: 25 20% 20%;
-    --primary: 145 35% 42%;
-    --primary-foreground: 45 40% 99%;
-    --secondary: 40 30% 94%;
-    --secondary-foreground: 25 20% 25%;
-    --muted: 40 20% 92%;
-    --muted-foreground: 25 15% 45%;
-    --accent: 18 70% 55%;
-    --accent-foreground: 45 40% 99%;
-    --destructive: 0 65% 55%;
-    --destructive-foreground: 45 40% 99%;
-    --border: 35 25% 88%;
-    --input: 35 25% 88%;
-    --ring: 145 35% 42%;
-    --sidebar-background: 45 30% 97%;
-    --sidebar-foreground: 25 20% 20%;
-    --sidebar-primary: 145 35% 42%;
-    --sidebar-primary-foreground: 45 40% 99%;
-    --sidebar-accent: 40 30% 94%;
-    --sidebar-accent-foreground: 25 20% 25%;
-    --sidebar-border: 35 25% 88%;
-    --sidebar-ring: 145 35% 42%;
+    /* Village users prefer consistency — same warm palette */
+    --background: 36 47% 97%;
+    --foreground: 25 25% 18%;
+    --card: 36 40% 98%;
+    --card-foreground: 25 25% 18%;
+    --popover: 36 40% 98%;
+    --popover-foreground: 25 25% 18%;
+    --primary: 150 28% 38%;
+    --primary-foreground: 36 47% 97%;
+    --secondary: 33 25% 92%;
+    --secondary-foreground: 25 20% 28%;
+    --muted: 30 18% 90%;
+    --muted-foreground: 25 12% 48%;
+    --accent: 18 55% 50%;
+    --accent-foreground: 36 47% 97%;
+    --destructive: 0 55% 52%;
+    --destructive-foreground: 36 47% 97%;
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 150 28% 38%;
+    --sidebar-background: 36 47% 97%;
+    --sidebar-foreground: 25 25% 18%;
+    --sidebar-primary: 150 28% 38%;
+    --sidebar-primary-foreground: 36 47% 97%;
+    --sidebar-accent: 33 25% 92%;
+    --sidebar-accent-foreground: 25 20% 28%;
+    --sidebar-border: 30 20% 85%;
+    --sidebar-ring: 150 28% 38%;
   }
 }
 

@@ -1,17 +1,23 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { TopBar } from '@/components/home/TopBar';
-import { CategoryGrid } from '@/components/home/CategoryGrid';
-import { AvailabilityStrip } from '@/components/home/AvailabilityStrip';
+import { AvailabilitySection } from '@/components/home/AvailabilitySection';
+import { ActionRows } from '@/components/home/ActionRows';
+import { GamppaSection } from '@/components/home/GamppaSection';
+import { VillageShops } from '@/components/home/VillageShops';
+import { SectionDivider } from '@/components/home/SectionDivider';
 
 export function HomePage() {
   return (
     <MobileLayout>
       <TopBar />
-      <div className="mt-2">
-        <CategoryGrid />
-        <AvailabilityStrip />
-      </div>
-      <div className="h-6" />
+      <AvailabilitySection />
+      <SectionDivider />
+      <ActionRows />
+      <SectionDivider />
+      <GamppaSection />
+      <SectionDivider />
+      <VillageShops />
+      <div className="h-4" />
     </MobileLayout>
   );
 }
