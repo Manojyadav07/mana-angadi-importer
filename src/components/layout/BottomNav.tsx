@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Heart, Package, User } from 'lucide-react';
-import { GampaIcon } from '@/components/home/GampaIcon';
+import gampaBasket from '@/assets/gampa-basket.jpeg';
 import { useApp } from '@/context/AppContext';
 import { useUserMode } from '@/context/UserModeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -16,7 +16,7 @@ export function BottomNav() {
   const customerNavItems = [
     { path: '/home', icon: <Home className="w-6 h-6" />, label: t.navHome },
     { path: '/favorites', icon: <Heart className="w-6 h-6" />, label: null },
-    { path: '/cart', icon: <GampaIcon className="w-6 h-6 scale-110" />, label: null, badge: cartCount, emphasized: true },
+    { path: '/cart', icon: <img src={gampaBasket} alt="Basket" className="w-7 h-7 object-contain" />, label: null, badge: cartCount, emphasized: true },
     { path: '/orders', icon: <Package className="w-6 h-6" />, label: t.navOrders },
     { path: '/profile', icon: <User className="w-6 h-6" />, label: t.navProfile },
   ];
