@@ -239,7 +239,12 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     const isEmailCred = credential.includes("@");
 
     if (isEmailCred) {
-      const { error } = await supabase.auth.signInWithOtp({ email: credential });
+      const { error } = await supabase.auth.signInWithOtp({
+        email: credential,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth/callback",
+        },
+      });
       return { error };
     } else {
       // Phone OTP via edge function + Twilio
