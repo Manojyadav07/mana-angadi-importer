@@ -179,7 +179,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-                  <Route path="/choose-role" element={<Navigate to="/home" replace />} />
+                  {/* /choose-role removed — roles obtained via Apply + Admin approval */}
                   <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                   <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                   <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
