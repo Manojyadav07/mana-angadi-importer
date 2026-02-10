@@ -14,22 +14,22 @@ export function ActionRows() {
 
   const items: ActionItem[] = [
     {
-      icon: <UtensilsCrossed className="w-4.5 h-4.5" strokeWidth={1.4} />,
+      icon: <UtensilsCrossed className="w-4 h-4 opacity-40" strokeWidth={1.2} />,
       label: language === 'en' ? 'Food' : 'ఆహారం',
       path: '/home',
     },
     {
-      icon: <ShoppingBasket className="w-4.5 h-4.5" strokeWidth={1.4} />,
+      icon: <ShoppingBasket className="w-4 h-4 opacity-40" strokeWidth={1.2} />,
       label: language === 'en' ? 'Grocery' : 'కిరాణా',
       path: '/home',
     },
     {
-      icon: <Pill className="w-4.5 h-4.5" strokeWidth={1.4} />,
+      icon: <Pill className="w-4 h-4 opacity-40" strokeWidth={1.2} />,
       label: language === 'en' ? 'Pharmacy' : 'మందులు',
       path: '/home',
     },
     {
-      icon: <Apple className="w-4.5 h-4.5" strokeWidth={1.4} />,
+      icon: <Apple className="w-4 h-4 opacity-40" strokeWidth={1.2} />,
       label: language === 'en' ? 'Vegetables & Fruits' : 'కూరగాయలు & పండ్లు',
       path: '/home',
     },
@@ -45,7 +45,7 @@ export function ActionRows() {
           <button
             key={item.label}
             onClick={() => navigate(item.path)}
-            className="w-full flex items-center gap-3 py-3.5 border-b border-border active:bg-muted/50 transition-colors touch-manipulation"
+            className="w-full flex items-center gap-3.5 py-4 border-b border-border/70 active:bg-muted/30 transition-colors touch-manipulation"
           >
             <span className="text-muted-foreground">{item.icon}</span>
             <span className="text-sm font-medium text-foreground flex-1 text-left">{item.label}</span>
