@@ -24,15 +24,24 @@ export function MerchantPromotion() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hidden, setHidden] = useState(false);
 
-  useEffect(() => {
-    setHidden(isDismissedToday());
-  }, []);
-
   // Level 2 — merchant promotions (will later come from DB)
   const promos: Promo[] = [
     { id: 'lakshmi-10', merchant: 'Lakshmi Stores', message: '10% off on groceries today' },
     { id: 'ravi-free', merchant: 'Ravi Medical', message: 'Free delivery on medicines this week' },
   ];
+
+  useEffect(() => {
+    setHidden(isDismissedToday());
+  }, []);
+
+  // Slow auto-rotate every 8 seconds
+  useEffect(() => {
+    if (hidden || promos.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % promos.length);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [hidden, promos.length]);
 
   if (hidden || promos.length === 0) return null;
 
