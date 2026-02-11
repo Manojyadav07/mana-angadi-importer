@@ -33,7 +33,6 @@ export function PromotionStrip() {
     setHidden(isDismissedToday());
   }, []);
 
-  // Slow auto-rotate every 7 seconds
   useEffect(() => {
     if (hidden || promos.length <= 1) return;
     const timer = setInterval(() => {
@@ -53,10 +52,15 @@ export function PromotionStrip() {
 
   return (
     <section className="px-5 pt-4 pb-1">
-      <div className="bg-card rounded-xl px-4 py-3 flex items-center justify-between gap-3 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.03)]">
-        <p className="text-[13px] text-foreground/70 leading-snug flex-1 min-w-0">
-          {current.text}
-        </p>
+      <div className="bg-card rounded-xl px-4 py-3 flex items-center justify-between gap-3 border border-border/40">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[10px] font-medium tracking-wide uppercase text-accent flex-shrink-0">
+            Featured
+          </span>
+          <p className="text-[13px] text-foreground/70 leading-snug flex-1 min-w-0 truncate">
+            {current.text}
+          </p>
+        </div>
         <button
           onClick={handleDismiss}
           className="flex-shrink-0 text-muted-foreground/30 active:text-muted-foreground/60 transition-colors touch-manipulation"
