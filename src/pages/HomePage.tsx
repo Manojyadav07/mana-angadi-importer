@@ -1,17 +1,15 @@
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { TopBar } from '@/components/home/TopBar';
-import { ActionRows } from '@/components/home/ActionRows';
-import { CommunityUpdates } from '@/components/home/CommunityUpdates';
-import { MerchantPromotion } from '@/components/home/MerchantPromotion';
+import { PromotionStrip } from '@/components/home/PromotionStrip';
+import { CategoryGrid } from '@/components/home/CategoryGrid';
 import { VillageShops } from '@/components/home/VillageShops';
 
 export function HomePage() {
   return (
     <MobileLayout>
       <TopBar />
-      <ActionRows />
-      <CommunityUpdates />
-      <MerchantPromotion />
+      <PromotionStrip />
+      <CategoryGrid />
       <VillageShops />
     </MobileLayout>
   );
