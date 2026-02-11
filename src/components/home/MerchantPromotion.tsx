@@ -39,7 +39,7 @@ export function MerchantPromotion() {
     if (hidden || promos.length <= 1) return;
     const timer = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % promos.length);
-    }, 7000);
+    }, 8000);
     return () => clearInterval(timer);
   }, [hidden, promos.length]);
 
