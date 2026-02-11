@@ -12,11 +12,11 @@ export function TopBar() {
 
   return (
     <header className="relative overflow-hidden" style={{ minHeight: 170 }}>
-      {/* Village watercolor background — subtle, low contrast */}
+      {/* Village watercolor background — subtle, low contrast, no overlay */}
       <img
         src={villageHeaderBg}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover opacity-[0.18]"
+        className="absolute inset-0 w-full h-full object-cover opacity-[0.14]"
         aria-hidden="true"
       />
 
