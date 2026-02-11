@@ -1,6 +1,7 @@
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { GampaIcon } from './GampaIcon';
+import villageHeaderBg from '@/assets/village-header-bg.jpg';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -17,29 +18,45 @@ export function TopBar() {
     || (user?.email ? user.email.split('@')[0] : null);
 
   return (
-    <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm px-5 py-3 flex items-center justify-between">
-      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-muted-foreground/40">
-        <GampaIcon className="w-5 h-5" strokeWidth={1.5} />
-      </div>
+    <header className="relative overflow-hidden" style={{ minHeight: 160 }}>
+      {/* Village illustration background */}
+      <img
+        src={villageHeaderBg}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        aria-hidden="true"
+      />
+      {/* Soft tint overlay */}
+      <div className="absolute inset-0 bg-[hsl(150_28%_28%/0.45)]" />
 
-      <div className="flex-1 mx-3 text-center">
-        {displayName ? (
-          <p className="text-[14px] font-medium text-foreground/70 leading-tight truncate">
-            {getGreeting()}, {displayName} Gaaru
-          </p>
-        ) : (
-          <p className="text-[14px] font-medium text-foreground/70 leading-tight truncate">
-            Welcome back
-          </p>
-        )}
-        <p className="text-[10px] text-muted-foreground/50 leading-tight truncate mt-0.5">
-          Metlachittapur
-        </p>
-      </div>
+      {/* Content */}
+      <div className="relative z-10 flex items-start justify-between px-5 pt-5 pb-6">
+        {/* Left: icon + greeting */}
+        <div className="flex flex-col gap-3">
+          <div className="w-10 h-10 rounded-full bg-[hsl(36_47%_97%/0.2)] backdrop-blur-sm flex items-center justify-center">
+            <GampaIcon className="w-5 h-5 text-[hsl(36_47%_97%/0.9)]" strokeWidth={1.5} />
+          </div>
+          <div>
+            {displayName ? (
+              <p className="text-[16px] font-medium text-[hsl(36_47%_97%/0.95)] leading-tight">
+                {displayName} Gaaru
+              </p>
+            ) : (
+              <p className="text-[16px] font-medium text-[hsl(36_47%_97%/0.95)] leading-tight">
+                Welcome back
+              </p>
+            )}
+            <p className="text-[11px] text-[hsl(36_47%_97%/0.6)] leading-tight mt-1">
+              Metlachittapur
+            </p>
+          </div>
+        </div>
 
-      <button className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-muted-foreground/30 active:text-muted-foreground/60 transition-colors">
-        <Bell className="w-[18px] h-[18px]" strokeWidth={1.3} />
-      </button>
+        {/* Right: bell */}
+        <button className="w-9 h-9 flex items-center justify-center text-[hsl(36_47%_97%/0.5)] active:text-[hsl(36_47%_97%/0.8)] transition-colors mt-1">
+          <Bell className="w-[18px] h-[18px]" strokeWidth={1.3} />
+        </button>
+      </div>
     </header>
   );
 }
