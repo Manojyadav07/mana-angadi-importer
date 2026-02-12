@@ -175,7 +175,9 @@ export function LoginPage() {
       }
 
       toast.success(t.loggedIn);
-      navigate("/login/success", { replace: true, state: { userName: userName.trim() || undefined } });
+      const enteredName = userName.trim();
+      if (enteredName) localStorage.setItem("mana-angadi-user-name", enteredName);
+      navigate("/login/success", { replace: true, state: { userName: enteredName || undefined } });
     } catch {
       toast.error(t.somethingWrong);
     } finally {
@@ -232,7 +234,9 @@ export function LoginPage() {
                 return;
               }
               toast.success(t.loggedIn);
-              navigate("/login/success", { replace: true, state: { userName: userName.trim() || undefined } });
+              const enteredName = userName.trim();
+              if (enteredName) localStorage.setItem("mana-angadi-user-name", enteredName);
+              navigate("/login/success", { replace: true, state: { userName: enteredName || undefined } });
             } catch {
               toast.error(t.somethingWrong);
             } finally {

@@ -25,7 +25,9 @@ export function LoginSuccessPage() {
   const { language } = useLanguage();
   const t = translations[language];
 
-  const userName = (location.state as any)?.userName || "User";
+  const userName = (location.state as any)?.userName
+    || localStorage.getItem("mana-angadi-user-name")
+    || "User";
 
   return (
     <div
