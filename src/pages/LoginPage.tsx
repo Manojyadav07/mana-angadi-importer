@@ -7,6 +7,7 @@ import { ArrowRight, Loader2, Mail, Phone, Leaf } from "lucide-react";
 import { toast } from "sonner";
 import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { OtpVerifyScreen } from "@/components/auth/OtpVerifyScreen";
 
 const WELCOME_SHOWN_KEY = "mana-angadi-welcome-shown";
 
@@ -208,6 +209,47 @@ export function LoginPage() {
   }
 
   const inputIsEmail = isEmail(credential);
+
+  // Phone OTP verify - render as full screen takeover
+  if (step === "verify" && !inputIsEmail) {
+    return (
+      <OtpVerifyScreen
+        phone={credential.trim()}
+        onVerify={(code) => {
+          setOtpCode(code);
+          const doVerify = async () => {
+            setIsSubmitting(true);
+            try {
+              const { error: verifyError } = await verifyOtp(credential.trim(), code);
+              if (verifyError) {
+                const msg = verifyError.message.toLowerCase();
+                if (msg.includes("expired") || msg.includes("invalid")) {
+                  toast.error(t.invalidCode);
+                } else if (msg.includes("rate") || msg.includes("limit")) {
+                  toast.error(t.tooManyVerify);
+                } else {
+                  toast.error(verifyError.message);
+                }
+                return;
+              }
+              toast.success(t.loggedIn);
+              const { route } = await postAuthRedirect();
+              navigate(route, { replace: true });
+            } catch {
+              toast.error(t.somethingWrong);
+            } finally {
+              setIsSubmitting(false);
+            }
+          };
+          doVerify();
+        }}
+        onResend={handleResend}
+        onChangePhone={handleChangeCredential}
+        isSubmitting={isSubmitting}
+        resendCountdown={resendCountdown}
+      />
+    );
+  }
 
   return (
     <div
@@ -443,74 +485,8 @@ export function LoginPage() {
         </div>
       )}
 
-      {/* Step B: Phone OTP verify */}
-      {step === "verify" && !inputIsEmail && (
-        <form onSubmit={handleVerify} className="space-y-5 mt-4">
-          <div className="text-center space-y-1">
-            <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
-              {t.sentTo}{" "}
-              <span className="font-medium" style={{ color: "#1A1A1A" }}>{credential.trim()}</span>
-            </p>
-            <button
-              type="button"
-              onClick={handleChangeCredential}
-              className="text-xs hover:underline"
-              style={{ color: "#2DB92D" }}
-            >
-              {t.change}
-            </button>
-          </div>
 
-          <div className="flex justify-center">
-            <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          {error && <p className="text-xs text-center" style={{ color: "hsl(0,55%,52%)" }}>{error}</p>}
 
-          <button
-            type="submit"
-            disabled={isSubmitting || otpCode.length !== 6}
-            className="w-full font-semibold py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            style={{
-              backgroundColor: "#2DB92D",
-              color: "#FFFFFF",
-              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.2)",
-            }}
-          >
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-              <>
-                {t.verify}
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
-
-          <div className="text-center">
-            {resendCountdown > 0 ? (
-              <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
-                {t.resendIn} {resendCountdown}s
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={handleResend}
-                className="text-sm hover:underline"
-                style={{ color: "#2DB92D" }}
-              >
-                {t.resend}
-              </button>
-            )}
-          </div>
-        </form>
-      )}
 
       {/* Footer — Bottom home indicator */}
       <div className="mt-auto pt-10 flex justify-center">
