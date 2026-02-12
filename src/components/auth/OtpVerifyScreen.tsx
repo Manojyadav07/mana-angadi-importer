@@ -1,8 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { ArrowLeft, ArrowRight, Signal, Wifi, BatteryFull, Clock } from "lucide-react";
-import culturalTextile from "@/assets/cultural-textile.jpg";
-import culturalPaddy from "@/assets/cultural-paddy.jpg";
-import culturalPottery from "@/assets/cultural-pottery.jpg";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
 
 interface OtpVerifyScreenProps {
   phone: string;
@@ -21,40 +18,46 @@ export function OtpVerifyScreen({
   isSubmitting,
   resendCountdown,
 }: OtpVerifyScreenProps) {
-  const [digits, setDigits] = useState<string[]>(["", "", "", ""]);
+  const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [agreed, setAgreed] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  const handleChange = useCallback(
-    (index: number, value: string) => {
-      if (!/^\d?$/.test(value)) return;
-      const next = [...digits];
-      next[index] = value;
-      setDigits(next);
-      if (value && index < 3) {
-        inputRefs.current[index + 1]?.focus();
-      }
-    },
-    [digits],
-  );
+  const handleChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return;
+    const next = [...digits];
+    next[index] = value;
+    setDigits(next);
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
 
-  const handleKeyDown = useCallback(
-    (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Backspace" && !digits[index] && index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      }
-    },
-    [digits],
-  );
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
-  const code = digits.join("");
-  const isComplete = code.length === 4;
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const next = [...digits];
+    for (let i = 0; i < 6; i++) {
+      next[i] = pasted[i] || "";
+    }
+    setDigits(next);
+    const focusIdx = Math.min(pasted.length, 5);
+    inputRefs.current[focusIdx]?.focus();
+  };
 
   const handleSubmit = () => {
-    if (isComplete) onVerify(code);
+    const code = digits.join("");
+    if (code.length === 6) onVerify(code);
   };
 
   const formatTime = (s: number) => {
@@ -63,227 +66,158 @@ export function OtpVerifyScreen({
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
+  const allFilled = digits.every((d) => d !== "");
+
   return (
-    <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: "#F9F8F4" }}>
-      {/* Device Frame */}
+    <div
+      className="min-h-screen flex flex-col relative"
+      style={{ backgroundColor: "#F9F8F4", color: "#1A1A1A", fontFamily: "'Newsreader', serif" }}
+    >
+      {/* Dotted background pattern */}
       <div
-        className="relative flex flex-col overflow-hidden mx-auto w-full"
+        className="fixed inset-0 -z-10 pointer-events-none"
         style={{
-          maxWidth: 400,
-          minHeight: 812,
-          backgroundColor: "#F9F8F4",
-          borderRadius: "3rem",
-          border: "8px solid rgba(26,26,26,0.05)",
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)",
+          opacity: 0.02,
+          backgroundImage: "radial-gradient(circle, #1A1A1A 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
         }}
+      />
+
+      {/* Sticky Top Nav */}
+      <div
+        className="sticky top-0 w-full px-6 py-4 flex items-center justify-between z-10"
+        style={{ backgroundColor: "rgba(249,248,244,0.8)", backdropFilter: "blur(8px)" }}
       >
-        {/* Dotted background pattern */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: 0.03,
-            backgroundImage:
-              "radial-gradient(circle, #1A1A1A 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
+        <button
+          type="button"
+          onClick={onChangePhone}
+          className="w-10 h-10 flex items-center justify-center"
+        >
+          <ArrowLeft size={24} color="#1A1A1A" />
+        </button>
 
-        {/* Status Bar */}
-        <div className="flex items-center justify-between px-8" style={{ height: 48 }}>
-          <span
-            className="font-semibold"
-            style={{ fontSize: 14, color: "#1A1A1A" }}
-          >
-            9:41
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Signal size={16} style={{ color: "#1A1A1A" }} />
-            <Wifi size={16} style={{ color: "#1A1A1A" }} />
-            <BatteryFull size={16} style={{ color: "#1A1A1A" }} />
-          </div>
-        </div>
+        <span
+          className="absolute left-1/2 -translate-x-1/2 font-bold uppercase"
+          style={{ fontSize: 10, letterSpacing: "0.3em", color: "rgba(26,26,26,0.4)" }}
+        >
+          MANA ANGADI
+        </span>
 
-        {/* Back Button */}
-        <div className="p-6">
-          <button
-            type="button"
-            onClick={onChangePhone}
-            className="flex items-center justify-center transition-opacity hover:opacity-80"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: "9999px",
-              backgroundColor: "#FFFFFF",
-              border: "1px solid rgba(26,26,26,0.05)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            }}
-          >
-            <ArrowLeft size={20} style={{ color: "#1A1A1A" }} />
-          </button>
-        </div>
+        <div className="w-10" />
+      </div>
 
-        {/* Header Content */}
-        <div className="flex flex-col items-center px-6">
-          {/* Brand Pill */}
-          <div
-            className="mb-6 font-bold uppercase"
-            style={{
-              fontSize: 10,
-              letterSpacing: "0.2em",
-              padding: "6px 16px",
-              borderRadius: "9999px",
-              border: "1px solid rgba(45,185,45,0.2)",
-              backgroundColor: "rgba(45,185,45,0.05)",
-              color: "#2DB92D",
-            }}
-          >
-            MANA ANGADI
-          </div>
-
-          {/* Title */}
+      {/* Main content */}
+      <div className="max-w-lg mx-auto w-full flex flex-col px-6 pb-10 flex-1">
+        {/* Header */}
+        <div className="mt-8 mb-12 text-center">
           <h1
-            className="font-medium italic leading-tight text-center"
-            style={{
-              fontFamily: "'Newsreader', serif",
-              fontSize: 32,
-              color: "#1A1A1A",
-            }}
+            className="font-medium italic leading-tight"
+            style={{ fontSize: 32, color: "#1A1A1A" }}
           >
             Verify your Number
           </h1>
-
-          {/* Subtitle */}
           <p
-            className="mt-4 text-center leading-relaxed"
-            style={{
-              fontSize: 18,
-              color: "#757575",
-              maxWidth: 240,
-            }}
+            className="mt-4 text-lg leading-relaxed mx-auto"
+            style={{ color: "#757575", maxWidth: 280 }}
           >
-            We've sent a 4-digit code to your mobile.
+            We've sent a 6-digit code to your mobile number.
           </p>
         </div>
 
         {/* OTP Inputs */}
-        <div className="flex justify-between gap-3 px-12 mt-10">
-          {digits.map((d, i) => (
+        <div className="flex justify-center gap-2 sm:gap-3 mb-10" onPaste={handlePaste}>
+          {digits.map((digit, i) => (
             <input
               key={i}
               ref={(el) => { inputRefs.current[i] = el; }}
               type="text"
               inputMode="numeric"
               maxLength={1}
-              value={d}
+              value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className="text-center font-medium transition-colors"
+              className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-medium rounded-xl bg-white transition-all outline-none"
               style={{
-                width: 64,
-                height: 80,
-                fontSize: 28,
-                borderRadius: "0.75rem",
-                border: d
-                  ? "2px solid #2DB92D"
-                  : "2px solid rgba(26,26,26,0.05)",
-                backgroundColor: "#FFFFFF",
+                border: `1px solid ${digit ? "#2DB92D" : "rgba(26,26,26,0.1)"}`,
                 color: "#1A1A1A",
-                outline: "none",
                 WebkitTapHighlightColor: "transparent",
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = "#2DB92D";
+                e.target.style.border = "1px solid #2DB92D";
+                e.target.style.boxShadow = "0 0 0 3px rgba(45,185,45,0.15)";
               }}
               onBlur={(e) => {
-                if (!e.target.value) {
-                  e.target.style.borderColor = "rgba(26,26,26,0.05)";
-                }
+                e.target.style.border = `1px solid ${digit ? "#2DB92D" : "rgba(26,26,26,0.1)"}`;
+                e.target.style.boxShadow = "none";
               }}
             />
           ))}
         </div>
 
-        {/* Countdown + Resend */}
-        <div className="mt-12 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2" style={{ color: "#757575" }}>
+        {/* Resend + Edit */}
+        <div className="space-y-6 text-center mb-12">
+          <div className="flex items-center justify-center gap-2" style={{ color: "#2DB92D" }}>
             <Clock size={18} />
-            <span>
+            <span className="text-base font-medium">
               Resend code in{" "}
-              <span
-                className="italic font-medium"
-                style={{ color: "#2DB92D" }}
-              >
-                {formatTime(resendCountdown)}
-              </span>
+              <span className="italic">{formatTime(resendCountdown)}</span>
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onChangePhone}
-            className="font-medium underline underline-offset-4 transition-opacity hover:opacity-70"
-            style={{
-              color: "#2DB92D",
-              textDecorationColor: "rgba(45,185,45,0.3)",
-            }}
-          >
-            Edit Phone Number
-          </button>
+
+          {resendCountdown <= 0 ? (
+            <button
+              type="button"
+              onClick={onResend}
+              className="text-base font-medium underline underline-offset-4 transition-opacity hover:opacity-80"
+              style={{ color: "#2DB92D", textDecorationColor: "rgba(45,185,45,0.3)" }}
+            >
+              Resend Code
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onChangePhone}
+              className="text-base font-medium underline underline-offset-4 transition-opacity hover:opacity-80"
+              style={{ color: "#2DB92D", textDecorationColor: "rgba(45,185,45,0.3)" }}
+            >
+              Edit Phone Number
+            </button>
+          )}
         </div>
 
-        {/* Cultural Image Strip */}
-        <div className="flex justify-center gap-3 mt-10" style={{ opacity: 0.6 }}>
-          <img
-            src={culturalTextile}
-            alt="Rural textile"
-            className="object-cover rotate-3"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "1rem",
-              border: "2px solid white",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            }}
-          />
-          <img
-            src={culturalPaddy}
-            alt="Paddy fields"
-            className="object-cover -rotate-6"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "1rem",
-              border: "2px solid white",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            }}
-          />
-          <img
-            src={culturalPottery}
-            alt="Village pottery"
-            className="object-cover rotate-6"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "1rem",
-              border: "2px solid white",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            }}
-          />
-        </div>
+        {/* Consent */}
+        <div className="space-y-8">
+          <label className="flex items-start gap-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="w-5 h-5 rounded border cursor-pointer mt-0.5 accent-[#2DB92D]"
+              style={{ borderColor: "rgba(26,26,26,0.2)" }}
+            />
+            <span className="text-sm leading-relaxed" style={{ color: "#757575" }}>
+              By proceeding, I agree to the{" "}
+              <span className="underline underline-offset-2 font-medium" style={{ color: "#1A1A1A" }}>
+                Terms of Service
+              </span>{" "}
+              and{" "}
+              <span className="underline underline-offset-2 font-medium" style={{ color: "#1A1A1A" }}>
+                Privacy Policy
+              </span>
+              .
+            </span>
+          </label>
 
-        {/* Verify Button */}
-        <div className="px-6 mt-auto mb-6">
+          {/* Primary Button */}
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!isComplete || isSubmitting}
-            className="w-full flex items-center justify-center gap-3 font-medium transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!allFilled || isSubmitting}
+            className="w-full flex items-center justify-center gap-3 text-lg font-medium text-white rounded-full transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "#2DB92D",
-              color: "#FFFFFF",
               padding: "20px 0",
-              borderRadius: "9999px",
-              fontSize: 18,
-              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.15)",
+              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.2)",
             }}
           >
             {isSubmitting ? (
@@ -291,23 +225,18 @@ export function OtpVerifyScreen({
             ) : (
               <>
                 Verify &amp; Enter
-                <ArrowRight size={20} style={{ color: "#FFFFFF" }} />
+                <ArrowRight size={20} />
               </>
             )}
           </button>
         </div>
 
-        {/* Home Indicator */}
-        <div className="flex justify-center mb-2">
-          <div
-            className="rounded-full"
-            style={{
-              width: 128,
-              height: 6,
-              backgroundColor: "rgba(26,26,26,0.1)",
-            }}
-          />
-        </div>
+        <div className="h-6" />
+      </div>
+
+      {/* Bottom indicator */}
+      <div className="flex justify-center pb-2 mt-auto">
+        <div className="w-32 h-1.5 rounded-full" style={{ backgroundColor: "rgba(26,26,26,0.1)" }} />
       </div>
     </div>
   );
