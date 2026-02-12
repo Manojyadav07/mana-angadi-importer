@@ -109,9 +109,12 @@ export function LoginPage() {
   const t = loginTranslations[language];
   const isTeluguActive = language === "te";
 
-  const handleWelcomeDismiss = () => {
-    setShowWelcome(false);
-  };
+  useEffect(() => {
+    if (showWelcome) {
+      const timer = setTimeout(() => setShowWelcome(false), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcome]);
 
   const handleSendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -198,7 +201,7 @@ export function LoginPage() {
   };
 
   if (showWelcome) {
-    return <WelcomeScreen onContinue={handleWelcomeDismiss} />;
+    return <WelcomeScreen />;
   }
 
   if (authLoading) {
