@@ -28,6 +28,7 @@ import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
 import { DeliveryPendingPage } from "./pages/DeliveryPendingPage";
 import { ApplyPage } from "./pages/ApplyPage";
+import { LoginSuccessPage } from "./pages/LoginSuccessPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminOnboardingPage } from "./pages/admin/AdminOnboardingPage";
 import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
@@ -180,6 +181,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+                  <Route path="/login/success" element={<LoginSuccessPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                   <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />

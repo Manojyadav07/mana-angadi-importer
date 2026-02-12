@@ -175,8 +175,7 @@ export function LoginPage() {
       }
 
       toast.success(t.loggedIn);
-      const { route } = await postAuthRedirect();
-      navigate(route, { replace: true });
+      navigate("/login/success", { replace: true, state: { userName: userName.trim() || undefined } });
     } catch {
       toast.error(t.somethingWrong);
     } finally {
@@ -233,8 +232,7 @@ export function LoginPage() {
                 return;
               }
               toast.success(t.loggedIn);
-              const { route } = await postAuthRedirect();
-              navigate(route, { replace: true });
+              navigate("/login/success", { replace: true, state: { userName: userName.trim() || undefined } });
             } catch {
               toast.error(t.somethingWrong);
             } finally {
