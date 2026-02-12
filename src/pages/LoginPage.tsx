@@ -29,7 +29,7 @@ export function LoginPage() {
   const [credential, setCredential] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Resend timer
@@ -41,10 +41,7 @@ export function LoginPage() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem(WELCOME_SHOWN_KEY);
-    if (!hasSeenWelcome) setShowWelcome(true);
-  }, []);
+  // Welcome screen always shows on page load, auto-dismisses after 2.5s
 
   const labels = useMemo(() => ({
     sendCode: language === "en" ? "Send Code" : "కోడ్ పంపండి",
@@ -62,7 +59,6 @@ export function LoginPage() {
 
 
   const handleWelcomeDismiss = () => {
-    localStorage.setItem(WELCOME_SHOWN_KEY, "true");
     setShowWelcome(false);
   };
 
