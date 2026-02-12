@@ -6,7 +6,8 @@ import villageHeaderBg from '@/assets/village-header-bg.jpg';
 export function TopBar() {
   const { user } = useAuth();
 
-  const displayName = user?.user_metadata?.display_name
+  const displayName = localStorage.getItem("mana-angadi-user-name")
+    || user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || (user?.email ? user.email.split('@')[0] : null);
 
