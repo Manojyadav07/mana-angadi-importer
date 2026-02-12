@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
-import { Store, ArrowRight, Loader2, Mail, Phone } from "lucide-react";
+import { ArrowRight, Loader2, Mail, Phone, Leaf } from "lucide-react";
 import { toast } from "sonner";
 import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -20,19 +20,83 @@ function isValidE164(value: string) {
   return /^\+\d{10,15}$/.test(value);
 }
 
+const loginTranslations = {
+  te: {
+    greeting: "నమస్కారం",
+    subtitle: "మానా అంగడికి స్వాగతం",
+    nameLabel: "వినియోగదారు పేరు నమోదు చేయండి",
+    namePlaceholder: "మీ పేరు",
+    credentialLabel: "ఫోన్ నంబర్ లేదా ఈమెయిల్ చిరునామా",
+    credentialPlaceholder: "ఫోన్ లేదా ఈమెయిల్ నమోదు చేయండి",
+    terms: "నేను",
+    termsOfService: "సేవా నిబంధనలు",
+    and: "మరియు",
+    privacyPolicy: "గోప్యతా విధానానికి",
+    termsEnd: "అంగీకరిస్తున్నాను",
+    sendCode: "కోడ్ పంపండి",
+    verify: "నిర్ధారించు",
+    resendIn: "మళ్ళీ పంపండి",
+    resend: "కోడ్ మళ్ళీ పంపండి",
+    enterOtp: "6-అంకెల కోడ్ నమోదు చేయండి",
+    emailLinkSent: "మీ ఇమెయిల్‌కు సురక్షిత లాగిన్ లింక్ పంపబడింది. కొనసాగించడానికి దాన్ని తెరవండి.",
+    sentTo: "కోడ్ పంపబడింది",
+    change: "మార్చు",
+    enterValid: "దయచేసి సరైన ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి",
+    enterValidFormat: "సరైన ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి (ఉదా. +91xxxxxxxxxx)",
+    tooMany: "చాలా ప్రయత్నాలు. దయచేసి కొంచెం ఆగి మళ్ళీ ప్రయత్నించండి.",
+    codeSent: "కోడ్ పంపబడింది!",
+    somethingWrong: "ఏదో తప్పు జరిగింది",
+    invalidCode: "చెల్లని లేదా గడువు ముగిసిన కోడ్. మళ్ళీ ప్రయత్నించండి.",
+    tooManyVerify: "చాలా ప్రయత్నాలు. దయచేసి ఆగండి.",
+    loggedIn: "లాగిన్ అయ్యారు!",
+    enter6Digit: "6-అంకెల కోడ్ నమోదు చేయండి",
+  },
+  en: {
+    greeting: "Namaskaram",
+    subtitle: "WELCOME TO MANA ANGADI",
+    nameLabel: "Enter User Name",
+    namePlaceholder: "Your name",
+    credentialLabel: "Phone Number or Email Address",
+    credentialPlaceholder: "Enter phone or email",
+    terms: "I agree to the",
+    termsOfService: "Terms of Service",
+    and: "and",
+    privacyPolicy: "Privacy Policy",
+    termsEnd: "",
+    sendCode: "Send Code",
+    verify: "Verify",
+    resendIn: "Resend in",
+    resend: "Resend Code",
+    enterOtp: "Enter the 6-digit code",
+    emailLinkSent: "We sent you a secure login link to your email. Open it to continue.",
+    sentTo: "Code sent to",
+    change: "Change",
+    enterValid: "Please enter email or phone number",
+    enterValidFormat: "Enter a valid email or phone number (e.g. +91xxxxxxxxxx)",
+    tooMany: "Too many attempts. Please wait and try again.",
+    codeSent: "Code sent!",
+    somethingWrong: "Something went wrong",
+    invalidCode: "Invalid or expired code. Try again.",
+    tooManyVerify: "Too many attempts. Please wait.",
+    loggedIn: "Logged in!",
+    enter6Digit: "Enter the 6-digit code",
+  },
+};
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { signInWithOtp, verifyOtp, user, role, isLoading: authLoading } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const [step, setStep] = useState<AuthStep>("send");
+  const [userName, setUserName] = useState("");
   const [credential, setCredential] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Resend timer
   const [resendCountdown, setResendCountdown] = useState(0);
 
   useEffect(() => {
@@ -41,22 +105,8 @@ export function LoginPage() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  // Welcome screen always shows on page load, auto-dismisses after 2.5s
-
-  const labels = useMemo(() => ({
-    sendCode: language === "en" ? "Send Code" : "కోడ్ పంపండి",
-    verify: language === "en" ? "Verify" : "నిర్ధారించు",
-    resendIn: language === "en" ? "Resend in" : "మళ్ళీ పంపండి",
-    resend: language === "en" ? "Resend Code" : "కోడ్ మళ్ళీ పంపండి",
-    placeholder: language === "en" ? "Email or Phone number" : "ఇమెయిల్ లేదా ఫోన్ నంబర్",
-    enterOtp: language === "en" ? "Enter the 6-digit code" : "6-అంకెల కోడ్ నమోదు చేయండి",
-    emailLinkSent: language === "en"
-      ? "We sent you a secure login link to your email. Open it to continue."
-      : "మీ ఇమెయిల్‌కు సురక్షిత లాగిన్ లింక్ పంపబడింది. కొనసాగించడానికి దాన్ని తెరవండి.",
-    sentTo: language === "en" ? "Code sent to" : "కోడ్ పంపబడింది",
-    changeCredential: language === "en" ? "Change" : "మార్చు",
-  }), [language]);
-
+  const t = loginTranslations[language];
+  const isTeluguActive = language === "te";
 
   const handleWelcomeDismiss = () => {
     setShowWelcome(false);
@@ -68,16 +118,12 @@ export function LoginPage() {
     const trimmed = credential.trim();
 
     if (!trimmed) {
-      setError(language === "en" ? "Please enter email or phone number" : "దయచేసి ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి");
+      setError(t.enterValid);
       return;
     }
 
     if (!isEmail(trimmed) && !isValidE164(trimmed)) {
-      setError(
-        language === "en"
-          ? "Enter a valid email or phone number (e.g. +91xxxxxxxxxx)"
-          : "సరైన ఇమెయిల్ లేదా ఫోన్ నంబర్ నమోదు చేయండి (ఉదా. +91xxxxxxxxxx)"
-      );
+      setError(t.enterValidFormat);
       return;
     }
 
@@ -87,7 +133,7 @@ export function LoginPage() {
       if (otpError) {
         const msg = otpError.message.toLowerCase();
         if (msg.includes("rate") || msg.includes("limit")) {
-          toast.error(language === "en" ? "Too many attempts. Please wait and try again." : "చాలా ప్రయత్నాలు. దయచేసి కొంచెం ఆగి మళ్ళీ ప్రయత్నించండి.");
+          toast.error(t.tooMany);
         } else {
           toast.error(otpError.message);
         }
@@ -95,9 +141,9 @@ export function LoginPage() {
       }
       setStep("verify");
       setResendCountdown(45);
-      toast.success(language === "en" ? "Code sent!" : "కోడ్ పంపబడింది!");
+      toast.success(t.codeSent);
     } catch {
-      toast.error(language === "en" ? "Something went wrong" : "ఏదో తప్పు జరిగింది");
+      toast.error(t.somethingWrong);
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +154,7 @@ export function LoginPage() {
     setError(null);
 
     if (otpCode.length !== 6) {
-      setError(language === "en" ? "Enter the 6-digit code" : "6-అంకెల కోడ్ నమోదు చేయండి");
+      setError(t.enter6Digit);
       return;
     }
 
@@ -118,21 +164,20 @@ export function LoginPage() {
       if (verifyError) {
         const msg = verifyError.message.toLowerCase();
         if (msg.includes("expired") || msg.includes("invalid")) {
-          toast.error(language === "en" ? "Invalid or expired code. Try again." : "చెల్లని లేదా గడువు ముగిసిన కోడ్. మళ్ళీ ప్రయత్నించండి.");
+          toast.error(t.invalidCode);
         } else if (msg.includes("rate") || msg.includes("limit")) {
-          toast.error(language === "en" ? "Too many attempts. Please wait." : "చాలా ప్రయత్నాలు. దయచేసి ఆగండి.");
+          toast.error(t.tooManyVerify);
         } else {
           toast.error(verifyError.message);
         }
         return;
       }
 
-      toast.success(language === "en" ? "Logged in!" : "లాగిన్ అయ్యారు!");
-      // Auth state change listener will handle hydration; navigate after
+      toast.success(t.loggedIn);
       const { route } = await postAuthRedirect();
       navigate(route, { replace: true });
     } catch {
-      toast.error(language === "en" ? "Something went wrong" : "ఏదో తప్పు జరిగింది");
+      toast.error(t.somethingWrong);
     } finally {
       setIsSubmitting(false);
     }
@@ -156,94 +201,222 @@ export function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="mobile-container min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="max-w-md mx-auto min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F9F8F4" }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#2DB92D" }} />
       </div>
     );
   }
 
-
   const inputIsEmail = isEmail(credential);
 
   return (
-    <div className="mobile-container min-h-screen flex flex-col bg-background">
+    <div
+      className="max-w-md mx-auto min-h-screen flex flex-col px-8 py-12 relative antialiased"
+      style={{ backgroundColor: "#F9F8F4", fontFamily: "'Be Vietnam Pro', sans-serif" }}
+    >
       {/* Language Toggle */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="flex items-center gap-1 bg-muted rounded-full p-1">
-          <button
-            type="button"
-            onClick={() => setLanguage("te")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              language === "te"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            తెలుగు
-          </button>
+      <div className="absolute top-8 right-8" style={{ width: 160 }}>
+        <div
+          className="relative flex items-center p-1 rounded-full"
+          style={{ backgroundColor: "#F2F0E9", border: "1px solid rgba(26,26,26,0.05)" }}
+        >
+          {/* Sliding indicator */}
+          <div
+            className="absolute rounded-full transition-all duration-300 ease-in-out"
+            style={{
+              height: "calc(100% - 8px)",
+              width: "calc(50% - 4px)",
+              top: 4,
+              backgroundColor: "#2DB92D",
+              left: isTeluguActive ? "calc(50% + 2px)" : 4,
+            }}
+          />
           <button
             type="button"
             onClick={() => setLanguage("en")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              language === "en"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex-1 px-4 py-1.5 text-center relative z-10 font-medium transition-colors duration-300"
+            style={{
+              fontSize: 13,
+              fontFamily: "'Fraunces', serif",
+              color: !isTeluguActive ? "#FFFFFF" : "rgba(26,26,26,0.6)",
+            }}
           >
             English
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage("te")}
+            className="flex-1 px-4 py-1.5 text-center relative z-10 font-medium transition-colors duration-300"
+            style={{
+              fontSize: 13,
+              fontFamily: "'Fraunces', serif",
+              color: isTeluguActive ? "#FFFFFF" : "rgba(26,26,26,0.6)",
+            }}
+          >
+            తెలుగు
           </button>
         </div>
       </div>
 
-      {/* Header */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-4">
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4 animate-scale-in">
-          <Store className="w-10 h-10 text-primary" />
+      {/* Header Section */}
+      <div className="flex flex-col items-center pt-16 pb-8">
+        {/* Logo */}
+        <div
+          className="flex items-center justify-center rounded-full mb-6"
+          style={{
+            width: 80,
+            height: 80,
+            backgroundColor: "#2DB92D",
+            boxShadow: "0 10px 25px -5px rgba(45,185,45,0.1)",
+          }}
+        >
+          <Leaf className="text-white" style={{ width: 36, height: 36 }} />
         </div>
 
-        <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">{t.welcome}</h1>
-        <p className="text-muted-foreground text-center mt-1 text-sm animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          {step === "send"
-            ? (language === "en" ? "Sign in or create an account" : "లాగిన్ అవ్వండి లేదా ఖాతా సృష్టించండి")
-            : inputIsEmail
-              ? labels.emailLinkSent
-              : labels.enterOtp}
+        {/* Greeting */}
+        <h1
+          className="font-light italic tracking-tight"
+          style={{
+            fontFamily: "'Fraunces', serif",
+            fontSize: "2.25rem",
+            color: "#1A1A1A",
+          }}
+        >
+          {t.greeting}
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          className="mt-2 text-sm font-medium text-center"
+          style={{
+            letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
+            textTransform: isTeluguActive ? "none" : "uppercase",
+            color: "rgba(26,26,26,0.6)",
+          }}
+        >
+          {t.subtitle}
         </p>
       </div>
 
-      {/* Step A: Send Code */}
+      {/* Form Section — Send step */}
       {step === "send" && (
-        <form onSubmit={handleSendCode} className="px-6 pb-6 space-y-4 animate-slide-up">
-          <div className="space-y-1">
-            <div className="relative">
-              {inputIsEmail ? (
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              ) : (
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              )}
-              <input
-                type="text"
-                value={credential}
-                onChange={(e) => { setCredential(e.target.value); setError(null); }}
-                placeholder={labels.placeholder}
-                className="input-village pl-12"
-                autoComplete="email tel"
-                autoFocus
-              />
-            </div>
-            {error && <p className="text-xs text-destructive px-1">{error}</p>}
+        <form onSubmit={handleSendCode} className="space-y-6 mt-4">
+          {/* Name field */}
+          <div>
+            <label
+              className="block mb-2 ml-1 font-bold"
+              style={{
+                fontSize: 10,
+                letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
+                textTransform: isTeluguActive ? "none" : "uppercase",
+                color: "rgba(26,26,26,0.4)",
+              }}
+            >
+              {t.nameLabel}
+            </label>
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder={t.namePlaceholder}
+              className="w-full bg-transparent rounded-xl px-4 py-4 outline-none transition-all"
+              style={{
+                border: "1px solid rgba(26,26,26,0.1)",
+                color: "#1A1A1A",
+                fontSize: 16,
+              }}
+              onFocus={(e) => {
+                e.target.style.border = "1px solid #2DB92D";
+                e.target.style.boxShadow = "0 0 0 1px #2DB92D";
+              }}
+              onBlur={(e) => {
+                e.target.style.border = "1px solid rgba(26,26,26,0.1)";
+                e.target.style.boxShadow = "none";
+              }}
+            />
           </div>
 
+          {/* Phone/Email field */}
+          <div>
+            <label
+              className="block mb-2 ml-1 font-bold"
+              style={{
+                fontSize: 10,
+                letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
+                textTransform: isTeluguActive ? "none" : "uppercase",
+                color: "rgba(26,26,26,0.4)",
+              }}
+            >
+              {t.credentialLabel}
+            </label>
+            <input
+              type="text"
+              value={credential}
+              onChange={(e) => { setCredential(e.target.value); setError(null); }}
+              placeholder={t.credentialPlaceholder}
+              className="w-full bg-transparent rounded-xl px-4 py-4 outline-none transition-all"
+              style={{
+                border: "1px solid rgba(26,26,26,0.1)",
+                color: "#1A1A1A",
+                fontSize: 16,
+              }}
+              onFocus={(e) => {
+                e.target.style.border = "1px solid #2DB92D";
+                e.target.style.boxShadow = "0 0 0 1px #2DB92D";
+              }}
+              onBlur={(e) => {
+                e.target.style.border = "1px solid rgba(26,26,26,0.1)";
+                e.target.style.boxShadow = "none";
+              }}
+              autoComplete="email tel"
+            />
+            {error && <p className="text-xs mt-1 px-1" style={{ color: "hsl(0,55%,52%)" }}>{error}</p>}
+          </div>
+
+          {/* Terms checkbox */}
+          <div className="flex items-start gap-3 px-1">
+            <input
+              type="checkbox"
+              checked={agreedTerms}
+              onChange={(e) => setAgreedTerms(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border cursor-pointer accent-[#2DB92D]"
+              style={{ borderColor: "rgba(26,26,26,0.2)" }}
+            />
+            <p className="text-xs leading-tight" style={{ color: "rgba(26,26,26,0.6)" }}>
+              {isTeluguActive ? (
+                <>
+                  {t.terms}{" "}
+                  <span className="underline underline-offset-2 cursor-pointer">{t.termsOfService}</span>{" "}
+                  {t.and}{" "}
+                  <span className="underline underline-offset-2 cursor-pointer">{t.privacyPolicy}</span>{" "}
+                  {t.termsEnd}
+                </>
+              ) : (
+                <>
+                  {t.terms}{" "}
+                  <span className="underline underline-offset-2 cursor-pointer">{t.termsOfService}</span>{" "}
+                  {t.and}{" "}
+                  <span className="underline underline-offset-2 cursor-pointer">{t.privacyPolicy}</span>
+                </>
+              )}
+            </p>
+          </div>
+
+          {/* Send Code button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full font-semibold py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "#2DB92D",
+              color: "#FFFFFF",
+              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.2)",
+            }}
           >
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-              <>
-                {labels.sendCode}
-                <ArrowRight className="w-5 h-5" />
-              </>
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+            ) : (
+              t.sendCode
             )}
           </button>
         </form>
@@ -251,38 +424,40 @@ export function LoginPage() {
 
       {/* Step B: Email magic link sent */}
       {step === "verify" && inputIsEmail && (
-        <div className="px-6 pb-6 space-y-5 animate-slide-up text-center">
-          <Mail className="w-12 h-12 text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            {labels.emailLinkSent}
+        <div className="space-y-5 text-center mt-4">
+          <Mail className="w-12 h-12 mx-auto" style={{ color: "#2DB92D" }} />
+          <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
+            {t.emailLinkSent}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs" style={{ color: "rgba(26,26,26,0.6)" }}>
             {credential.trim()}
           </p>
           <button
             type="button"
             onClick={handleChangeCredential}
-            className="text-xs text-primary hover:underline"
+            className="text-xs hover:underline"
+            style={{ color: "#2DB92D" }}
           >
-            {labels.changeCredential}
+            {t.change}
           </button>
         </div>
       )}
 
       {/* Step B: Phone OTP verify */}
       {step === "verify" && !inputIsEmail && (
-        <form onSubmit={handleVerify} className="px-6 pb-6 space-y-5 animate-slide-up">
+        <form onSubmit={handleVerify} className="space-y-5 mt-4">
           <div className="text-center space-y-1">
-            <p className="text-sm text-muted-foreground">
-              {labels.sentTo}{" "}
-              <span className="font-medium text-foreground">{credential.trim()}</span>
+            <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
+              {t.sentTo}{" "}
+              <span className="font-medium" style={{ color: "#1A1A1A" }}>{credential.trim()}</span>
             </p>
             <button
               type="button"
               onClick={handleChangeCredential}
-              className="text-xs text-primary hover:underline"
+              className="text-xs hover:underline"
+              style={{ color: "#2DB92D" }}
             >
-              {labels.changeCredential}
+              {t.change}
             </button>
           </div>
 
@@ -298,16 +473,21 @@ export function LoginPage() {
               </InputOTPGroup>
             </InputOTP>
           </div>
-          {error && <p className="text-xs text-destructive text-center">{error}</p>}
+          {error && <p className="text-xs text-center" style={{ color: "hsl(0,55%,52%)" }}>{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting || otpCode.length !== 6}
-            className="btn-accent w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full font-semibold py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{
+              backgroundColor: "#2DB92D",
+              color: "#FFFFFF",
+              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.2)",
+            }}
           >
             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
-                {labels.verify}
+                {t.verify}
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -315,24 +495,26 @@ export function LoginPage() {
 
           <div className="text-center">
             {resendCountdown > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {labels.resendIn} {resendCountdown}s
+              <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
+                {t.resendIn} {resendCountdown}s
               </p>
             ) : (
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-sm text-primary hover:underline"
+                className="text-sm hover:underline"
+                style={{ color: "#2DB92D" }}
               >
-                {labels.resend}
+                {t.resend}
               </button>
             )}
           </div>
         </form>
       )}
 
-      <div className="px-6 pb-6 text-center">
-        <span className="trust-badge">{t.villageBadge}</span>
+      {/* Footer — Bottom home indicator */}
+      <div className="mt-auto pt-10 flex justify-center">
+        <div className="w-32 h-1 rounded-full" style={{ backgroundColor: "rgba(26,26,26,0.1)" }} />
       </div>
     </div>
   );
