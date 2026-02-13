@@ -26,10 +26,10 @@ const villageSpecials = [
 ];
 
 const essentials = [
-  { icon: UtensilsCrossed, label: 'Food' },
-  { icon: ShoppingBasket, label: 'Groceries' },
-  { icon: Pill, label: 'Pharmacy' },
-  { icon: Sprout, label: 'Fruits & Veg' },
+  { icon: UtensilsCrossed, label: 'Food', bg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop' },
+  { icon: ShoppingBasket, label: 'Groceries', bg: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop' },
+  { icon: Pill, label: 'Pharmacy', bg: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop' },
+  { icon: Sprout, label: 'Fruits & Veg', bg: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=400&fit=crop' },
 ];
 
 export function HomePage() {
@@ -69,21 +69,21 @@ export function HomePage() {
             <span className="text-sm italic opacity-50">Seasonal Picks</span>
           </div>
 
-          <div className="flex overflow-x-auto gap-5 px-6 hide-scrollbar">
+          <div className="flex overflow-x-auto gap-3 px-6 hide-scrollbar">
             {villageSpecials.map((item) => (
-              <div key={item.title} className="flex-none w-72">
-                <div className="relative aspect-[4/5] rounded-xl overflow-hidden mb-3 border border-mana-charcoal/5">
+              <div key={item.title} className="flex-none w-44">
+                <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-2 border border-mana-charcoal/5">
                   <img
                     src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <p className="text-xs uppercase tracking-tighter opacity-80">
+                  <div className="absolute bottom-3 left-3 text-white">
+                    <p className="text-[10px] uppercase tracking-tighter opacity-80">
                       {item.label}
                     </p>
-                    <p className="text-lg font-medium">{item.title}</p>
+                    <p className="text-sm font-medium">{item.title}</p>
                   </div>
                 </div>
               </div>
@@ -92,29 +92,34 @@ export function HomePage() {
         </section>
 
         {/* ──────────── 3. MAIN ACTION CTA ──────────── */}
-        <section className="px-6 mt-10">
+        <section className="px-6 mt-6">
           <button
             onClick={() => navigate('/home')}
-            className="w-full bg-primary text-white py-5 rounded-xl text-xl font-medium shadow-xl shadow-primary/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
+            className="w-full bg-primary text-white py-3.5 rounded-xl text-base font-medium shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           >
             Explore Angadi
-            <ArrowRight className="w-5 h-5" strokeWidth={2} />
+            <ArrowRight className="w-4 h-4" strokeWidth={2} />
           </button>
         </section>
 
         {/* ──────────── 4. DAILY ESSENTIALS GRID ──────────── */}
-        <section className="px-6 mt-12">
-          <p className="text-sm uppercase tracking-widest opacity-40 mb-6 font-semibold">
+        <section className="px-6 mt-8">
+          <p className="text-xs uppercase tracking-widest opacity-40 mb-4 font-semibold">
             Daily Essentials
           </p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {essentials.map((cat) => (
               <button
                 key={cat.label}
-                className="bg-white/50 border border-mana-charcoal/5 p-6 rounded-xl flex flex-col items-center text-center"
+                className="relative overflow-hidden rounded-xl border border-mana-charcoal/5 flex flex-col items-center justify-end text-center"
+                style={{ minHeight: 100 }}
               >
-                <cat.icon className="text-primary w-9 h-9 mb-4" strokeWidth={1.5} />
-                <span className="text-lg font-medium">{cat.label}</span>
+                <img src={cat.bg} alt={cat.label} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+                <div className="relative z-10 pb-3">
+                  <cat.icon className="text-white w-7 h-7 mb-1 mx-auto" strokeWidth={1.5} />
+                  <span className="text-sm font-semibold text-white">{cat.label}</span>
+                </div>
               </button>
             ))}
           </div>
