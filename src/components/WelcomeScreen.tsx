@@ -1,6 +1,4 @@
-import welcomeLogo from '@/assets/welcome-logo.png';
-
-export function WelcomeScreen() {
+export function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="max-w-md mx-auto h-screen relative flex flex-col items-center justify-center px-10 overflow-hidden bg-[#F9F8F4]">
       {/* Center Illustration Block */}
@@ -8,13 +6,6 @@ export function WelcomeScreen() {
         {/* Concentric decorative rings */}
         <div className="absolute w-72 h-72 border-[0.5px] border-[#2DB92D]/20 rounded-full" />
         <div className="absolute w-64 h-64 border-[1px] border-[#2DB92D]/10 rounded-full" />
-
-        {/* Central Logo Image */}
-        <img
-          src={welcomeLogo}
-          alt="మన అంగడి"
-          className="relative z-10 w-56 h-56 object-contain"
-        />
       </div>
 
       {/* Telugu Brand Name */}
@@ -32,6 +23,20 @@ export function WelcomeScreen() {
       >
         పల్లెటూరి స్వచ్ఛత.. అంగడి భరోసా.. మీ ముంగిట!
       </p>
+
+      {/* Start Button */}
+      <button
+        onClick={onStart}
+        className="mt-10 w-full max-w-[280px] py-4 rounded-xl font-semibold text-base active:scale-[0.98] transition-transform"
+        style={{
+          backgroundColor: '#2DB92D',
+          color: '#FFFFFF',
+          fontFamily: "'Noto Serif Telugu', serif",
+          boxShadow: '0 20px 25px -5px rgba(45,185,45,0.2)',
+        }}
+      >
+        అంగడిని అన్వేషించండి
+      </button>
 
       {/* Bottom divider section */}
       <div className="absolute bottom-20 w-full flex flex-col items-center px-6">
