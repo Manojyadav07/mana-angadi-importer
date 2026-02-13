@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useShops } from '@/hooks/useShops';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function VillageShops() {
   const navigate = useNavigate();
   const { data: shops = [] } = useShops();
+  const { language } = useLanguage();
 
   const visibleShops = shops.filter((s) => s.isActive).slice(0, 6);
 
@@ -11,16 +13,15 @@ export function VillageShops() {
 
   return (
     <section className="px-5 pt-5 pb-6">
-      {/* Muted gold divider */}
       <div className="h-[1px] bg-accent/20 mb-4" />
 
       <p className="text-[13px] font-medium text-muted-foreground mb-4">
-        From your Angadi
+        {language === 'en' ? 'From your Angadi' : 'మీ అంగడి నుండి'}
       </p>
       <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-1">
         {visibleShops.map((shop) => {
-          const name = shop.name_en;
-          const initials = name.slice(0, 2).toUpperCase();
+          const name = language === 'en' ? shop.name_en : shop.name_te;
+          const initials = shop.name_en.slice(0, 2).toUpperCase();
 
           return (
             <button

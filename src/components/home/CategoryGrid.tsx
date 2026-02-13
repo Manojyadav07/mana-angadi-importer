@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface CategorySurface {
   label: string;
@@ -9,22 +10,23 @@ interface CategorySurface {
 
 export function CategoryGrid() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   const groceries: CategorySurface = {
-    label: 'Groceries',
-    subtitle: 'Daily essentials delivered',
+    label: language === 'en' ? 'Groceries' : 'కిరాణా',
+    subtitle: language === 'en' ? 'Daily essentials delivered' : 'రోజువారీ అవసరాలు డెలివరీ',
     path: '/home',
     anchor: true,
   };
 
   const paired: CategorySurface[] = [
-    { label: 'Food', path: '/home' },
-    { label: 'Pharmacy', path: '/home' },
+    { label: language === 'en' ? 'Food' : 'ఆహారం', path: '/home' },
+    { label: language === 'en' ? 'Pharmacy' : 'మందులు', path: '/home' },
   ];
 
   const wide: CategorySurface = {
-    label: 'Vegetables & Fruits',
-    subtitle: 'Farm fresh, locally sourced',
+    label: language === 'en' ? 'Vegetables & Fruits' : 'కూరగాయలు & పండ్లు',
+    subtitle: language === 'en' ? 'Farm fresh, locally sourced' : 'పొలం నుండి నేరుగా, స్థానికంగా',
     path: '/home',
   };
 
@@ -37,7 +39,6 @@ export function CategoryGrid() {
           className="relative w-full rounded-2xl text-left overflow-hidden active:scale-[0.98] transition-transform duration-200 touch-manipulation"
           style={{ minHeight: 140 }}
         >
-          {/* Darker sand surface with subtle grain */}
           <div
             className="absolute inset-0 bg-muted"
             style={{
