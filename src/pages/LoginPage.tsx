@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
-import { ArrowRight, Loader2, Mail, Phone, Leaf } from "lucide-react";
+import { ArrowRight, Loader2, Mail, Phone } from "lucide-react";
+import welcomeCyclist from "@/assets/welcome-cyclist.png";
 import { toast } from "sonner";
 import { postAuthRedirect } from "@/context/auth/postAuthRedirect";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -303,17 +304,12 @@ export function LoginPage() {
       {/* Header Section */}
       <div className="flex flex-col items-center pt-16 pb-8">
         {/* Logo */}
-        <div
-          className="flex items-center justify-center rounded-full mb-6"
-          style={{
-            width: 80,
-            height: 80,
-            backgroundColor: "#2DB92D",
-            boxShadow: "0 10px 25px -5px rgba(45,185,45,0.1)",
-          }}
-        >
-          <Leaf className="text-white" style={{ width: 36, height: 36 }} />
-        </div>
+        <img
+          src={welcomeCyclist}
+          alt="Mana Angadi"
+          className="rounded-full mb-6 object-contain"
+          style={{ width: 80, height: 80 }}
+        />
 
         {/* Greeting */}
         <h1
