@@ -1,11 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Heart, ShoppingCart, Truck, User } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { getCartItemCount } = useApp();
+  const { t } = useLanguage();
   const cartCount = getCartItemCount();
 
   const hiddenPaths = ['/', '/login', '/order-success', '/delivery/onboarding'];
@@ -26,13 +28,13 @@ export function BottomNav() {
         {/* Tab 1 – Home */}
         <button onClick={() => navigate('/home')} className={tabClass(isActive('/home'))}>
           <Home className="w-6 h-6" strokeWidth={1.5} />
-          <span className={labelClass}>Home</span>
+          <span className={labelClass}>{t.navHome}</span>
         </button>
 
         {/* Tab 2 – Favourite */}
         <button onClick={() => navigate('/favorites')} className={tabClass(isActive('/favorites'))}>
           <Heart className="w-6 h-6" strokeWidth={1.5} />
-          <span className={labelClass}>Saved</span>
+          <span className={labelClass}>{t.navSaved}</span>
         </button>
 
         {/* Center Floating Basket */}
@@ -53,13 +55,13 @@ export function BottomNav() {
         {/* Tab 4 – Orders */}
         <button onClick={() => navigate('/orders')} className={tabClass(isActive('/orders'))}>
           <Truck className="w-6 h-6" strokeWidth={1.5} />
-          <span className={labelClass}>Orders</span>
+          <span className={labelClass}>{t.navOrders}</span>
         </button>
 
         {/* Tab 5 – Profile */}
         <button onClick={() => navigate('/profile')} className={tabClass(isActive('/profile'))}>
           <User className="w-6 h-6" strokeWidth={1.5} />
-          <span className={labelClass}>Profile</span>
+          <span className={labelClass}>{t.navProfile}</span>
         </button>
       </div>
 
