@@ -132,7 +132,7 @@ export function LoginPage() {
       const { error: otpError } = await signInWithOtp(trimmed);
       if (otpError) {
         const msg = otpError.message.toLowerCase();
-        if (msg.includes("rate") || msg.includes("limit")) {
+        if (msg.includes("rate") || msg.includes("limit") || msg.includes("wait")) {
           toast.error(t.tooMany);
         } else {
           toast.error(otpError.message);
