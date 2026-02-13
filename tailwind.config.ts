@@ -59,6 +59,8 @@ export default {
           DEFAULT: "hsl(var(--charcoal))",
           foreground: "hsl(var(--charcoal-foreground))",
         },
+        "mana-cream": "hsl(var(--mana-cream))",
+        "mana-charcoal": "hsl(var(--mana-charcoal))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -80,6 +82,7 @@ export default {
       },
       fontFamily: {
         sans: ["'Noto Sans Telugu'", "'Inter'", "system-ui", "sans-serif"],
+        newsreader: ["'Newsreader'", "Georgia", "serif"],
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
