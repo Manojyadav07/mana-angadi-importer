@@ -47,33 +47,26 @@ export function HomePage() {
     <MobileLayout>
       <div className="max-w-md mx-auto min-h-screen relative pb-32 bg-mana-cream text-mana-charcoal font-newsreader selection:bg-primary/20">
         {/* ──────────── 1. HEADER ──────────── */}
-        <header className="relative overflow-hidden px-6 pt-12 pb-6">
-          <img
-            src={villageHeaderBg}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.12]"
-            aria-hidden="true"
-          />
-          <div className="relative z-10 flex justify-between items-start">
+        <header className="relative overflow-hidden px-5 pt-8 pb-4">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-mana-cream to-primary/5" aria-hidden="true" />
+          <div className="relative z-10 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <img
                 src={welcomeLogo}
                 alt="Mana Angadi"
-                className="w-12 h-12 object-contain"
+                className="w-10 h-10 rounded-full object-cover border-2 border-primary/20 shadow-sm"
               />
               <div>
-                <p className="text-sm tracking-widest uppercase opacity-60 mb-1">
+                <p className="text-[10px] tracking-widest uppercase opacity-50">
                   Welcome Home
                 </p>
-                <h1 className="text-3xl font-medium leading-tight">
-                  Namaskaram,
-                  <br />
-                  {displayName} Gaaru
+                <h1 className="text-xl font-medium leading-snug">
+                  Namaskaram, {displayName} Gaaru
                 </h1>
               </div>
             </div>
-            <button className="w-10 h-10 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
-              <Bell className="w-5 h-5" strokeWidth={1.5} />
+            <button className="w-9 h-9 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
+              <Bell className="w-4 h-4" strokeWidth={1.5} />
             </button>
           </div>
         </header>
