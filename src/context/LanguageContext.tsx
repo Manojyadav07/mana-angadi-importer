@@ -184,6 +184,32 @@ interface Translations {
   help: string;
   callSupport: string;
   whatsappSupport: string;
+
+  // HomePage
+  welcomeHome: string;
+  namaskaram: string;
+  gaaru: string;
+  villageSpecials: string;
+  seasonalPicks: string;
+  villageGrown: string;
+  freshVegetables: string;
+  handcrafted: string;
+  clayPottery: string;
+  villageLoom: string;
+  cottonTextiles: string;
+  exploreAngadi: string;
+  dailyEssentials: string;
+  food: string;
+  groceries: string;
+  pharmacy: string;
+  fruitsAndVeg: string;
+  communityLabel: string;
+  communityMessage: string;
+  neighboursJoined: string;
+
+  // BottomNav
+  navSaved: string;
+  navCart: string;
   currentStatusLabel: string;
 }
 
@@ -370,6 +396,32 @@ const teluguTranslations: Translations = {
   callSupport: 'కాల్ చేయండి',
   whatsappSupport: 'వాట్సాప్',
   currentStatusLabel: 'ప్రస్తుత స్థితి',
+
+  // HomePage
+  welcomeHome: 'స్వాగతం',
+  namaskaram: 'నమస్కారం',
+  gaaru: 'గారు',
+  villageSpecials: 'మన ఊరి ప్రత్యేకతలు',
+  seasonalPicks: 'సీజన్ ఎంపికలు',
+  villageGrown: 'మన పల్లె పంట',
+  freshVegetables: 'తాజా కూరగాయలు',
+  handcrafted: 'చేతితో తయారైన',
+  clayPottery: 'మట్టి కుండలు',
+  villageLoom: 'మన ఊరి మగ్గం',
+  cottonTextiles: 'నూలు వస్త్రాలు',
+  exploreAngadi: 'అంగడి చూడండి',
+  dailyEssentials: 'రోజువారీ అవసరాలు',
+  food: 'భోజనం',
+  groceries: 'కిరాణా',
+  pharmacy: 'మందుల షాపు',
+  fruitsAndVeg: 'పండ్లు & కూరగాయలు',
+  communityLabel: 'సమాజం',
+  communityMessage: 'ఈ రోజు ₹200 పైన ఆర్డర్లకు ఉచిత డెలివరీ. మన ఊరి అంగడులకు మద్దతు ఇవ్వండి!',
+  neighboursJoined: 'ఇరుగుపొరుగు వారు ఈ రోజు చేరారు',
+
+  // BottomNav
+  navSaved: 'ఇష్టమైనవి',
+  navCart: 'బుట్ట',
 };
 
 const englishTranslations: Translations = {
@@ -555,6 +607,32 @@ const englishTranslations: Translations = {
   callSupport: 'Call Support',
   whatsappSupport: 'WhatsApp Support',
   currentStatusLabel: 'Current status',
+
+  // HomePage
+  welcomeHome: 'Welcome Home',
+  namaskaram: 'Namaskaram',
+  gaaru: 'Gaaru',
+  villageSpecials: 'Village Specials',
+  seasonalPicks: 'Seasonal Picks',
+  villageGrown: 'Village Grown',
+  freshVegetables: 'Fresh Vegetables',
+  handcrafted: 'Handcrafted',
+  clayPottery: 'Clay Pottery',
+  villageLoom: 'Village Loom',
+  cottonTextiles: 'Cotton Textiles',
+  exploreAngadi: 'Explore Angadi',
+  dailyEssentials: 'Daily Essentials',
+  food: 'Food',
+  groceries: 'Groceries',
+  pharmacy: 'Pharmacy',
+  fruitsAndVeg: 'Fruits & Veg',
+  communityLabel: 'Community',
+  communityMessage: 'Free delivery today on all orders above ₹200. Support your local village shops!',
+  neighboursJoined: 'neighbours joined today',
+
+  // BottomNav
+  navSaved: 'Saved',
+  navCart: 'Cart',
 };
 
 interface LanguageContextType {
