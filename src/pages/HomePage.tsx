@@ -3,15 +3,16 @@ import { Bell, ArrowRight, UtensilsCrossed, ShoppingBasket, Pill, Sprout } from 
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useAuth } from '@/context/AuthContext';
 
-import culturalPaddy from '@/assets/cultural-paddy.jpg';
+import welcomeLogo from '@/assets/welcome-cyclist.png';
+import villageHeaderBg from '@/assets/village-header-bg.jpg';
 import culturalPottery from '@/assets/cultural-pottery.jpg';
 import culturalTextile from '@/assets/cultural-textile.jpg';
 
 const villageSpecials = [
   {
-    image: culturalPaddy,
-    label: 'Fresh Harvest',
-    title: 'Organic Millets',
+    image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400&h=500&fit=crop',
+    label: 'Village Grown',
+    title: 'Fresh Vegetables',
   },
   {
     image: culturalPottery,
@@ -26,7 +27,7 @@ const villageSpecials = [
 ];
 
 const essentials = [
-  { icon: UtensilsCrossed, label: 'Food', bg: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop' },
+  { icon: UtensilsCrossed, label: 'Food', bg: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=400&h=400&fit=crop' },
   { icon: ShoppingBasket, label: 'Groceries', bg: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop' },
   { icon: Pill, label: 'Pharmacy', bg: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop' },
   { icon: Sprout, label: 'Fruits & Veg', bg: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=400&fit=crop' },
@@ -46,20 +47,35 @@ export function HomePage() {
     <MobileLayout>
       <div className="max-w-md mx-auto min-h-screen relative pb-32 bg-mana-cream text-mana-charcoal font-newsreader selection:bg-primary/20">
         {/* ──────────── 1. HEADER ──────────── */}
-        <header className="px-6 pt-12 pb-6 flex justify-between items-start">
-          <div>
-            <p className="text-sm tracking-widest uppercase opacity-60 mb-1">
-              Welcome Home
-            </p>
-            <h1 className="text-3xl font-medium leading-tight">
-              Namaskaram,
-              <br />
-              {displayName} Gaaru
-            </h1>
+        <header className="relative overflow-hidden px-6 pt-12 pb-6">
+          <img
+            src={villageHeaderBg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.12]"
+            aria-hidden="true"
+          />
+          <div className="relative z-10 flex justify-between items-start">
+            <div className="flex items-center gap-3">
+              <img
+                src={welcomeLogo}
+                alt="Mana Angadi"
+                className="w-12 h-12 object-contain"
+              />
+              <div>
+                <p className="text-sm tracking-widest uppercase opacity-60 mb-1">
+                  Welcome Home
+                </p>
+                <h1 className="text-3xl font-medium leading-tight">
+                  Namaskaram,
+                  <br />
+                  {displayName} Gaaru
+                </h1>
+              </div>
+            </div>
+            <button className="w-10 h-10 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
+              <Bell className="w-5 h-5" strokeWidth={1.5} />
+            </button>
           </div>
-          <button className="w-10 h-10 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
-            <Bell className="w-5 h-5" strokeWidth={1.5} />
-          </button>
         </header>
 
         {/* ──────────── 2. VILLAGE SPECIALS ──────────── */}
