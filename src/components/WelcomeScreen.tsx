@@ -1,3 +1,5 @@
+import welcomeCyclist from "@/assets/welcome-cyclist.png";
+
 export function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
     <div
@@ -9,10 +11,11 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
 
       {/* Center content */}
       <div className="flex flex-col items-center text-center">
-        {/* Decorative concentric circles */}
+        {/* Decorative concentric circles with logo */}
         <div className="relative flex items-center justify-center w-48 h-48 sm:w-60 sm:h-60 mb-8 sm:mb-12">
           <div className="absolute w-48 h-48 sm:w-60 sm:h-60 border-[0.5px] rounded-full" style={{ borderColor: 'rgba(45,185,45,0.2)' }} />
           <div className="absolute w-40 h-40 sm:w-52 sm:h-52 border-[1px] rounded-full" style={{ borderColor: 'rgba(45,185,45,0.1)' }} />
+          <img src={welcomeCyclist} alt="Mana Angadi" className="relative z-10 w-36 h-36 sm:w-44 sm:h-44 object-contain" />
         </div>
 
         {/* Brand Heading */}
