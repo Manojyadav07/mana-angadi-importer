@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
-import { Leaf, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import welcomeCyclist from "@/assets/welcome-cyclist.png";
 
 const translations = {
   te: {
@@ -59,12 +60,12 @@ export function LoginSuccessPage() {
       {/* Main center content */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center">
         {/* Eco icon */}
-        <div
-          className="flex items-center justify-center rounded-full mb-10"
-          style={{ width: 96, height: 96, backgroundColor: "#E8F3E8" }}
-        >
-          <Leaf style={{ width: 48, height: 48, color: "#2DB92D" }} />
-        </div>
+        <img
+          src={welcomeCyclist}
+          alt="Mana Angadi"
+          className="rounded-full mb-10 object-contain"
+          style={{ width: 96, height: 96 }}
+        />
 
         {/* Greeting */}
         <div className="max-w-sm text-center space-y-4">
