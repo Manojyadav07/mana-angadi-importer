@@ -105,7 +105,7 @@ export function HomePage() {
             { icon: '🍲', label: t.food, bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
             { icon: '🧺', label: t.groceries, bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
             { icon: '🏥', label: t.pharmacy, bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
-            { icon: '🍎', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
+            { icon: '🥦🍊', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
           ].map(({ icon, label, bg, border, ring }) => (
             <button
               key={label}
