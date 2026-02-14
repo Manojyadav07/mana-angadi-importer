@@ -4,16 +4,15 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 
-import welcomeLogo from '@/assets/welcome-cyclist.png';
 import culturalPottery from '@/assets/cultural-pottery.jpg';
 import culturalTextile from '@/assets/cultural-textile.jpg';
 
-const essentialIcons = [UtensilsCrossed, ShoppingBasket, Pill, Sprout];
-const essentialBgs = [
-  'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=400&fit=crop',
+const recentItems = [
+  { image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=100&h=100&fit=crop', labelEn: 'Rice', labelTe: 'బియ్యం' },
+  { image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=100&h=100&fit=crop', labelEn: 'Oil', labelTe: 'నూనె' },
+  { image: 'https://images.unsplash.com/photo-1607672632458-9eb56696346a?w=100&h=100&fit=crop', labelEn: 'Dal', labelTe: 'పప్పు' },
+  { image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&h=100&fit=crop', labelEn: 'Sugar', labelTe: 'చక్కెర' },
+  { image: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=100&h=100&fit=crop', labelEn: 'Flour', labelTe: 'పిండి' },
 ];
 
 export function HomePage() {
@@ -31,7 +30,7 @@ export function HomePage() {
 
   const villageSpecials = [
     {
-      image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400&h=500&fit=crop',
+      image: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400&h=300&fit=crop',
       label: t.villageGrown,
       title: t.freshVegetables,
     },
@@ -47,32 +46,30 @@ export function HomePage() {
     },
   ];
 
-  const essentialLabels = [t.food, t.groceries, t.pharmacy, t.fruitsAndVeg];
+  const essentialItems = [
+    { icon: UtensilsCrossed, label: t.food },
+    { icon: ShoppingBasket, label: t.groceries },
+    { icon: Pill, label: t.pharmacy },
+    { icon: Sprout, label: t.fruitsAndVeg },
+  ];
 
   return (
     <MobileLayout>
-      <div className="max-w-md mx-auto min-h-screen relative pb-32 bg-mana-cream text-mana-charcoal font-newsreader selection:bg-primary/20">
+      <div className="max-w-md mx-auto min-h-screen relative pb-28 bg-mana-cream text-mana-charcoal font-newsreader selection:bg-primary/20">
+
         {/* ──────────── 1. HEADER ──────────── */}
-        <header className="relative overflow-hidden px-5 pt-8 pb-4">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-mana-cream to-primary/5" aria-hidden="true" />
-          <div className="relative z-10 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <img
-                src={welcomeLogo}
-                alt={t.appName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-primary/20 shadow-sm"
-              />
-              <div>
-                <p className="text-[10px] tracking-widest uppercase opacity-50">
-                  {t.welcomeHome}
-                </p>
-                <h1 className="text-xl font-medium leading-snug">
-                  {t.namaskaram}, {displayName} {t.gaaru}
-                </h1>
-              </div>
+        <header className="px-6 pt-10 pb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase opacity-60">
+                {t.welcomeToAngadi}
+              </p>
+              <h1 className="text-2xl font-medium leading-tight mt-1">
+                {t.namaskaram},<br />
+                {displayName} {t.gaaru}
+              </h1>
             </div>
             <div className="flex items-center gap-2">
-              {/* Language Toggle */}
               <button
                 onClick={() => setLanguage(isTeluguActive ? 'en' : 'te')}
                 className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-mana-charcoal/10 bg-white/80"
@@ -80,34 +77,34 @@ export function HomePage() {
                 {isTeluguActive ? 'EN' : 'తె'}
               </button>
               <button className="w-9 h-9 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
-                <Bell className="w-4 h-4" strokeWidth={1.5} />
+                <Bell className="w-5 h-5" strokeWidth={1.5} />
               </button>
             </div>
           </div>
         </header>
 
         {/* ──────────── 2. VILLAGE SPECIALS ──────────── */}
-        <section className="mt-4">
-          <div className="px-6 flex justify-between items-baseline mb-4">
-            <h2 className="text-xl font-semibold">{t.villageSpecials}</h2>
-            <span className="text-sm italic opacity-50">{t.seasonalPicks}</span>
+        <section className="mt-2">
+          <div className="px-6 flex justify-between items-baseline mb-3">
+            <h2 className="text-lg font-semibold">{t.villageSpecials}</h2>
+            <span className="text-xs italic opacity-50">{t.seasonalPicks}</span>
           </div>
 
           <div className="flex overflow-x-auto gap-3 px-6 hide-scrollbar">
             {villageSpecials.map((item) => (
-              <div key={item.title} className="flex-none w-44">
-                <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-2 border border-mana-charcoal/5">
+              <div key={item.title} className="flex-none w-64">
+                <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-mana-charcoal/5">
                   <img
                     src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-3 left-3 text-white">
-                    <p className="text-[10px] uppercase tracking-tighter opacity-80">
+                    <p className="text-[9px] uppercase tracking-tighter opacity-80">
                       {item.label}
                     </p>
-                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-base font-medium">{item.title}</p>
                   </div>
                 </div>
               </div>
@@ -115,65 +112,89 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* ──────────── 3. MAIN ACTION CTA ──────────── */}
+        {/* ──────────── 3. EXPLORE CTA ──────────── */}
         <section className="px-6 mt-6">
           <button
             onClick={() => navigate('/home')}
-            className="w-full bg-primary text-white py-3.5 rounded-xl text-base font-medium shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            className="w-full bg-primary text-white py-4 rounded-xl text-lg font-medium shadow-lg shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           >
             {t.exploreAngadi}
-            <ArrowRight className="w-4 h-4" strokeWidth={2} />
+            <ArrowRight className="w-5 h-5" strokeWidth={2} />
           </button>
         </section>
 
-        {/* ──────────── 4. DAILY ESSENTIALS GRID ──────────── */}
+        {/* ──────────── 4. RECENTLY ORDERED ──────────── */}
+        <section className="mt-8">
+          <div className="px-6 flex justify-between items-baseline mb-3">
+            <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold">
+              {t.recentlyOrdered}
+            </p>
+            <button className="text-[10px] uppercase tracking-widest opacity-40 font-bold">
+              {t.viewAll}
+            </button>
+          </div>
+
+          <div className="flex overflow-x-auto gap-4 px-6 hide-scrollbar">
+            {recentItems.map((item) => (
+              <div key={item.labelEn} className="flex-none w-16 flex flex-col items-center gap-1.5">
+                <div className="w-16 h-16 rounded-full bg-white border border-mana-charcoal/5 p-1 shadow-sm overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={language === 'te' ? item.labelTe : item.labelEn}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </div>
+                <span className="text-[10px] font-sans opacity-70 text-center">
+                  {language === 'te' ? item.labelTe : item.labelEn}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ──────────── 5. DAILY ESSENTIALS GRID ──────────── */}
         <section className="px-6 mt-8">
-          <p className="text-xs uppercase tracking-widest opacity-40 mb-4 font-semibold">
+          <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-4">
             {t.dailyEssentials}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            {essentialIcons.map((Icon, i) => (
+          <div className="grid grid-cols-4 gap-3">
+            {essentialItems.map(({ icon: Icon, label }) => (
               <button
-                key={essentialLabels[i]}
-                className="relative overflow-hidden rounded-xl border border-mana-charcoal/5 flex flex-col items-center justify-end text-center"
-                style={{ minHeight: 100 }}
+                key={label}
+                className="aspect-square bg-white border border-mana-charcoal/5 rounded-xl flex flex-col items-center justify-center shadow-sm gap-1.5"
               >
-                <img src={essentialBgs[i]} alt={essentialLabels[i]} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
-                <div className="relative z-10 pb-3">
-                  <Icon className="text-white w-7 h-7 mb-1 mx-auto" strokeWidth={1.5} />
-                  <span className="text-sm font-semibold text-white">{essentialLabels[i]}</span>
-                </div>
+                <Icon className="text-primary w-6 h-6" strokeWidth={1.5} />
+                <span className="text-[11px] font-sans font-medium opacity-80">{label}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* ──────────── 5. COMMUNITY NOTICE ──────────── */}
-        <section className="px-6 mt-10 mb-8">
-          <div className="bg-white border border-mana-charcoal/10 p-6 rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="uppercase tracking-widest text-xs font-bold opacity-60">
+        {/* ──────────── 6. COMMUNITY NOTICE ──────────── */}
+        <section className="px-6 mt-8 mb-4">
+          <div className="bg-white border border-mana-charcoal/10 p-4 rounded-xl shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="uppercase tracking-widest text-[9px] font-bold opacity-60">
                 {t.communityLabel}
               </span>
             </div>
-            <p className="text-lg italic leading-relaxed text-mana-charcoal/80 mb-4">
+            <p className="text-sm italic leading-relaxed text-mana-charcoal/80 mb-3">
               {t.communityMessage}
             </p>
             <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
+              <div className="flex -space-x-1.5">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="w-7 h-7 rounded-full bg-mana-charcoal/10 border-2 border-white"
+                    className="w-5 h-5 rounded-full bg-mana-charcoal/10 border-2 border-white"
                   />
                 ))}
               </div>
-              <span className="text-xs font-bold bg-mana-charcoal text-white w-5 h-5 rounded-full flex items-center justify-center" style={{ fontSize: 10 }}>
+              <span className="text-[9px] font-bold bg-mana-charcoal text-white w-4 h-4 rounded-full flex items-center justify-center">
                 +12
               </span>
-              <span className="text-xs opacity-50 ml-1">{t.neighboursJoined}</span>
+              <span className="text-[10px] opacity-50 ml-1">{t.neighboursJoined}</span>
             </div>
           </div>
         </section>
