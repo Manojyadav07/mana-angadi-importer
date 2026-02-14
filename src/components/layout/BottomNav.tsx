@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Heart, ShoppingCart, Truck, Menu } from 'lucide-react';
+import { Home, Heart, Truck, Menu } from 'lucide-react';
+import cartBasketIcon from '@/assets/cart-basket-icon.png';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -41,9 +42,9 @@ export function BottomNav() {
         <div className="relative -top-6">
           <button
             onClick={() => navigate('/cart')}
-            className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream"
+            className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream overflow-hidden"
           >
-            <ShoppingCart className="w-6 h-6" strokeWidth={1.5} />
+            <img src={cartBasketIcon} alt="Cart" className="w-10 h-10 object-contain" />
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-mana-charcoal text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                 {cartCount > 9 ? '9+' : cartCount}

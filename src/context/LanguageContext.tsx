@@ -643,7 +643,7 @@ const englishTranslations: Translations = {
   neighboursJoined: 'neighbours joined today',
 
   // BottomNav
-  navSaved: 'Saved',
+  navSaved: 'Favourite',
   navCart: 'Cart',
   navMenu: 'Menu',
 

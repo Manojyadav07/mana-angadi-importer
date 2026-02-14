@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Bell, ArrowRight, Home, Heart, ShoppingCart, Truck, Menu } from 'lucide-react';
+import { Bell, ArrowRight, Home, Heart, Truck, Menu } from 'lucide-react';
+import cartBasketIcon from '@/assets/cart-basket-icon.png';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useApp } from '@/context/AppContext';
@@ -105,7 +106,7 @@ export function HomePage() {
             { icon: '🍲', label: t.food, bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
             { icon: '🧺', label: t.groceries, bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
             { icon: '🏥', label: t.pharmacy, bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
-            { icon: '🥦🍊', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
+            { icon: '🥬🍅', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
           ].map(({ icon, label, bg, border, ring }) => (
             <button
               key={label}
@@ -164,9 +165,9 @@ export function HomePage() {
           <div className="relative -top-6">
             <button
               onClick={() => navigate('/cart')}
-              className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream"
+              className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream overflow-hidden"
             >
-              <ShoppingCart className="w-6 h-6" strokeWidth={1.5} />
+              <img src={cartBasketIcon} alt="Cart" className="w-10 h-10 object-contain" />
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-mana-charcoal text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {cartCount > 9 ? '9+' : cartCount}
