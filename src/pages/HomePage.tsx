@@ -44,11 +44,12 @@ export function HomePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setLanguage(isTeluguActive ? 'en' : 'te')}
-              className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-mana-charcoal/10 bg-white/80"
+              className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+              style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'rgba(249,248,244,0.8)' }}
             >
               {isTeluguActive ? 'EN' : 'తె'}
             </button>
-            <button className="w-9 h-9 rounded-full bg-mana-charcoal/5 flex items-center justify-center">
+            <button className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
               <Bell className="w-5 h-5 text-mana-charcoal" strokeWidth={1.5} />
             </button>
           </div>
@@ -111,8 +112,8 @@ export function HomePage() {
             <button
               key={label}
               onClick={() => navigate('/home')}
-              className="flex items-center gap-3 py-3 px-4 rounded-xl bg-white shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer"
-              style={{ border: `1.5px solid ${border}` }}
+              className="flex items-center gap-3 py-3 px-4 rounded-xl shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer"
+              style={{ backgroundColor: 'rgba(249,248,244,0.9)', border: `1.5px solid ${border}` }}
             >
               <span className="relative flex-shrink-0">
                 <span
@@ -134,7 +135,7 @@ export function HomePage() {
 
       {/* 5. COMMUNITY NOTICE */}
       <section className="px-6 mt-8 mb-4">
-        <div className="bg-white border border-mana-charcoal/10 p-4 rounded-xl shadow-sm">
+        <div className="border p-4 rounded-xl shadow-sm" style={{ backgroundColor: 'rgba(249,248,244,0.9)', borderColor: 'rgba(26,26,26,0.1)' }}>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             <span className="uppercase tracking-widest text-[9px] font-bold opacity-60">{t.communityLabel}</span>
@@ -153,7 +154,7 @@ export function HomePage() {
       </section>
 
       {/* 6. BOTTOM NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-mana-charcoal/5 px-8 pt-3 pb-6 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto backdrop-blur-md border-t px-8 pt-3 pb-6 z-50" style={{ backgroundColor: 'rgba(249,248,244,0.95)', borderColor: 'rgba(26,26,26,0.05)' }}>
         <div className="flex justify-between items-end">
           <button onClick={() => navigate('/homepage')} className={tabClass(true)}>
             <Home className="w-6 h-6" strokeWidth={1.5} />
