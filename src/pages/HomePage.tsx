@@ -90,27 +90,28 @@ export function HomePage() {
       <section className="px-6 mt-6">
         <button
           onClick={() => navigate('/home')}
-          className="w-full bg-primary text-white py-4 rounded-xl text-lg font-medium shadow-lg shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          className="w-full bg-primary text-white py-3 rounded-lg text-sm font-medium shadow-md shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <span>{t.exploreAngadi}</span>
-          <ArrowRight className="w-5 h-5" strokeWidth={2} />
+          <ArrowRight className="w-4 h-4" strokeWidth={2} />
         </button>
       </section>
 
       {/* 4. DAILY ESSENTIALS GRID */}
       <section className="px-6 mt-8">
         <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-4">{t.dailyEssentials}</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[
-            { image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop', label: t.food },
-            { image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop', label: t.groceries },
-            { image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=200&h=200&fit=crop', label: t.pharmacy },
-            { image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&h=200&fit=crop', label: t.fruitsAndVeg },
+            { image: 'https://images.unsplash.com/photo-1567337710282-00832b415979?w=400&h=300&fit=crop', label: t.food },
+            { image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=300&fit=crop', label: t.groceries },
+            { image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=400&h=300&fit=crop', label: t.pharmacy },
+            { image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=300&fit=crop', label: t.fruitsAndVeg },
           ].map(({ image, label }) => (
-            <button key={label} className="aspect-square bg-white border border-mana-charcoal/5 rounded-xl flex flex-col items-center justify-center shadow-sm gap-1.5 overflow-hidden relative">
-              <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover opacity-25" />
-              <div className="relative z-10 flex flex-col items-center justify-center gap-1.5">
-                <span className="text-[11px] font-sans font-medium opacity-80">{label}</span>
+            <button key={label} className="relative rounded-xl overflow-hidden shadow-sm border border-mana-charcoal/5 aspect-[4/3]">
+              <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <span className="text-white text-sm font-sans font-bold drop-shadow-lg">{label}</span>
               </div>
             </button>
           ))}
