@@ -110,7 +110,8 @@ export function HomePage() {
           ].map(({ icon, label, bg, border, ring }) => (
             <button
               key={label}
-              className="flex items-center gap-3 py-3 px-4 rounded-xl bg-white shadow-sm active:scale-[0.97] transition-transform touch-manipulation"
+              onClick={() => navigate('/home')}
+              className="flex items-center gap-3 py-3 px-4 rounded-xl bg-white shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer"
               style={{ border: `1.5px solid ${border}` }}
             >
               <span className="relative flex-shrink-0">
@@ -167,7 +168,7 @@ export function HomePage() {
               onClick={() => navigate('/cart')}
               className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream"
             >
-              <GampaIcon className="w-9 h-9" strokeWidth={1.8} />
+              <GampaIcon className="w-11 h-11" strokeWidth={1.8} />
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-mana-charcoal text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {cartCount > 9 ? '9+' : cartCount}
