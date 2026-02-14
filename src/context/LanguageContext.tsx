@@ -210,7 +210,13 @@ interface Translations {
   // BottomNav
   navSaved: string;
   navCart: string;
+  navMenu: string;
   currentStatusLabel: string;
+
+  // Recently Ordered
+  recentlyOrdered: string;
+  viewAll: string;
+  welcomeToAngadi: string;
 }
 
 const teluguTranslations: Translations = {
@@ -422,6 +428,12 @@ const teluguTranslations: Translations = {
   // BottomNav
   navSaved: 'ఇష్టమైనవి',
   navCart: 'బుట్ట',
+  navMenu: 'మెను',
+
+  // Recently Ordered
+  recentlyOrdered: 'ఇటీవల ఆర్డర్ చేసినవి',
+  viewAll: 'అన్నీ చూడండి',
+  welcomeToAngadi: 'అంగడికి స్వాగతం',
 };
 
 const englishTranslations: Translations = {
@@ -633,8 +645,13 @@ const englishTranslations: Translations = {
   // BottomNav
   navSaved: 'Saved',
   navCart: 'Cart',
-};
+  navMenu: 'Menu',
 
+  // Recently Ordered
+  recentlyOrdered: 'Recently Ordered',
+  viewAll: 'View All',
+  welcomeToAngadi: 'Welcome to Angadi',
+};
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
