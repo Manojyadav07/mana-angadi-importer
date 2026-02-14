@@ -100,24 +100,31 @@ export function HomePage() {
       {/* 4. DAILY ESSENTIALS GRID */}
       <section className="px-6 mt-6">
         <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-3">{t.dailyEssentials}</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: '🍲', label: t.food, splash: 'rgba(234,140,46,0.15)' },
-            { icon: '🧺', label: t.groceries, splash: 'rgba(139,90,43,0.15)' },
-            { icon: '🏥', label: t.pharmacy, splash: 'rgba(20,184,166,0.15)' },
-            { icon: '🍎', label: t.fruitsAndVeg, splash: 'rgba(45,185,45,0.15)' },
-          ].map(({ icon, label, splash }) => (
+            { icon: '🍲', label: t.food, bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
+            { icon: '🧺', label: t.groceries, bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
+            { icon: '🏥', label: t.pharmacy, bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
+            { icon: '🍎', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
+          ].map(({ icon, label, bg, border, ring }) => (
             <button
               key={label}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white border border-mana-charcoal/5 shadow-sm active:scale-[0.96] transition-transform touch-manipulation"
+              className="flex items-center gap-3 py-3 px-4 rounded-xl bg-white shadow-sm active:scale-[0.97] transition-transform touch-manipulation"
+              style={{ border: `1.5px solid ${border}` }}
             >
-              <span
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl animate-[bloom-inner_3s_ease-in-out_infinite]"
-                style={{ background: splash }}
-              >
-                {icon}
+              <span className="relative flex-shrink-0">
+                <span
+                  className="absolute inset-0 rounded-full animate-[bloom-outer_3s_ease-in-out_infinite]"
+                  style={{ background: ring, width: 48, height: 48, top: -4, left: -4 }}
+                />
+                <span
+                  className="relative w-10 h-10 rounded-full flex items-center justify-center text-2xl"
+                  style={{ background: bg }}
+                >
+                  {icon}
+                </span>
               </span>
-              <span className="text-[10px] font-sans font-bold text-mana-charcoal/70 leading-tight text-center">{label}</span>
+              <span className="text-[13px] font-sans font-bold text-mana-charcoal/90 leading-tight">{label}</span>
             </button>
           ))}
         </div>
