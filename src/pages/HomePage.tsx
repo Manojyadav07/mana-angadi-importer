@@ -98,33 +98,26 @@ export function HomePage() {
       </section>
 
       {/* 4. DAILY ESSENTIALS GRID */}
-      <section className="px-6 mt-8">
-        <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-4">{t.dailyEssentials}</p>
-        <div className="grid grid-cols-2 gap-3">
+      <section className="px-6 mt-6">
+        <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-3">{t.dailyEssentials}</p>
+        <div className="grid grid-cols-4 gap-2">
           {[
-            { icon: '🍛', label: t.food, splashColor: 'rgba(234,140,46,0.18)', ringColor: 'rgba(234,140,46,0.10)' },
-            { icon: '🛒', label: t.groceries, splashColor: 'rgba(139,90,43,0.18)', ringColor: 'rgba(139,90,43,0.10)' },
-            { icon: '💊', label: t.pharmacy, splashColor: 'rgba(20,184,166,0.18)', ringColor: 'rgba(20,184,166,0.10)' },
-            { icon: '🥬', label: t.fruitsAndVeg, splashColor: 'rgba(45,185,45,0.18)', ringColor: 'rgba(45,185,45,0.10)' },
-          ].map(({ icon, label, splashColor, ringColor }) => (
+            { icon: '🍲', label: t.food, splash: 'rgba(234,140,46,0.15)' },
+            { icon: '🧺', label: t.groceries, splash: 'rgba(139,90,43,0.15)' },
+            { icon: '🏥', label: t.pharmacy, splash: 'rgba(20,184,166,0.15)' },
+            { icon: '🍎', label: t.fruitsAndVeg, splash: 'rgba(45,185,45,0.15)' },
+          ].map(({ icon, label, splash }) => (
             <button
               key={label}
-              className="relative rounded-xl overflow-hidden shadow-sm border border-mana-charcoal/5 aspect-[4/3] bg-white flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation"
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white border border-mana-charcoal/5 shadow-sm active:scale-[0.96] transition-transform touch-manipulation"
             >
-              {/* Outer bloom ring */}
               <span
-                className="absolute rounded-full animate-[bloom-outer_3s_ease-in-out_infinite]"
-                style={{ width: 90, height: 90, background: ringColor }}
-              />
-              {/* Inner splash */}
-              <span
-                className="absolute rounded-full animate-[bloom-inner_3s_ease-in-out_infinite_0.4s]"
-                style={{ width: 64, height: 64, background: splashColor }}
-              />
-              {/* Icon */}
-              <span className="relative z-10 text-4xl leading-none select-none">{icon}</span>
-              {/* Label */}
-              <span className="relative z-10 text-[12px] font-sans font-bold text-mana-charcoal/80 tracking-wide">{label}</span>
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl animate-[bloom-inner_3s_ease-in-out_infinite]"
+                style={{ background: splash }}
+              >
+                {icon}
+              </span>
+              <span className="text-[10px] font-sans font-bold text-mana-charcoal/70 leading-tight text-center">{label}</span>
             </button>
           ))}
         </div>
