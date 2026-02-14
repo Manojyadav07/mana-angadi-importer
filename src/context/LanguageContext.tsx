@@ -421,8 +421,8 @@ const teluguTranslations: Translations = {
   groceries: 'కిరాణా',
   pharmacy: 'మందుల షాపు',
   fruitsAndVeg: 'పండ్లు & కూరగాయలు',
-  communityLabel: 'సమాజం',
-  communityMessage: 'ఈ రోజు ₹200 పైన ఆర్డర్లకు ఉచిత డెలివరీ. మన ఊరి అంగడులకు మద్దతు ఇవ్వండి!',
+  communityLabel: 'కమ్యూనిటీ నోటీస్',
+  communityMessage: 'హై స్ట్రీట్‌కు సాయంత్రం 4 గంటలకు బ్యాచ్ డెలివరీ షెడ్యూల్ చేయబడింది. పూల్‌లో చేరండి, ఉచిత డెలివరీ పొందండి.',
   neighboursJoined: 'ఇరుగుపొరుగు వారు ఈ రోజు చేరారు',
 
   // BottomNav
@@ -638,8 +638,8 @@ const englishTranslations: Translations = {
   groceries: 'Groceries',
   pharmacy: 'Pharmacy',
   fruitsAndVeg: 'Fruits & Veg',
-  communityLabel: 'Community',
-  communityMessage: 'Free delivery today on all orders above ₹200. Support your local village shops!',
+  communityLabel: 'Community Notice',
+  communityMessage: 'A batch delivery to High Street is scheduled for 4 PM. Join the pool and get free delivery.',
   neighboursJoined: 'neighbours joined today',
 
   // BottomNav
