@@ -102,17 +102,29 @@ export function HomePage() {
         <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-4">{t.dailyEssentials}</p>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { image: 'https://images.unsplash.com/photo-1567337710282-00832b415979?w=400&h=300&fit=crop', label: t.food },
-            { image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=300&fit=crop', label: t.groceries },
-            { image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=400&h=300&fit=crop', label: t.pharmacy },
-            { image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=300&fit=crop', label: t.fruitsAndVeg },
-          ].map(({ image, label }) => (
-            <button key={label} className="relative rounded-xl overflow-hidden shadow-sm border border-mana-charcoal/5 aspect-[4/3]">
-              <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-              <div className="absolute bottom-0 left-0 right-0 p-3">
-                <span className="text-white text-sm font-sans font-bold drop-shadow-lg">{label}</span>
-              </div>
+            { icon: '🍛', label: t.food, splashColor: 'rgba(234,140,46,0.18)', ringColor: 'rgba(234,140,46,0.10)' },
+            { icon: '🛒', label: t.groceries, splashColor: 'rgba(139,90,43,0.18)', ringColor: 'rgba(139,90,43,0.10)' },
+            { icon: '💊', label: t.pharmacy, splashColor: 'rgba(20,184,166,0.18)', ringColor: 'rgba(20,184,166,0.10)' },
+            { icon: '🥬', label: t.fruitsAndVeg, splashColor: 'rgba(45,185,45,0.18)', ringColor: 'rgba(45,185,45,0.10)' },
+          ].map(({ icon, label, splashColor, ringColor }) => (
+            <button
+              key={label}
+              className="relative rounded-xl overflow-hidden shadow-sm border border-mana-charcoal/5 aspect-[4/3] bg-white flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              {/* Outer bloom ring */}
+              <span
+                className="absolute rounded-full animate-[bloom-outer_3s_ease-in-out_infinite]"
+                style={{ width: 90, height: 90, background: ringColor }}
+              />
+              {/* Inner splash */}
+              <span
+                className="absolute rounded-full animate-[bloom-inner_3s_ease-in-out_infinite_0.4s]"
+                style={{ width: 64, height: 64, background: splashColor }}
+              />
+              {/* Icon */}
+              <span className="relative z-10 text-4xl leading-none select-none">{icon}</span>
+              {/* Label */}
+              <span className="relative z-10 text-[12px] font-sans font-bold text-mana-charcoal/80 tracking-wide">{label}</span>
             </button>
           ))}
         </div>
