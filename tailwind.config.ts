@@ -115,6 +115,14 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "bloom-outer": {
+          "0%, 100%": { transform: "scale(0.7)", opacity: "0.3" },
+          "50%": { transform: "scale(1.15)", opacity: "0.08" },
+        },
+        "bloom-inner": {
+          "0%, 100%": { transform: "scale(0.8)", opacity: "0.5" },
+          "50%": { transform: "scale(1.1)", opacity: "0.15" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
