@@ -17,14 +17,10 @@ export function useRealtimeLocation(orderId: string | undefined) {
       return;
     }
 
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let pollInterval: NodeJS.Timeout | null = null;
-
-    // Fetch latest known location
-    const fetchInitialLocation = async () => {
+    const fetchLatestLocation = async () => {
       const { data, error } = await supabase
         .from("delivery_location_updates")
-        .select("lat, lng, timestamp")
+        .select("*")
         .eq("order_id", orderId)
         .order("timestamp", { ascending: false })
         .limit(1)
@@ -32,8 +28,8 @@ export function useRealtimeLocation(orderId: string | undefined) {
 
       if (!error && data) {
         setLocation({
-          lat: data.lat,
-          lng: data.lng,
+          lat: Number(data.lat),
+          lng: Number(data.lng),
           timestamp: data.timestamp ?? new Date().toISOString(),
         });
       }
@@ -41,10 +37,10 @@ export function useRealtimeLocation(orderId: string | undefined) {
       setIsLoading(false);
     };
 
-    fetchInitialLocation();
+    fetchLatestLocation();
 
-    // Subscribe to realtime INSERT events
-    channel = supabase
+    // Subscribe to realtime updates
+    const channel = supabase
       .channel(`location-${orderId}`)
       .on(
         "postgres_changes",
@@ -55,43 +51,23 @@ export function useRealtimeLocation(orderId: string | undefined) {
           filter: `order_id=eq.${orderId}`,
         },
         (payload) => {
-          const newData = payload.new as {
-            lat: number;
-            lng: number;
-            created_at: string;
-          };
+          const newData = payload.new as any;
 
           setLocation({
-            lat: newData.lat,
-            lng: newData.lng,
-            timestamp: newData.created_at,
+            lat: Number(newData.lat),
+            lng: Number(newData.lng),
+            timestamp: newData.timestamp ?? new Date().toISOString(),
           });
         },
       )
       .subscribe();
 
-    // Fallback polling every 5 seconds (safety net)
-    pollInterval = setInterval(async () => {
-      const { data } = await supabase
-        .from("delivery_location_updates")
-        .select("lat, lng, timestamp")
-        .eq("order_id", orderId)
-        .order("timestamp", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setLocation({
-          lat: data.lat,
-          lng: data.lng,
-          timestamp: data.timestamp ?? new Date().toISOString(),
-        });
-      }
-    }, 5000);
+    // Fallback polling every 5 seconds
+    const pollInterval = setInterval(fetchLatestLocation, 5000);
 
     return () => {
-      if (channel) channel.unsubscribe();
-      if (pollInterval) clearInterval(pollInterval);
+      channel.unsubscribe();
+      clearInterval(pollInterval);
     };
   }, [orderId]);
 
