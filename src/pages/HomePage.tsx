@@ -88,7 +88,7 @@ export function HomePage() {
       {/* 3. EXPLORE CTA */}
       <section className="px-6 mt-6">
         <button
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/categories')}
           className="w-full bg-primary text-primary-foreground py-3 rounded-lg text-sm font-medium shadow-md shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <span>{t.exploreAngadi}</span>
@@ -101,14 +101,14 @@ export function HomePage() {
         <p className="label-micro mb-3">{t.dailyEssentials}</p>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: '🍲', label: t.food, bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
-            { icon: '🧺', label: t.groceries, bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
-            { icon: '🏥', label: t.pharmacy, bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
-            { icon: '🥬🍅', label: t.fruitsAndVeg, bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
-          ].map(({ icon, label, bg, border, ring }) => (
+            { icon: '🍲', label: t.food, category: 'food', bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
+            { icon: '🧺', label: t.groceries, category: 'groceries', bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
+            { icon: '🏥', label: t.pharmacy, category: 'pharmacy', bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
+            { icon: '🥬🍅', label: t.fruitsAndVeg, category: 'vegetables', bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
+          ].map(({ icon, label, category, bg, border, ring }) => (
             <button
               key={label}
-              onClick={() => navigate('/home')}
+              onClick={() => navigate(`/shops?category=${category}`)}
               className="flex items-center gap-3 py-3 px-4 rounded-xl shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer bg-mana-cream/90"
               style={{ border: `1.5px solid ${border}` }}
             >
