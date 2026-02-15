@@ -20,8 +20,9 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#2db92d",
+          DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -59,8 +60,8 @@ export default {
           DEFAULT: "hsl(var(--charcoal))",
           foreground: "hsl(var(--charcoal-foreground))",
         },
-        "mana-cream": "#F9F8F4",
-        "mana-charcoal": "#1A1A1A",
+        "mana-cream": "hsl(var(--mana-cream))",
+        "mana-charcoal": "hsl(var(--mana-charcoal))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -81,7 +82,7 @@ export default {
         "3xl": "1.5rem",
       },
       fontFamily: {
-        display: ["'Newsreader'", "serif"],
+        display: ["'Noto Serif Telugu'", "'Newsreader'", "serif"],
         sans: ["'Inter'", "system-ui", "-apple-system", "sans-serif"],
       },
       fontSize: {
