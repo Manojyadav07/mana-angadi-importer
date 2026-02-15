@@ -217,7 +217,7 @@ export function ShopPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {filteredProducts.map(product => {
               const cartItem = getCartItem(product.id);
               const quantity = cartItem?.quantity || 0;
@@ -227,11 +227,10 @@ export function ShopPage() {
               return (
                 <div
                   key={product.id}
-                  className="bg-card rounded-xl shadow-sm border border-transparent hover:border-primary/20 transition-colors overflow-hidden flex"
-                  style={{ minHeight: 120 }}
+                  className="bg-card rounded-xl shadow-sm border border-transparent hover:border-primary/20 transition-colors p-4"
                 >
-                  {/* Product Image — Left 1/3 */}
-                  <div className="w-1/3 flex-shrink-0 bg-muted">
+                  {/* 1:1 Square Product Image */}
+                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted">
                     {product.image ? (
                       <img
                         src={product.image}
@@ -239,65 +238,63 @@ export function ShopPage() {
                         className={`w-full h-full object-cover ${!product.inStock ? 'opacity-50 grayscale' : ''}`}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center min-h-[120px]">
-                        <Package className="w-8 h-8 text-muted-foreground/30" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-12 h-12 text-muted-foreground/30" />
                       </div>
                     )}
                   </div>
 
-                  {/* Product Info — Right 2/3 */}
-                  <div className="flex-1 p-4 flex flex-col justify-between">
-                    <div>
-                      <h3 className={`text-lg font-medium leading-snug ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-                        {productName}
-                      </h3>
-                      {product.category && (
-                        <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
-                          {product.category}
-                        </p>
-                      )}
-                      {unit && (
-                        <p className="text-muted-foreground text-xs italic mt-1">
-                          {language === 'en' ? `per ${unit}` : `ప్రతి ${unit}`}
-                        </p>
-                      )}
-                    </div>
+                  {/* Product Details */}
+                  <div className="mt-3">
+                    <h3 className={`font-display text-xl font-medium leading-snug ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
+                      {productName}
+                    </h3>
+                    {product.category && (
+                      <p className="text-muted-foreground text-sm mt-1 line-clamp-1">
+                        {product.category}
+                      </p>
+                    )}
+                    {unit && (
+                      <p className="text-muted-foreground text-xs italic mt-1">
+                        {language === 'en' ? `per ${unit}` : `ప్రతి ${unit}`}
+                      </p>
+                    )}
+                  </div>
 
-                    <div className="flex items-end justify-between mt-2">
-                      <span className={`text-lg font-bold ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-                        ₹{product.price}
-                      </span>
+                  {/* Bottom row: Price + Add */}
+                  <div className="flex items-center justify-between mt-4">
+                    <span className={`text-xl font-bold ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
+                      ₹{product.price}
+                    </span>
 
-                      {/* Add / Quantity */}
-                      {!product.inStock ? (
-                        <span className="text-destructive text-xs font-medium">{t.outOfStock}</span>
-                      ) : quantity === 0 ? (
+                    {!product.inStock ? (
+                      <span className="text-destructive text-xs font-medium">{t.outOfStock}</span>
+                    ) : quantity === 0 ? (
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2.5">
                         <button
-                          onClick={() => addToCart(product)}
-                          className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+                          onClick={() => updateQuantity(product.id, quantity - 1)}
+                          className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center active:scale-90 transition-transform"
                         >
-                          <Plus className="w-5 h-5" />
+                          <Minus className="w-4 h-4 text-foreground" />
                         </button>
-                      ) : (
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            onClick={() => updateQuantity(product.id, quantity - 1)}
-                            className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center active:scale-90 transition-transform"
-                          >
-                            <Minus className="w-4 h-4 text-foreground" />
-                          </button>
-                          <span className="w-5 text-center font-bold text-sm text-foreground">
-                            {quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(product.id, quantity + 1)}
-                            className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-transform"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                        <span className="w-5 text-center font-bold text-sm text-foreground">
+                          {quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(product.id, quantity + 1)}
+                          className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-transform"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
