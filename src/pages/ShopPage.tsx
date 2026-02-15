@@ -7,7 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLocalizedName, getLocalizedShopType } from '@/types';
 import {
-  ArrowLeft, Heart, Star, MapPin, BadgeCheck,
+  ArrowLeft, Search, Star, MapPin,
   Plus, Minus, Loader2, Package, ShoppingBag,
 } from 'lucide-react';
 
@@ -21,8 +21,8 @@ const SHOP_IMAGES: Record<string, string> = {
   medical: shopMedicalImg,
 };
 
-const CATEGORY_TABS_EN = ['Traditional Spices', 'Hand-Pounded Rice', 'Fresh Pulses', 'Local Oils'];
-const CATEGORY_TABS_TE = ['సంప్రదాయ మసాలాలు', 'చేతి దంపుడు బియ్యం', 'తాజా పప్పులు', 'నాటు నూనెలు'];
+const TABS_EN = ['All', 'Popular', 'Recommended'];
+const TABS_TE = ['అన్నీ', 'ప్రసిద్ధ', 'సిఫార్సు'];
 
 export function ShopPage() {
   const { shopId } = useParams<{ shopId: string }>();
@@ -31,7 +31,8 @@ export function ShopPage() {
   const { cart, addToCart, updateQuantity, getCartItemCount, getCartTotal } = useApp();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: shop, isLoading: shopLoading } = useShop(shopId);
   const { data: products = [], isLoading: productsLoading } = useProducts(shopId);
@@ -41,8 +42,15 @@ export function ShopPage() {
   const isLoading = shopLoading || productsLoading;
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => p.isActive);
-  }, [products]);
+    let filtered = products.filter(p => p.isActive);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name_en.toLowerCase().includes(q) || p.name_te.includes(q)
+      );
+    }
+    return filtered;
+  }, [products, searchQuery]);
 
   const getCartItem = (productId: string) =>
     cart.find(item => item.product.id === productId);
@@ -58,8 +66,8 @@ export function ShopPage() {
 
   if (isLoading) {
     return (
-      <MobileLayout showNav={false}>
-        <div className="flex items-center justify-center min-h-screen bg-background">
+      <MobileLayout>
+        <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </MobileLayout>
@@ -69,7 +77,7 @@ export function ShopPage() {
   if (!shop) {
     return (
       <MobileLayout>
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex items-center justify-center min-h-screen">
           <p className="text-muted-foreground font-display text-lg">{t.shopNotFound}</p>
         </div>
       </MobileLayout>
@@ -79,242 +87,192 @@ export function ShopPage() {
   const shopName = getLocalizedName(shop, language);
   const shopType = getLocalizedShopType(shop, language);
   const heroImg = SHOP_IMAGES[shop.type] || shopGroceryImg;
-  const tabs = language === 'en' ? CATEGORY_TABS_EN : CATEGORY_TABS_TE;
-
-  const tagline = language === 'en'
-    ? `Serving Metlachittapur with authentic ${shopType.toLowerCase()} essentials since 1972.`
-    : `1972 నుండి మెట్లచిట్టాపూర్‌కు అసలైన ${shopType} సేవలు.`;
+  const tabs = language === 'en' ? TABS_EN : TABS_TE;
 
   return (
     <MobileLayout>
-      {/* ═══ 1. HERO SECTION ═══ */}
-      <div className="relative w-full" style={{ height: 280 }}>
-        <img
-          src={heroImg}
-          alt={shopName}
-          className="w-full h-full object-cover"
-        />
-        {/* Dark gradient overlay */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, rgba(0,0,0,0.45) 100%)',
-          }}
-        />
-
-        {/* Top navigation overlay */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4">
+      {/* ═══ 1. STICKY HEADER ═══ */}
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-foreground/5">
+        <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={handleBack}
-            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center active:scale-95 transition-transform"
+            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
+          <h1 className="font-display text-lg font-semibold text-foreground truncate mx-3 flex-1 text-center">
+            {shopName}
+          </h1>
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
-            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center active:scale-95 transition-transform"
+            onClick={() => setShowSearch(!showSearch)}
+            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
           >
-            <Heart
-              className={`w-5 h-5 ${isFavorited ? 'text-red-400 fill-red-400' : 'text-white'}`}
-            />
+            <Search className="w-5 h-5 text-foreground" />
           </button>
         </div>
-      </div>
-
-      {/* ═══ 2. SHOP INFO BLOCK (overlapping card) ═══ */}
-      <div className="relative -mt-6 bg-background rounded-t-3xl px-6 pt-6 pb-4">
-        <h1 className="font-display text-4xl font-semibold text-foreground leading-tight">
-          {shopName}
-        </h1>
-        <p className="text-muted-foreground text-sm italic mt-2 leading-relaxed">
-          {tagline}
-        </p>
-
-        {/* ═══ 3. STATS ROW ═══ */}
-        <div className="flex items-center mt-5 py-4 border-y border-primary/10">
-          {/* Rating */}
-          <div className="flex-1 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5">
-              <Star className="w-4 h-4 text-primary fill-primary" />
-              <span className="text-foreground font-semibold text-base">4.8</span>
-            </div>
-            <span className="label-micro">
-              {language === 'en' ? 'RATING' : 'రేటింగ్'}
-            </span>
+        {showSearch && (
+          <div className="px-4 pb-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={language === 'en' ? 'Search products...' : 'ఉత్పత్తులు వెతకండి...'}
+              className="w-full px-4 py-2.5 rounded-full bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              autoFocus
+            />
           </div>
+        )}
+      </header>
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-primary/10" />
-
-          {/* Distance */}
-          <div className="flex-1 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-semibold text-base">1.2 km</span>
-            </div>
-            <span className="label-micro">
-              {language === 'en' ? 'DISTANCE' : 'దూరం'}
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-primary/10" />
-
-          {/* Local Certified */}
-          <div className="flex-1 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5">
-              <BadgeCheck className="w-4 h-4 text-primary" />
-              <span className="text-foreground font-semibold text-base">
-                {language === 'en' ? 'Local' : 'స్థానిక'}
+      {/* ═══ 2. HERO SECTION ═══ */}
+      <div className="px-4 pt-4">
+        <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted shadow-sm">
+          <img src={heroImg} alt={shopName} className="w-full h-full object-cover" />
+          {shop.isOpen && (
+            <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm px-3 py-1 rounded-full">
+              <span className="text-primary text-xs font-semibold">
+                {language === 'en' ? 'Open Now' : 'ఇప్పుడు తెరిచి ఉంది'}
               </span>
             </div>
-            <span className="label-micro">
-              {language === 'en' ? 'CERTIFIED' : 'ధ్రువీకరించబడింది'}
-            </span>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* ═══ 4. STICKY CATEGORY TABS ═══ */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-foreground/5">
-        <div className="flex gap-0 overflow-x-auto scrollbar-hide px-6 py-0">
+      {/* ═══ 3. SHOP INFO BLOCK ═══ */}
+      <div className="px-4 pt-4 pb-2">
+        <h2 className="font-display text-2xl font-semibold text-foreground">{shopName}</h2>
+        <p className="text-muted-foreground text-sm italic mt-1">{shopType}</p>
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-primary fill-primary" />
+            <span className="text-sm font-medium text-foreground">4.8</span>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="w-4 h-4" />
+            <span className="text-sm">1.2 km</span>
+          </div>
+        </div>
+        <div className="h-px bg-border mt-4" />
+      </div>
+
+      {/* ═══ 4. CATEGORY TABS ═══ */}
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab, idx) => (
             <button
               key={tab}
               onClick={() => setActiveTab(idx)}
-              className={`relative px-4 py-3.5 whitespace-nowrap text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === idx
-                  ? 'text-primary font-bold'
-                  : 'text-foreground/40'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card border border-border text-muted-foreground'
               }`}
             >
               {tab}
-              {activeTab === idx && (
-                <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary rounded-full" />
-              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ═══ 5. PRODUCT SECTION ═══ */}
-      <div className="px-5 pt-5 pb-36">
-        {/* Section header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-2xl font-semibold text-foreground">
-            {tabs[activeTab]}
-          </h2>
-          <button className="text-primary text-sm font-medium">
-            {language === 'en' ? 'View All' : 'అన్నీ చూడండి'}
-          </button>
-        </div>
-
+      {/* ═══ 5. PRODUCT LIST ═══ */}
+      <div className="px-4 pb-36 space-y-3">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <div className="text-center py-12">
+            <Package className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-muted-foreground text-sm">
-              {language === 'en' ? 'No products available yet' : 'ఇంకా ఉత్పత్తులు అందుబాటులో లేవు'}
+              {language === 'en' ? 'No products available' : 'ఉత్పత్తులు అందుబాటులో లేవు'}
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
-            {filteredProducts.map(product => {
-              const cartItem = getCartItem(product.id);
-              const quantity = cartItem?.quantity || 0;
-              const productName = getLocalizedName(product, language);
-              const unit = language === 'en' ? product.unit_en : product.unit_te;
+          filteredProducts.map(product => {
+            const cartItem = getCartItem(product.id);
+            const quantity = cartItem?.quantity || 0;
+            const productName = getLocalizedName(product, language);
+            const unit = language === 'en' ? product.unit_en : product.unit_te;
 
-              return (
-                <div
-                  key={product.id}
-                  className="bg-card rounded-xl shadow-sm border border-transparent hover:border-primary/20 transition-colors p-4"
-                >
-                  {/* 1:1 Square Product Image */}
-                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted">
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={productName}
-                        className={`w-full h-full object-cover ${!product.inStock ? 'opacity-50 grayscale' : ''}`}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 text-muted-foreground/30" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="mt-3">
-                    <h3 className={`font-display text-xl font-medium leading-snug ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-                      {productName}
-                    </h3>
-                    {product.category && (
-                      <p className="text-muted-foreground text-sm mt-1 line-clamp-1">
-                        {product.category}
-                      </p>
-                    )}
-                    {unit && (
-                      <p className="text-muted-foreground text-xs italic mt-1">
-                        {language === 'en' ? `per ${unit}` : `ప్రతి ${unit}`}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Bottom row: Price + Add */}
-                  <div className="flex items-center justify-between mt-4">
-                    <span className={`text-xl font-bold ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-                      ₹{product.price}
-                    </span>
-
-                    {!product.inStock ? (
-                      <span className="text-destructive text-xs font-medium">{t.outOfStock}</span>
-                    ) : quantity === 0 ? (
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-90 transition-transform"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2.5">
-                        <button
-                          onClick={() => updateQuantity(product.id, quantity - 1)}
-                          className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center active:scale-90 transition-transform"
-                        >
-                          <Minus className="w-4 h-4 text-foreground" />
-                        </button>
-                        <span className="w-5 text-center font-bold text-sm text-foreground">
-                          {quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(product.id, quantity + 1)}
-                          className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-transform"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+            return (
+              <div
+                key={product.id}
+                className="bg-card rounded-xl shadow-sm p-4 flex items-center gap-4"
+              >
+                {/* Square Thumbnail */}
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={productName}
+                      className={`w-full h-full object-cover ${!product.inStock ? 'opacity-50 grayscale' : ''}`}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-6 h-6 text-muted-foreground/40" />
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <h4 className={`font-medium text-sm leading-tight ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
+                    {productName}
+                  </h4>
+                  {unit && (
+                    <p className="text-muted-foreground text-xs mt-0.5">{unit}</p>
+                  )}
+                  <p className="text-foreground font-semibold text-sm mt-1">₹{product.price}</p>
+                  {!product.inStock && (
+                    <span className="text-destructive text-xs">{t.outOfStock}</span>
+                  )}
+                </div>
+
+                {/* Add / Quantity */}
+                <div className="flex-shrink-0">
+                  {!product.inStock ? (
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center opacity-40">
+                      <Plus className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  ) : quantity === 0 ? (
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(product.id, quantity - 1)}
+                        className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+                      >
+                        <Minus className="w-4 h-4 text-foreground" />
+                      </button>
+                      <span className="w-6 text-center font-semibold text-sm">{quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(product.id, quantity + 1)}
+                        className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-95 transition-transform"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* ═══ 7. FLOATING BASKET BAR ═══ */}
+      {/* ═══ 6. FLOATING BASKET BAR ═══ */}
       {cartCount > 0 && (
         <div className="fixed bottom-24 left-4 right-4 max-w-md mx-auto z-30 animate-slide-up">
           <button
             onClick={() => navigate('/basket')}
-            className="w-full bg-primary text-primary-foreground rounded-full px-6 py-4 flex items-center justify-between shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
+            className="w-full bg-primary text-primary-foreground rounded-full px-5 py-3.5 flex items-center justify-between shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5" />
               </div>
-              <span className="font-medium text-base">
+              <span className="font-medium">
                 {cartCount} {cartCount === 1 ? (language === 'en' ? 'item' : 'వస్తువు') : (language === 'en' ? 'items' : 'వస్తువులు')}
               </span>
             </div>
