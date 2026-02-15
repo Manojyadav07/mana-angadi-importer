@@ -51,7 +51,7 @@ export function ShopListingPage() {
   const category = searchParams.get('category') || '';
   const catInfo = CATEGORY_MAP[category];
 
-  const COMING_SOON_SLUGS = ['dairy', 'sweets', 'household', 'artisans', 'grama-ruchulu', 'rythu-crops'];
+  const COMING_SOON_SLUGS = ['dairy', 'sweets', 'household', 'artisans', 'grama-ruchulu', 'rythu-crops', 'rythu'];
   const isComingSoon = COMING_SOON_SLUGS.includes(category);
 
   const filteredShops = useMemo(() => {
