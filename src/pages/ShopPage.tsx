@@ -224,28 +224,28 @@ export function ShopPage() {
                   )}
                 </div>
 
-                {/* Add / Quantity */}
+                {/* Add / Quantity Stepper */}
                 <div className="flex-shrink-0">
                   {!product.inStock ? (
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center opacity-40">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center opacity-40">
                       <Plus className="w-4 h-4 text-muted-foreground" />
                     </div>
                   ) : quantity === 0 ? (
                     <button
                       onClick={() => addToCart(product)}
-                      className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                      className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-95 transition-transform"
                     >
                       <Plus className="w-5 h-5" />
                     </button>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-primary/10 rounded-full h-10 px-1">
                       <button
                         onClick={() => updateQuantity(product.id, quantity - 1)}
-                        className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+                        className="w-8 h-8 rounded-full border border-foreground/10 flex items-center justify-center active:scale-95 transition-transform"
                       >
                         <Minus className="w-4 h-4 text-foreground" />
                       </button>
-                      <span className="w-6 text-center font-semibold text-sm">{quantity}</span>
+                      <span className="w-7 text-center font-bold text-sm text-foreground">{quantity}</span>
                       <button
                         onClick={() => updateQuantity(product.id, quantity + 1)}
                         className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-95 transition-transform"
