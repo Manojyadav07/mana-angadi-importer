@@ -12,7 +12,7 @@ export function BottomNav() {
   const cartCount = getCartItemCount();
 
   const hiddenPaths = ['/', '/login', '/order-success', '/delivery/onboarding'];
-  if (hiddenPaths.includes(location.pathname)) return null;
+  if (hiddenPaths.some((p) => location.pathname === p)) return null;
 
   const isActive = (path: string) =>
     location.pathname === path ||
@@ -38,15 +38,17 @@ export function BottomNav() {
           <span className={labelClass}>{t.navSaved}</span>
         </button>
 
-        {/* Center Floating Cart */}
+        {/* Center Floating Basket */}
         <div className="relative -top-6">
           <button
-            onClick={() => navigate('/cart')}
-            className="bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream"
+            onClick={() => navigate('/basket')}
+            className={`bg-primary w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 ring-6 ring-mana-cream transition-opacity ${
+              cartCount === 0 ? 'opacity-60' : ''
+            }`}
           >
             <GampaIcon className="w-11 h-11" strokeWidth={1.8} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-mana-charcoal text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-mana-cream">
                 {cartCount > 9 ? '9+' : cartCount}
               </span>
             )}
