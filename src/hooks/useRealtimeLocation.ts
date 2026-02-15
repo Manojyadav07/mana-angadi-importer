@@ -24,9 +24,9 @@ export function useRealtimeLocation(orderId: string | undefined) {
     const fetchInitialLocation = async () => {
       const { data, error } = await supabase
         .from("delivery_location_updates")
-        .select("lat, lng, created_at")
+        .select("lat, lng, timestamp")
         .eq("order_id", orderId)
-        .order("created_at", { ascending: false })
+        .order("timestamp", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -34,7 +34,7 @@ export function useRealtimeLocation(orderId: string | undefined) {
         setLocation({
           lat: data.lat,
           lng: data.lng,
-          timestamp: data.created_at,
+          timestamp: data.timestamp ?? new Date().toISOString(),
         });
       }
 
@@ -74,9 +74,9 @@ export function useRealtimeLocation(orderId: string | undefined) {
     pollInterval = setInterval(async () => {
       const { data } = await supabase
         .from("delivery_location_updates")
-        .select("lat, lng, created_at")
+        .select("lat, lng, timestamp")
         .eq("order_id", orderId)
-        .order("created_at", { ascending: false })
+        .order("timestamp", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -84,7 +84,7 @@ export function useRealtimeLocation(orderId: string | undefined) {
         setLocation({
           lat: data.lat,
           lng: data.lng,
-          timestamp: data.created_at,
+          timestamp: data.timestamp ?? new Date().toISOString(),
         });
       }
     }, 5000);
