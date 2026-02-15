@@ -122,10 +122,40 @@ export function ShopListingPage() {
             ))}
           </div>
         ) : filteredShops.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-sm font-display italic">
-              {language === 'en' ? 'No shops found in this category' : 'ఈ విభాగంలో అంగడులు కనుగొనబడలేదు'}
+          <div className="flex flex-col items-center justify-center text-center px-6 py-16">
+            {/* Subtle storefront illustration */}
+            <svg
+              className="w-40 h-40 opacity-40 text-muted-foreground"
+              viewBox="0 0 160 160"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect x="30" y="70" width="100" height="60" rx="4" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M30 70L50 40H110L130 70" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M30 70C30 62 42 62 42 70C42 62 54 62 54 70C54 62 66 62 66 70C66 62 78 62 78 70C78 62 90 62 90 70C90 62 102 62 102 70C102 62 114 62 114 70C114 62 130 62 130 70" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="62" y="95" width="36" height="35" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="80" y1="95" x2="80" y2="130" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="40" y="82" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="106" y="82" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="80" cy="38" r="4" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+
+            <h2 className="font-display text-2xl text-foreground font-semibold mt-6">
+              {language === 'en' ? 'Local partners coming soon' : 'స్థానిక భాగస్వాములు త్వరలో'}
+            </h2>
+
+            <p className="text-muted-foreground text-sm mt-3 leading-relaxed max-w-xs mx-auto">
+              {language === 'en'
+                ? 'We are onboarding trusted sellers in your village. Check back shortly or explore other categories.'
+                : 'మీ గ్రామంలో నమ్మకమైన విక్రేతలను చేర్చుతున్నాము. కొద్దిసేపట్లో తిరిగి చూడండి లేదా ఇతర విభాగాలను అన్వేషించండి.'}
             </p>
+
+            <button
+              onClick={() => navigate('/categories')}
+              className="btn-primary-pill mt-6 px-6 py-3 min-h-[56px] text-sm font-semibold"
+            >
+              {language === 'en' ? 'Explore Other Categories' : 'ఇతర విభాగాలు చూడండి'}
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
