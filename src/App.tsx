@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
+import { CategoryListingPage } from "./pages/CategoryListingPage";
 import { CartPage } from "./pages/CartPage";
 import { OrderSuccessPage } from "./pages/OrderSuccessPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -185,6 +186,7 @@ const App = () => {
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
                   <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+                  <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
                   <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
                   <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
                   <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
