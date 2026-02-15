@@ -15,19 +15,19 @@ export function CategoryGrid() {
   const groceries: CategorySurface = {
     label: language === 'en' ? 'Groceries' : 'కిరాణా',
     subtitle: language === 'en' ? 'Daily essentials delivered' : 'రోజువారీ అవసరాలు డెలివరీ',
-    path: '/home',
+    path: '/categories',
     anchor: true,
   };
 
   const paired: CategorySurface[] = [
-    { label: language === 'en' ? 'Food' : 'ఆహారం', path: '/home' },
-    { label: language === 'en' ? 'Pharmacy' : 'మందులు', path: '/home' },
+    { label: language === 'en' ? 'Food' : 'ఆహారం', path: '/categories' },
+    { label: language === 'en' ? 'Pharmacy' : 'మందులు', path: '/categories' },
   ];
 
   const wide: CategorySurface = {
     label: language === 'en' ? 'Vegetables & Fruits' : 'కూరగాయలు & పండ్లు',
     subtitle: language === 'en' ? 'Farm fresh, locally sourced' : 'పొలం నుండి నేరుగా, స్థానికంగా',
-    path: '/home',
+    path: '/categories',
   };
 
   return (
