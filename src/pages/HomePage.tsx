@@ -25,7 +25,7 @@ export function HomePage() {
   const labelClass = 'text-[9px] uppercase tracking-widest font-bold';
 
   return (
-    <div className="max-w-md mx-auto min-h-screen relative pb-28 bg-mana-cream text-mana-charcoal font-display selection:bg-primary/20">
+    <div className="screen-shell relative pb-28 font-display selection:bg-primary/20">
 
       {/* 1. HEADER */}
       <header className="px-6 pt-10 pb-4 bg-mana-cream">
@@ -35,7 +35,7 @@ export function HomePage() {
               <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-contain" />
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase opacity-60 mb-0.5">{t.welcomeHome}</p>
+              <p className="label-micro opacity-100 mb-0.5">{t.welcomeHome}</p>
               <h1 className="text-2xl font-medium leading-tight text-mana-charcoal">
                 {t.namaskaram}, <br />{displayName} {t.gaaru}
               </h1>
@@ -44,12 +44,11 @@ export function HomePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setLanguage(isTeluguActive ? 'en' : 'te')}
-              className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
-              style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'rgba(249,248,244,0.8)' }}
+              className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-foreground/10 bg-mana-cream/80"
             >
               {isTeluguActive ? 'EN' : 'తె'}
             </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
+            <button className="w-9 h-9 rounded-full flex items-center justify-center bg-foreground/5">
               <Bell className="w-5 h-5 text-mana-charcoal" strokeWidth={1.5} />
             </button>
           </div>
@@ -63,9 +62,8 @@ export function HomePage() {
           <span className="text-xs opacity-50 italic">{t.seasonalPicks}</span>
         </div>
         <div className="flex overflow-x-auto px-6 gap-3 hide-scrollbar">
-          {/* First: Morning Greens Basket */}
           <div className="flex-none w-64">
-            <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-mana-charcoal/5">
+            <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-foreground/5">
               <img className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&h=300&fit=crop" alt={language === 'te' ? 'ఉదయపు ఆకుకూరలు' : 'Morning Greens Basket'} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 text-white">
@@ -74,9 +72,8 @@ export function HomePage() {
               </div>
             </div>
           </div>
-          {/* Second: Banganapalli Gold */}
           <div className="flex-none w-64">
-            <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-mana-charcoal/5">
+            <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-foreground/5">
               <img className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&h=300&fit=crop" alt={language === 'te' ? 'బంగినపల్లి మామిడి' : 'Banganapalli Gold'} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 text-white">
@@ -92,7 +89,7 @@ export function HomePage() {
       <section className="px-6 mt-6">
         <button
           onClick={() => navigate('/home')}
-          className="w-full bg-primary text-white py-3 rounded-lg text-sm font-medium shadow-md shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          className="w-full bg-primary text-primary-foreground py-3 rounded-lg text-sm font-medium shadow-md shadow-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <span>{t.exploreAngadi}</span>
           <ArrowRight className="w-4 h-4" strokeWidth={2} />
@@ -101,7 +98,7 @@ export function HomePage() {
 
       {/* 4. DAILY ESSENTIALS GRID */}
       <section className="px-6 mt-6">
-        <p className="text-[10px] tracking-[0.2em] uppercase opacity-40 font-bold mb-3">{t.dailyEssentials}</p>
+        <p className="label-micro mb-3">{t.dailyEssentials}</p>
         <div className="grid grid-cols-2 gap-3">
           {[
             { icon: '🍲', label: t.food, bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
@@ -112,8 +109,8 @@ export function HomePage() {
             <button
               key={label}
               onClick={() => navigate('/home')}
-              className="flex items-center gap-3 py-3 px-4 rounded-xl shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer"
-              style={{ backgroundColor: 'rgba(249,248,244,0.9)', border: `1.5px solid ${border}` }}
+              className="flex items-center gap-3 py-3 px-4 rounded-xl shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer bg-mana-cream/90"
+              style={{ border: `1.5px solid ${border}` }}
             >
               <span className="relative flex-shrink-0">
                 <span
@@ -127,7 +124,7 @@ export function HomePage() {
                   {icon}
                 </span>
               </span>
-              <span className="text-[13px] font-sans font-bold text-mana-charcoal/90 leading-tight">{label}</span>
+              <span className="text-[13px] font-sans font-bold text-foreground/90 leading-tight">{label}</span>
             </button>
           ))}
         </div>
@@ -135,16 +132,16 @@ export function HomePage() {
 
       {/* 5. COMMUNITY NOTICE */}
       <section className="px-6 mt-8 mb-4">
-        <div className="border p-4 rounded-xl shadow-sm" style={{ backgroundColor: 'rgba(249,248,244,0.9)', borderColor: 'rgba(26,26,26,0.1)' }}>
+        <div className="card-notice">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="uppercase tracking-widest text-[9px] font-bold opacity-60">{t.communityLabel}</span>
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-60">{t.communityLabel}</span>
           </div>
-          <p className="text-sm italic leading-relaxed text-mana-charcoal/80 mb-3">{t.communityMessage}</p>
+          <p className="text-sm italic leading-relaxed text-foreground/80 mb-3">{t.communityMessage}</p>
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1.5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="w-5 h-5 rounded-full bg-mana-charcoal/10 border-2 border-white" />
+                <div key={i} className="w-5 h-5 rounded-full bg-foreground/10 border-2 border-white" />
               ))}
             </div>
             <span className="text-[7px] font-bold bg-mana-charcoal text-white w-4 h-4 rounded-full flex items-center justify-center">+12</span>
@@ -154,7 +151,7 @@ export function HomePage() {
       </section>
 
       {/* 6. BOTTOM NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto backdrop-blur-md border-t px-8 pt-3 pb-6 z-50" style={{ backgroundColor: 'rgba(249,248,244,0.95)', borderColor: 'rgba(26,26,26,0.05)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-mana-cream/95 backdrop-blur-md border-t border-foreground/5 px-8 pt-3 pb-6 z-50">
         <div className="flex justify-between items-end">
           <button onClick={() => navigate('/homepage')} className={tabClass(true)}>
             <Home className="w-6 h-6" strokeWidth={1.5} />

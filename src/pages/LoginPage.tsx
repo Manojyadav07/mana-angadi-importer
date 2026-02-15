@@ -110,8 +110,6 @@ export function LoginPage() {
   const t = loginTranslations[language];
   const isTeluguActive = language === "te";
 
-  // Welcome screen is now dismissed manually via button click
-
   const handleSendCode = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError(null);
@@ -202,8 +200,8 @@ export function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F9F8F4" }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#2DB92D" }} />
+      <div className="screen-shell flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -253,48 +251,25 @@ export function LoginPage() {
   }
 
   return (
-    <div
-      className="max-w-md mx-auto min-h-screen flex flex-col px-8 py-12 relative antialiased"
-      style={{ backgroundColor: "#F9F8F4", fontFamily: "'Be Vietnam Pro', sans-serif" }}
-    >
+    <div className="screen-shell flex flex-col px-8 py-12 relative font-sans">
       {/* Language Toggle */}
-      <div className="absolute top-8 right-8" style={{ width: 160 }}>
-        <div
-          className="relative flex items-center p-1 rounded-full"
-          style={{ backgroundColor: "#F2F0E9", border: "1px solid rgba(26,26,26,0.05)" }}
-        >
-          {/* Sliding indicator */}
+      <div className="absolute top-8 right-8 w-40">
+        <div className="lang-toggle">
           <div
-            className="absolute rounded-full transition-all duration-300 ease-in-out"
-            style={{
-              height: "calc(100% - 8px)",
-              width: "calc(50% - 4px)",
-              top: 4,
-              backgroundColor: "#2DB92D",
-              left: isTeluguActive ? "calc(50% + 2px)" : 4,
-            }}
+            className="lang-toggle-slider"
+            style={{ left: isTeluguActive ? "calc(50% + 2px)" : 4 }}
           />
           <button
             type="button"
             onClick={() => setLanguage("en")}
-            className="flex-1 px-4 py-1.5 text-center relative z-10 font-medium transition-colors duration-300"
-            style={{
-              fontSize: 13,
-              fontFamily: "'Fraunces', serif",
-              color: !isTeluguActive ? "#FFFFFF" : "rgba(26,26,26,0.6)",
-            }}
+            className={`lang-toggle-btn ${!isTeluguActive ? "text-primary-foreground" : "text-foreground/60"}`}
           >
             English
           </button>
           <button
             type="button"
             onClick={() => setLanguage("te")}
-            className="flex-1 px-4 py-1.5 text-center relative z-10 font-medium transition-colors duration-300"
-            style={{
-              fontSize: 13,
-              fontFamily: "'Fraunces', serif",
-              color: isTeluguActive ? "#FFFFFF" : "rgba(26,26,26,0.6)",
-            }}
+            className={`lang-toggle-btn ${isTeluguActive ? "text-primary-foreground" : "text-foreground/60"}`}
           >
             తెలుగు
           </button>
@@ -303,35 +278,17 @@ export function LoginPage() {
 
       {/* Header Section */}
       <div className="flex flex-col items-center pt-16 pb-8">
-        {/* Logo */}
         <img
           src={welcomeCyclist}
           alt="Mana Angadi"
-          className="rounded-full mb-6 object-contain"
-          style={{ width: 80, height: 80 }}
+          className="rounded-full mb-6 object-contain w-20 h-20"
         />
 
-        {/* Greeting */}
-        <h1
-          className="font-light italic tracking-tight"
-          style={{
-            fontFamily: "'Fraunces', serif",
-            fontSize: "2.25rem",
-            color: "#1A1A1A",
-          }}
-        >
+        <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
           {t.greeting}
         </h1>
 
-        {/* Subtitle */}
-        <p
-          className="mt-2 text-sm font-medium text-center"
-          style={{
-            letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
-            textTransform: isTeluguActive ? "none" : "uppercase",
-            color: "rgba(26,26,26,0.6)",
-          }}
-        >
+        <p className={`mt-2 ${isTeluguActive ? "text-subtitle-te" : "text-subtitle"}`}>
           {t.subtitle}
         </p>
       </div>
@@ -341,15 +298,7 @@ export function LoginPage() {
         <form onSubmit={handleSendCode} className="space-y-6 mt-4">
           {/* Name field */}
           <div>
-            <label
-              className="block mb-2 ml-1 font-bold"
-              style={{
-                fontSize: 10,
-                letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
-                textTransform: isTeluguActive ? "none" : "uppercase",
-                color: "rgba(26,26,26,0.4)",
-              }}
-            >
+            <label className={`block mb-2 ml-1 ${isTeluguActive ? "label-micro-te" : "label-micro"}`}>
               {t.nameLabel}
             </label>
             <input
@@ -357,34 +306,13 @@ export function LoginPage() {
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder={t.namePlaceholder}
-              className="w-full bg-transparent rounded-xl px-4 py-4 outline-none transition-all"
-              style={{
-                border: "1px solid rgba(26,26,26,0.1)",
-                color: "#1A1A1A",
-                fontSize: 16,
-              }}
-              onFocus={(e) => {
-                e.target.style.border = "1px solid #2DB92D";
-                e.target.style.boxShadow = "0 0 0 1px #2DB92D";
-              }}
-              onBlur={(e) => {
-                e.target.style.border = "1px solid rgba(26,26,26,0.1)";
-                e.target.style.boxShadow = "none";
-              }}
+              className="input-auth"
             />
           </div>
 
           {/* Phone/Email field */}
           <div>
-            <label
-              className="block mb-2 ml-1 font-bold"
-              style={{
-                fontSize: 10,
-                letterSpacing: isTeluguActive ? "0.025em" : "0.15em",
-                textTransform: isTeluguActive ? "none" : "uppercase",
-                color: "rgba(26,26,26,0.4)",
-              }}
-            >
+            <label className={`block mb-2 ml-1 ${isTeluguActive ? "label-micro-te" : "label-micro"}`}>
               {t.credentialLabel}
             </label>
             <input
@@ -392,23 +320,10 @@ export function LoginPage() {
               value={credential}
               onChange={(e) => { setCredential(e.target.value); setError(null); }}
               placeholder={t.credentialPlaceholder}
-              className="w-full bg-transparent rounded-xl px-4 py-4 outline-none transition-all"
-              style={{
-                border: "1px solid rgba(26,26,26,0.1)",
-                color: "#1A1A1A",
-                fontSize: 16,
-              }}
-              onFocus={(e) => {
-                e.target.style.border = "1px solid #2DB92D";
-                e.target.style.boxShadow = "0 0 0 1px #2DB92D";
-              }}
-              onBlur={(e) => {
-                e.target.style.border = "1px solid rgba(26,26,26,0.1)";
-                e.target.style.boxShadow = "none";
-              }}
+              className="input-auth"
               autoComplete="email tel"
             />
-            {error && <p className="text-xs mt-1 px-1" style={{ color: "hsl(0,55%,52%)" }}>{error}</p>}
+            {error && <p className="text-xs mt-1 px-1 text-destructive">{error}</p>}
           </div>
 
           {/* Terms checkbox */}
@@ -417,10 +332,9 @@ export function LoginPage() {
               type="checkbox"
               checked={agreedTerms}
               onChange={(e) => setAgreedTerms(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border cursor-pointer accent-[#2DB92D]"
-              style={{ borderColor: "rgba(26,26,26,0.2)" }}
+              className="checkbox-primary mt-0.5"
             />
-            <p className="text-xs leading-tight" style={{ color: "rgba(26,26,26,0.6)" }}>
+            <p className="text-xs leading-tight text-foreground/60">
               {isTeluguActive ? (
                 <>
                   {t.terms}{" "}
@@ -444,12 +358,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full font-semibold py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: "#2DB92D",
-              color: "#FFFFFF",
-              boxShadow: "0 20px 25px -5px rgba(45,185,45,0.2)",
-            }}
+            className="btn-primary-block"
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -463,30 +372,26 @@ export function LoginPage() {
       {/* Step B: Email magic link sent */}
       {step === "verify" && inputIsEmail && (
         <div className="space-y-5 text-center mt-4">
-          <Mail className="w-12 h-12 mx-auto" style={{ color: "#2DB92D" }} />
-          <p className="text-sm" style={{ color: "rgba(26,26,26,0.6)" }}>
+          <Mail className="w-12 h-12 mx-auto text-primary" />
+          <p className="text-sm text-foreground/60">
             {t.emailLinkSent}
           </p>
-          <p className="text-xs" style={{ color: "rgba(26,26,26,0.6)" }}>
+          <p className="text-xs text-foreground/60">
             {credential.trim()}
           </p>
           <button
             type="button"
             onClick={handleChangeCredential}
-            className="text-xs hover:underline"
-            style={{ color: "#2DB92D" }}
+            className="text-xs hover:underline text-primary"
           >
             {t.change}
           </button>
         </div>
       )}
 
-
-
-
       {/* Footer — Bottom home indicator */}
       <div className="mt-auto pt-10 flex justify-center">
-        <div className="w-32 h-1 rounded-full" style={{ backgroundColor: "rgba(26,26,26,0.1)" }} />
+        <div className="home-indicator" />
       </div>
     </div>
   );
