@@ -75,7 +75,7 @@ export function CategoryListingPage() {
   };
 
   const handleCategoryClick = (cat: CategoryDef) => {
-    navigate('/home');
+    navigate(`/shops?category=${cat.key}`);
   };
 
   const title = language === 'en' ? 'Explore Angadi' : 'అంగడి చూడండి';
@@ -87,7 +87,7 @@ export function CategoryListingPage() {
       <header className="sticky top-0 z-10 bg-mana-cream/95 backdrop-blur-sm border-b border-border px-5 py-5">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/homepage')}
             className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center transition-colors touch-manipulation"
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
