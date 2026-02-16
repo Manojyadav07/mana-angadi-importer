@@ -15,6 +15,7 @@ import { ShopPage } from "./pages/ShopPage";
 import { CategoryListingPage } from "./pages/CategoryListingPage";
 import { ShopListingPage } from "./pages/ShopListingPage";
 import { CartPage } from "./pages/CartPage";
+import { BasketPage } from "./pages/BasketPage";
 import { OrderSuccessPage } from "./pages/OrderSuccessPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
@@ -191,7 +192,7 @@ const App = () => {
                   <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
                   <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
                   <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-                  <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                  <Route path="/basket" element={<ProtectedRoute><BasketPage /></ProtectedRoute>} />
                   <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
                   <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
