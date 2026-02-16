@@ -1,61 +1,103 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { CheckCircle, Home, ShoppingBag } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export function OrderSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
   const orderId = location.state?.orderId;
+  const etaMin = location.state?.etaMin;
+  const etaMax = location.state?.etaMax;
+
+  // Generate short display ID
+  const displayId = orderId ? `#MA${String(orderId).slice(-4).toUpperCase()}` : '#MA0000';
+
+  // Estimate delivery time
+  const getDeliveryEstimate = () => {
+    const now = new Date();
+    const deliveryMinutes = etaMax || 45;
+    const eta = new Date(now.getTime() + deliveryMinutes * 60000);
+    const hours = eta.getHours();
+    const minutes = eta.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+
+    if (language === 'en') {
+      return `Today ${displayHours}:${displayMinutes} ${ampm}`;
+    }
+    return `ఈ రోజు ${displayHours}:${displayMinutes} ${ampm}`;
+  };
+
+  const texts = {
+    heading: language === 'en' ? 'Dhanyavadalu!' : 'ధన్యవాదాలు!',
+    subheading: language === 'en'
+      ? 'Your order has been placed successfully.'
+      : 'మీ ఆర్డర్ విజయవంతంగా ఇవ్వబడింది.',
+    orderRef: language === 'en' ? 'ORDER REFERENCE' : 'ఆర్డర్ రిఫరెన్స్',
+    estDelivery: language === 'en' ? 'ESTIMATED DELIVERY' : 'అంచనా డెలివరీ',
+    infoMessage: language === 'en'
+      ? 'A local delivery partner from your village will arrive shortly.'
+      : 'మీ ఊరి నుండి ఒక స్థానిక డెలివరీ భాగస్వామి త్వరలో వస్తారు.',
+    trackOrder: language === 'en' ? 'Track My Order' : 'నా ఆర్డర్‌ను ట్రాక్ చేయండి',
+    backHome: language === 'en' ? 'Back to Home' : 'హోమ్‌కు తిరిగి వెళ్ళండి',
+  };
 
   return (
-    <div className="mobile-container min-h-screen flex flex-col items-center justify-center bg-background px-6">
-      {/* Success Icon */}
-      <div className="w-28 h-28 rounded-full bg-success/10 flex items-center justify-center mb-6 animate-scale-in">
-        <CheckCircle className="w-16 h-16 text-success" />
+    <div className="screen-shell min-h-screen bg-mana-cream flex flex-col items-center px-6 pt-14 pb-10">
+      {/* 1. Top Branding */}
+      <div className="text-center mb-10">
+        <p className="text-xs uppercase tracking-[0.3em] text-mana-charcoal/40 font-sans">MANA</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-mana-charcoal/40 font-sans -mt-0.5">ANGADI</p>
       </div>
 
-      {/* Success Message */}
-      <h1 className="text-2xl font-bold text-foreground text-center animate-fade-in">
-        {t.orderSuccessMessage}
+      {/* 2. Success Icon */}
+      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-8">
+        <Check className="w-10 h-10 text-primary" strokeWidth={2.5} />
+      </div>
+
+      {/* 3. Main Heading */}
+      <h1 className="font-display text-3xl font-semibold text-mana-charcoal text-center mb-2">
+        {texts.heading}
       </h1>
-
-      {orderId && (
-        <p className="text-muted-foreground text-center mt-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          {t.orderId} #{orderId}
-        </p>
-      )}
-
-      {/* Delivery Message */}
-      <div className="bg-primary/10 rounded-2xl p-4 mt-6 w-full animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <p className="text-center text-foreground">
-          🛵 {t.deliveryMessage}
-        </p>
-      </div>
-
-      {/* Privacy Note */}
-      <p className="text-muted-foreground text-sm text-center mt-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-        {t.privacyOrderNote}
+      <p className="text-mana-charcoal/60 text-center text-sm mb-8">
+        {texts.subheading}
       </p>
 
-      {/* Actions */}
-      <div className="w-full mt-8 space-y-3 animate-slide-up">
-        <button
-          onClick={() => navigate('/orders')}
-          className="btn-primary w-full flex items-center justify-center gap-2"
-        >
-          <ShoppingBag className="w-5 h-5" />
-          {t.myOrders}
-        </button>
-
-        <button
-          onClick={() => navigate('/home')}
-          className="btn-secondary w-full flex items-center justify-center gap-2"
-        >
-          <Home className="w-5 h-5" />
-          {t.goHome}
-        </button>
+      {/* 4. Order Information Card */}
+      <div className="w-full bg-card rounded-xl shadow-sm p-5 mb-6">
+        <div className="mb-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-mana-charcoal/50 mb-1">{texts.orderRef}</p>
+          <p className="font-bold text-mana-charcoal text-lg">{displayId}</p>
+        </div>
+        <div className="border-t border-mana-charcoal/5 my-3" />
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-mana-charcoal/50 mb-1">{texts.estDelivery}</p>
+          <p className="font-bold text-mana-charcoal text-lg">{getDeliveryEstimate()}</p>
+        </div>
       </div>
+
+      {/* 5. Informational Message */}
+      <p className="text-mana-charcoal/50 text-sm text-center italic mb-10 px-4">
+        {texts.infoMessage}
+      </p>
+
+      {/* 6. Primary Action */}
+      <button
+        onClick={() => navigate('/orders')}
+        className="btn-primary-pill w-full py-4 text-base font-semibold active:scale-[0.98] transition-transform"
+      >
+        {texts.trackOrder}
+      </button>
+
+      {/* 7. Secondary Action */}
+      <button
+        onClick={() => navigate('/home')}
+        className="mt-4 text-mana-charcoal/50 text-sm font-sans hover:text-mana-charcoal transition-colors"
+      >
+        {texts.backHome}
+      </button>
     </div>
   );
 }
