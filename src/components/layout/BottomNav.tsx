@@ -1,13 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Heart, Truck, Menu } from 'lucide-react';
 import { GampaIcon } from '@/components/home/GampaIcon';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/context/LanguageContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getCartItemCount } = useApp();
+  const { getCartItemCount } = useCart();
   const { t } = useLanguage();
   const cartCount = getCartItemCount();
 

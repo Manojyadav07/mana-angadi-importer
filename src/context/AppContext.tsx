@@ -1,19 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { 
-  User, CartItem, Order, Product, OrderStatus, Shop, UserRole, LocationUpdate, 
+  User, Order, OrderStatus, Shop, UserRole, LocationUpdate, 
   METPALLY_COORDS, METLACHITTAPUR_COORDS, PaymentMethod, PaymentStatus,
   CustomerAddress, calculateDistanceKm, calculateDeliveryFee, calculateETA, formatAddress
 } from '@/types';
-import { getShopById } from '@/data/mockData';
-
-interface PlaceOrderOptions {
-  shop: Shop;
-  note?: string;
-  address?: CustomerAddress;
-  paymentMethod?: PaymentMethod;
-  codChangeNeeded?: number;
-  upiTxnRef?: string;
-}
 
 interface AppContextType {
   // Auth state
@@ -28,17 +18,7 @@ interface AppContextType {
   updateUserAvailability: (isAvailable: boolean) => void;
   acknowledgeInsurance: () => void;
 
-  // Cart state
-  cart: CartItem[];
-  cartShopId: string | null;
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
-  getCartTotal: () => number;
-  getCartItemCount: () => number;
-
-  // Orders state
+  // Orders state (legacy local — kept for backward compat, DB hooks preferred)
   orders: Order[];
   placeOrder: (options: PlaceOrderOptions) => Order;
   getOrderById: (orderId: string) => Order | undefined;
@@ -56,12 +36,19 @@ interface AppContextType {
   getLatestLocation: (orderId: string) => LocationUpdate | undefined;
 }
 
+interface PlaceOrderOptions {
+  shop: Shop;
+  note?: string;
+  address?: CustomerAddress;
+  paymentMethod?: PaymentMethod;
+  codChangeNeeded?: number;
+  upiTxnRef?: string;
+}
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartShopId, setCartShopId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [locationUpdates, setLocationUpdates] = useState<LocationUpdate[]>([]);
 
@@ -82,8 +69,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    setCart([]);
-    setCartShopId(null);
     setOrders([]);
     setLocationUpdates([]);
   }, []);
@@ -100,96 +85,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(prev => prev ? { ...prev, insuranceAcknowledged: true } : null);
   }, []);
 
-  // Cart functions
-  const addToCart = useCallback((product: Product) => {
-    if (cartShopId && cartShopId !== product.shopId) {
-      setCart([{ product, quantity: 1 }]);
-      setCartShopId(product.shopId);
-      return;
-    }
-
-    setCartShopId(product.shopId);
-    setCart(prev => {
-      const existingItem = prev.find(item => item.product.id === product.id);
-      if (existingItem) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-  }, [cartShopId]);
-
-  const removeFromCart = useCallback((productId: string) => {
-    setCart(prev => {
-      const newCart = prev.filter(item => item.product.id !== productId);
-      if (newCart.length === 0) {
-        setCartShopId(null);
-      }
-      return newCart;
-    });
-  }, []);
-
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart(prev =>
-      prev.map(item =>
-        item.product.id === productId
-          ? { ...item, quantity }
-          : item
-      )
-    );
-  }, [removeFromCart]);
-
-  const clearCart = useCallback(() => {
-    setCart([]);
-    setCartShopId(null);
-  }, []);
-
-  const getCartTotal = useCallback(() => {
-    return cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
-  }, [cart]);
-
-  const getCartItemCount = useCallback(() => {
-    return cart.reduce((count, item) => count + item.quantity, 0);
-  }, [cart]);
-
-  // Order functions
+  // Order functions (legacy local state — DB hooks are preferred)
   const placeOrder = useCallback((options: PlaceOrderOptions): Order => {
     const { shop, note, address, paymentMethod = 'COD', codChangeNeeded, upiTxnRef } = options;
-    
-    // Get shop coordinates or use defaults
     const pickupLat = shop.pickupLat ?? METPALLY_COORDS.lat;
     const pickupLng = shop.pickupLng ?? METPALLY_COORDS.lng;
-    
-    // Get drop coordinates from address or use defaults
     const dropLat = address?.lat ?? METLACHITTAPUR_COORDS.lat;
     const dropLng = address?.lng ?? METLACHITTAPUR_COORDS.lng;
-    
-    // Calculate distance
     const distanceKm = calculateDistanceKm(pickupLat, pickupLng, dropLat, dropLng);
-    
-    // Calculate subtotal
-    const subtotal = getCartTotal();
-    
-    // Calculate delivery fee
-    const { fee: deliveryFee, freeDelivery } = calculateDeliveryFee(shop.type, distanceKm, subtotal);
-    
-    // Calculate ETA
+    const subtotal = 0;
+    const { fee: deliveryFee } = calculateDeliveryFee(shop.type, distanceKm, subtotal);
     const eta = calculateETA(distanceKm);
-    
-    // Format address text
-    const addressText_te = address 
-      ? formatAddress(address, 'te') 
-      : 'రామాలయం దగ్గర, మెట్లచిట్టాపూర్';
-    const addressText_en = address 
-      ? formatAddress(address, 'en') 
-      : 'Near Temple, Metlachittapur';
+    const addressText_te = address ? formatAddress(address, 'te') : 'రామాలయం దగ్గర, మెట్లచిట్టాపూర్';
+    const addressText_en = address ? formatAddress(address, 'en') : 'Near Temple, Metlachittapur';
     
     const newOrder: Order = {
       id: `ORD${Date.now().toString().slice(-8)}`,
@@ -202,33 +110,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       subtotal,
       deliveryFee,
       total: subtotal + deliveryFee,
-      items: cart.map(item => ({
-        productId: item.product.id,
-        productName_te: item.product.name_te,
-        productName_en: item.product.name_en,
-        quantity: item.quantity,
-        price: item.product.price,
-      })),
+      items: [],
       createdAt: new Date(),
       statusUpdatedAt: new Date(),
       customerNote: note,
-      // Address snapshots
       deliveryAddressId: address?.id,
       customerAddressText_te: addressText_te,
       customerAddressText_en: addressText_en,
-      customerAddressText: addressText_en, // Legacy
+      customerAddressText: addressText_en,
       deliveryInstructions_te: address?.deliveryInstructions_te,
       deliveryInstructions_en: address?.deliveryInstructions_en,
-      // Coordinate snapshots
       pickupLatSnapshot: pickupLat,
       pickupLngSnapshot: pickupLng,
       dropLatSnapshot: dropLat,
       dropLngSnapshot: dropLng,
-      // Distance and ETA
       approxDistanceKm: distanceKm,
       etaMin: eta?.min,
       etaMax: eta?.max,
-      // Payment
       paymentMethod,
       paymentStatus: paymentMethod === 'UPI' ? 'Pending' : 'Unpaid',
       upiTxnRef,
@@ -236,10 +134,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
 
     setOrders(prev => [newOrder, ...prev]);
-    clearCart();
-
     return newOrder;
-  }, [user, cart, getCartTotal, clearCart]);
+  }, [user]);
 
   const getOrderById = useCallback((orderId: string) => {
     return orders.find(order => order.id === orderId);
@@ -249,120 +145,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return orders.filter(order => shopIds.includes(order.shopId));
   }, [orders]);
 
-  // Get all orders with status 'ready' that are not assigned to any delivery partner
   const getReadyOrders = useCallback(() => {
     return orders.filter(order => order.status === 'ready' && !order.deliveryPartnerId);
   }, [orders]);
 
-  // Get orders assigned to a specific delivery partner
   const getDeliveryPartnerOrders = useCallback((deliveryPartnerId: string) => {
     return orders.filter(order => order.deliveryPartnerId === deliveryPartnerId);
   }, [orders]);
 
   const updateOrderStatus = useCallback((
-    orderId: string, 
-    status: OrderStatus, 
-    rejectionReason_te?: string, 
-    rejectionReason_en?: string
+    orderId: string, status: OrderStatus, rejectionReason_te?: string, rejectionReason_en?: string
   ) => {
     setOrders(prev =>
       prev.map(order => {
         if (order.id !== orderId) return order;
-        
-        const updates: Partial<Order> = {
-          status,
-          statusUpdatedAt: new Date(),
-          rejectionReason_te,
-          rejectionReason_en,
-        };
-
-        // Set timeline timestamps based on status
-        if (status === 'accepted') {
-          updates.acceptedAt = new Date();
-        } else if (status === 'ready') {
-          updates.readyAt = new Date();
-        }
-
+        const updates: Partial<Order> = { status, statusUpdatedAt: new Date(), rejectionReason_te, rejectionReason_en };
+        if (status === 'accepted') updates.acceptedAt = new Date();
+        else if (status === 'ready') updates.readyAt = new Date();
         return { ...order, ...updates };
       })
     );
   }, []);
 
-  // Delivery partner accepts an order
   const acceptDelivery = useCallback((orderId: string, deliveryPartnerId: string, deliveryPartnerName: string) => {
     setOrders(prev =>
       prev.map(order =>
         order.id === orderId
-          ? {
-              ...order,
-              status: 'assigned' as OrderStatus,
-              deliveryPartnerId,
-              deliveryPartnerName,
-              assignedAt: new Date(),
-              statusUpdatedAt: new Date(),
-            }
+          ? { ...order, status: 'assigned' as OrderStatus, deliveryPartnerId, deliveryPartnerName, assignedAt: new Date(), statusUpdatedAt: new Date() }
           : order
       )
     );
   }, []);
 
-  // Update delivery status
   const updateDeliveryStatus = useCallback((orderId: string, status: 'pickedUp' | 'onTheWay' | 'delivered') => {
     setOrders(prev =>
       prev.map(order => {
         if (order.id !== orderId) return order;
-        
-        const updates: Partial<Order> = {
-          status,
-          statusUpdatedAt: new Date(),
-        };
-
-        if (status === 'pickedUp') {
-          updates.pickedUpAt = new Date();
-        } else if (status === 'onTheWay') {
-          updates.onTheWayAt = new Date();
-        } else if (status === 'delivered') {
+        const updates: Partial<Order> = { status, statusUpdatedAt: new Date() };
+        if (status === 'pickedUp') updates.pickedUpAt = new Date();
+        else if (status === 'onTheWay') updates.onTheWayAt = new Date();
+        else if (status === 'delivered') {
           updates.deliveredAt = new Date();
-          // Mark COD as paid on delivery
-          if (order.paymentMethod === 'COD') {
-            updates.paymentStatus = 'Paid';
-            updates.paidAt = new Date();
-          }
+          if (order.paymentMethod === 'COD') { updates.paymentStatus = 'Paid'; updates.paidAt = new Date(); }
         }
-
         return { ...order, ...updates };
       })
     );
   }, []);
 
-  // Update payment status
   const updatePaymentStatus = useCallback((orderId: string, status: PaymentStatus) => {
     setOrders(prev =>
       prev.map(order =>
         order.id === orderId
-          ? {
-              ...order,
-              paymentStatus: status,
-              paidAt: status === 'Paid' ? new Date() : order.paidAt,
-            }
+          ? { ...order, paymentStatus: status, paidAt: status === 'Paid' ? new Date() : order.paidAt }
           : order
       )
     );
   }, []);
 
-  // Location tracking
   const updateLocation = useCallback((orderId: string, lat: number, lng: number) => {
     if (!user) return;
-    
-    const newUpdate: LocationUpdate = {
-      orderId,
-      deliveryPartnerId: user.id,
-      lat,
-      lng,
-      createdAt: new Date(),
-    };
-    
-    setLocationUpdates(prev => [...prev, newUpdate]);
+    setLocationUpdates(prev => [...prev, { orderId, deliveryPartnerId: user.id, lat, lng, createdAt: new Date() }]);
   }, [user]);
 
   const getLatestLocation = useCallback((orderId: string) => {
@@ -371,37 +214,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [locationUpdates]);
 
   const value: AppContextType = {
-    user,
-    isAuthenticated: !!user,
-    isMerchant: user?.role === 'merchant',
-    isDelivery: user?.role === 'delivery',
-    isAdmin: user?.role === 'admin',
-    login,
-    logout,
-    updateUserName,
-    updateUserAvailability,
-    acknowledgeInsurance,
-    cart,
-    cartShopId,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    getCartTotal,
-    getCartItemCount,
-    orders,
-    placeOrder,
-    getOrderById,
-    getOrdersByShopIds,
-    getReadyOrders,
-    getDeliveryPartnerOrders,
-    updateOrderStatus,
-    acceptDelivery,
-    updateDeliveryStatus,
-    updatePaymentStatus,
-    locationUpdates,
-    updateLocation,
-    getLatestLocation,
+    user, isAuthenticated: !!user, isMerchant: user?.role === 'merchant', isDelivery: user?.role === 'delivery', isAdmin: user?.role === 'admin',
+    login, logout, updateUserName, updateUserAvailability, acknowledgeInsurance,
+    orders, placeOrder, getOrderById, getOrdersByShopIds, getReadyOrders, getDeliveryPartnerOrders,
+    updateOrderStatus, acceptDelivery, updateDeliveryStatus, updatePaymentStatus,
+    locationUpdates, updateLocation, getLatestLocation,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

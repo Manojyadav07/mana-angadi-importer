@@ -3,14 +3,14 @@ import { Bell, ArrowRight, Home, Heart, Truck, Menu } from 'lucide-react';
 import { GampaIcon } from '@/components/home/GampaIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import welcomeCyclist from '@/assets/welcome-cyclist.png';
 
 export function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
-  const { getCartItemCount } = useApp();
+  const { getCartItemCount } = useCart();
   const isTeluguActive = language === 'te';
   const cartCount = getCartItemCount();
 

@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useShop } from '@/hooks/useShops';
@@ -10,7 +9,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 
 export function CartPage() {
   const navigate = useNavigate();
-  const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, getCartItemCount } = useApp();
+  const { cart, cartShopId, updateQuantity, removeFromCart, getCartTotal, getCartItemCount } = useCart();
   const { user } = useAuth();
   const { language } = useLanguage();
 
@@ -27,7 +26,6 @@ export function CartPage() {
   if (cart.length === 0) {
     return (
       <div className="screen-shell min-h-screen flex flex-col bg-background">
-        {/* Header */}
         <div className="pt-12 px-5 pb-4">
           <div className="flex items-center">
             <button
@@ -104,7 +102,7 @@ export function CartPage() {
 
             return (
               <div
-                key={item.product.id}
+                key={item.product_id}
                 className="bg-card rounded-xl shadow-sm p-4 flex gap-4"
               >
                 {/* Thumbnail */}
@@ -128,7 +126,7 @@ export function CartPage() {
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-foreground leading-tight">{productName}</h3>
                       <button
-                        onClick={() => removeFromCart(item.product.id)}
+                        onClick={() => removeFromCart(item.product_id)}
                         className="w-7 h-7 flex items-center justify-center rounded-full active:scale-95 transition-transform flex-shrink-0"
                       >
                         <X className="w-4 h-4 text-muted-foreground" />
@@ -145,17 +143,16 @@ export function CartPage() {
                       ₹{item.product.price * quantity}
                     </span>
 
-                    {/* Quantity stepper */}
                     <div className="flex items-center gap-1 bg-primary/10 rounded-full h-10 px-1">
                       <button
-                        onClick={() => updateQuantity(item.product.id, quantity - 1)}
+                        onClick={() => updateQuantity(item.product_id, quantity - 1)}
                         className="w-8 h-8 rounded-full border border-foreground/10 flex items-center justify-center active:scale-95 transition-transform"
                       >
                         <Minus className="w-4 h-4 text-foreground" />
                       </button>
                       <span className="w-7 text-center font-bold text-sm text-foreground">{quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.product.id, quantity + 1)}
+                        onClick={() => updateQuantity(item.product_id, quantity + 1)}
                         className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-95 transition-transform"
                       >
                         <Plus className="w-4 h-4" />
@@ -204,7 +201,6 @@ export function CartPage() {
         </button>
       </div>
 
-      {/* ── 9. BOTTOM NAV ── */}
       <BottomNav />
     </div>
   );

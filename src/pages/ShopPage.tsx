@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useShop } from '@/hooks/useShops';
 import { useProducts } from '@/hooks/useProducts';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLocalizedName, getLocalizedShopType } from '@/types';
 import {
@@ -28,7 +28,7 @@ export function ShopPage() {
   const { shopId } = useParams<{ shopId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { cart, addToCart, updateQuantity, getCartItemCount, getCartTotal } = useApp();
+  const { cart, addToCart, updateQuantity, getCartItemCount, getCartTotal } = useCart();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
@@ -53,7 +53,7 @@ export function ShopPage() {
   }, [products, searchQuery]);
 
   const getCartItem = (productId: string) =>
-    cart.find(item => item.product.id === productId);
+    cart.find(item => item.product_id === productId);
 
   const handleBack = () => {
     const fromCategory = searchParams.get('from');
