@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/context/LanguageContext';
 import { GampaIcon } from './GampaIcon';
 
 export function GamppaSection() {
   const navigate = useNavigate();
-  const { getCartItemCount } = useApp();
+  const { getCartItemCount } = useCart();
   const { language } = useLanguage();
   const count = getCartItemCount();
 

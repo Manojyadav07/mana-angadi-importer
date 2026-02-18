@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/context/AppContext';
+import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAddress } from '@/context/AddressContext';
@@ -15,7 +15,7 @@ import { SUPPORT_CONFIG } from '@/types';
 
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const { cart, cartShopId, getCartTotal, clearCart } = useApp();
+  const { cart, cartShopId, getCartTotal, clearCartAsync } = useCart();
   const { user } = useAuth();
   const { language } = useLanguage();
   const { getDefaultAddress } = useAddress();
@@ -79,7 +79,7 @@ export function CheckoutPage() {
         shopPickupLat: shop.pickupLat,
         shopPickupLng: shop.pickupLng,
         items: cart.map(item => ({
-          productId: item.product.id,
+          productId: item.product_id,
           productNameTe: item.product.name_te,
           productNameEn: item.product.name_en,
           price: item.product.price,
@@ -105,7 +105,7 @@ export function CheckoutPage() {
         note,
       });
 
-      clearCart();
+      await clearCartAsync();
       navigate('/order-success', { state: { orderId: order.id } });
     } catch (error: any) {
       console.error('Order creation failed:', error);
@@ -204,12 +204,11 @@ export function CheckoutPage() {
             {en ? 'Order Summary' : 'ఆర్డర్ సారాంశం'}
           </p>
 
-          {/* Item rows */}
           <div className="space-y-3">
             {cart.map(item => {
               const productName = getProductName(item.product);
               return (
-                <div key={item.product.id} className="flex items-center gap-3">
+                <div key={item.product_id} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     {item.product.image ? (
                       <img src={item.product.image} alt={productName} className="w-full h-full object-cover" />
@@ -229,7 +228,6 @@ export function CheckoutPage() {
             })}
           </div>
 
-          {/* Totals */}
           <div className="border-t border-foreground/5 mt-4 pt-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{en ? 'Subtotal' : 'ఉప మొత్తం'}</span>
@@ -270,13 +268,10 @@ export function CheckoutPage() {
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* COD */}
             <button
               onClick={() => setPaymentMethod('COD')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all active:scale-95 ${
-                paymentMethod === 'COD'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-foreground/10 bg-card'
+                paymentMethod === 'COD' ? 'border-primary bg-primary/5' : 'border-foreground/10 bg-card'
               }`}
             >
               <Banknote className={`w-6 h-6 ${paymentMethod === 'COD' ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -286,13 +281,10 @@ export function CheckoutPage() {
               {paymentMethod === 'COD' && <Check className="w-4 h-4 text-primary" />}
             </button>
 
-            {/* UPI */}
             <button
               onClick={() => setPaymentMethod('UPI')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all active:scale-95 ${
-                paymentMethod === 'UPI'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-foreground/10 bg-card'
+                paymentMethod === 'UPI' ? 'border-primary bg-primary/5' : 'border-foreground/10 bg-card'
               }`}
             >
               <CreditCard className={`w-6 h-6 ${paymentMethod === 'UPI' ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -303,7 +295,6 @@ export function CheckoutPage() {
             </button>
           </div>
 
-          {/* COD Change Options */}
           {paymentMethod === 'COD' && (
             <div className="mt-4 pt-4 border-t border-foreground/5">
               <p className="text-sm text-muted-foreground mb-2">{en ? 'Need change for?' : 'చిల్లర కావాలి?'}</p>
@@ -325,10 +316,8 @@ export function CheckoutPage() {
             </div>
           )}
 
-          {/* UPI Details */}
           {paymentMethod === 'UPI' && (
             <div className="mt-4 pt-4 border-t border-foreground/5 space-y-3">
-              {/* Copy UPI ID */}
               <button
                 onClick={handleCopyUpi}
                 className="w-full py-2.5 rounded-xl border border-foreground/10 flex items-center justify-center gap-2 active:scale-95 transition-transform"
@@ -337,7 +326,6 @@ export function CheckoutPage() {
                 <span className="text-sm text-foreground">{SUPPORT_CONFIG.upiVpa}</span>
               </button>
 
-              {/* QR Toggle */}
               <button
                 onClick={() => setShowQR(!showQR)}
                 className="w-full py-2 text-sm text-primary flex items-center justify-center gap-2"
@@ -352,7 +340,6 @@ export function CheckoutPage() {
                 </div>
               )}
 
-              {/* UTR Input */}
               <input
                 type="text"
                 value={upiTxnRef}
@@ -361,7 +348,6 @@ export function CheckoutPage() {
                 className="w-full px-4 py-3 rounded-xl border border-foreground/10 bg-background focus:outline-none focus:border-primary text-sm"
               />
 
-              {/* Upload Proof */}
               <button className="w-full py-2.5 rounded-xl border border-dashed border-foreground/10 flex items-center justify-center gap-2 text-muted-foreground active:scale-95 transition-transform">
                 <Upload className="w-4 h-4" />
                 <span className="text-sm">{en ? 'Upload Payment Screenshot' : 'పేమెంట్ స్క్రీన్‌షాట్ అప్‌లోడ్'}</span>
@@ -385,7 +371,6 @@ export function CheckoutPage() {
         </button>
       </div>
 
-      {/* Address Picker Modal */}
       {showAddressPicker && (
         <AddressPicker
           onClose={() => setShowAddressPicker(false)}
