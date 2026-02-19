@@ -162,7 +162,7 @@ function ApplyRoute({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => {
-  const { isLoading } = useAuth();
+  const { isLoading } = useAuth(); // read-only auth state
 
   // Global auth loading gate: show spinner until session is resolved
   if (isLoading) {
