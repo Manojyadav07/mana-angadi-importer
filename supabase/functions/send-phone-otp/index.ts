@@ -30,9 +30,9 @@ serve(async (req: Request) => {
 
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
+    const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    if (!accountSid || !authToken || !messagingServiceSid) {
+    if (!accountSid || !authToken || !twilioPhone) {
       return new Response(
         JSON.stringify({ error: "SMS provider not configured" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -88,7 +88,7 @@ serve(async (req: Request) => {
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const body = new URLSearchParams({
       To: phone,
-      MessagingServiceSid: messagingServiceSid,
+      From: twilioPhone,
       Body: `Your verification code is: ${code}. It expires in 10 minutes.`,
     });
 
