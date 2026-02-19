@@ -77,7 +77,7 @@ serve(async (req: Request) => {
 
       // Ensure the user has the fake email set (for magic link to work)
       if (!existingUser.email || existingUser.email !== fakeEmail) {
-        await supabaseAdmin.auth.admin.updateUser(userId, {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
           email: fakeEmail,
           email_confirm: true,
         });
