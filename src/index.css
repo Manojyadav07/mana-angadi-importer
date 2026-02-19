@@ -2,95 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Mana Angadi Design System — Rooted Premium */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600;700&family=Noto+Serif+Telugu:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap');
+
+/* Leaflet Map Styles */
+@import 'leaflet/dist/leaflet.css';
+
+/* Fix Leaflet z-index issues */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
+.leaflet-container {
+  z-index: 1 !important;
+  font-family: inherit;
+}
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ── Brand tokens ── */
+    --mana-cream: 40 33% 97%;       /* #F9F8F4 */
+    --mana-charcoal: 0 0% 10%;      /* #1A1A1A */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* ── Surface tokens ── */
+    --background: var(--mana-cream);
+    --foreground: var(--mana-charcoal);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --card: 40 25% 96%;
+    --card-foreground: var(--mana-charcoal);
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --popover: 40 25% 96%;
+    --popover-foreground: var(--mana-charcoal);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* ── Primary: brand green #2DB92D ── */
+    --primary: 120 61% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 120 61% 45% / 0.2;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* ── Secondary: lighter cream ── */
+    --secondary: 38 20% 91%;
+    --secondary-foreground: 0 0% 14%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* ── Muted: warm neutral ── */
+    --muted: 35 15% 88%;
+    --muted-foreground: 0 0% 46%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* ── Accent: brushed gold, minimal ── */
+    --accent: 40 30% 52%;
+    --accent-foreground: 0 0% 12%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* ── Charcoal: structural ── */
+    --charcoal: var(--mana-charcoal);
+    --charcoal-foreground: var(--mana-cream);
 
-    --radius: 0.5rem;
+    /* ── Status ── */
+    --success: 145 40% 42%;
+    --success-foreground: 40 33% 97%;
 
-    --sidebar-background: 0 0% 98%;
+    --warning: 40 75% 52%;
+    --warning-foreground: 25 20% 15%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --destructive: 0 55% 52%;
+    --destructive-foreground: 40 33% 97%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* ── Border & input ── */
+    --border: 35 15% 85%;
+    --input: 35 15% 85%;
+    --ring: 120 61% 45%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --radius: 0.75rem;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* Shop status colors */
+    --shop-open: 145 50% 45%;
+    --shop-closed: 0 30% 55%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    /* Order status colors */
+    --status-placed: 220 60% 55%;
+    --status-accepted: 35 80% 50%;
+    --status-ready: 145 50% 45%;
+    --status-delivered: 145 60% 40%;
 
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: var(--mana-cream);
+    --sidebar-foreground: var(--mana-charcoal);
+    --sidebar-primary: 120 61% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 38 20% 91%;
+    --sidebar-accent-foreground: 0 0% 14%;
+    --sidebar-border: 35 15% 85%;
+    --sidebar-ring: 120 61% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Same warm palette — village consistency, no dark mode */
+    --mana-cream: 40 33% 97%;
+    --mana-charcoal: 0 0% 10%;
+    --background: var(--mana-cream);
+    --foreground: var(--mana-charcoal);
+    --card: 40 25% 96%;
+    --card-foreground: var(--mana-charcoal);
+    --popover: 40 25% 96%;
+    --popover-foreground: var(--mana-charcoal);
+    --primary: 120 61% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 120 61% 45% / 0.2;
+    --secondary: 38 20% 91%;
+    --secondary-foreground: 0 0% 14%;
+    --muted: 35 15% 88%;
+    --muted-foreground: 0 0% 46%;
+    --accent: 40 30% 52%;
+    --accent-foreground: 0 0% 12%;
+    --destructive: 0 55% 52%;
+    --destructive-foreground: 40 33% 97%;
+    --border: 35 15% 85%;
+    --input: 35 15% 85%;
+    --ring: 120 61% 45%;
+    --charcoal: var(--mana-charcoal);
+    --charcoal-foreground: var(--mana-cream);
+    --sidebar-background: var(--mana-cream);
+    --sidebar-foreground: var(--mana-charcoal);
+    --sidebar-primary: 120 61% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 38 20% 91%;
+    --sidebar-accent-foreground: 0 0% 14%;
+    --sidebar-border: 35 15% 85%;
+    --sidebar-ring: 120 61% 45%;
   }
 }
 
@@ -101,5 +139,329 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Sans Telugu', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Large, accessible text for village users */
+  html {
+    font-size: 18px;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 16px;
+    }
   }
 }
+
+/* ═══════════════════════════════════════════════
+   REUSABLE PRIMITIVES — Design Token System
+   ═══════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Screen Shells ── */
+  .screen-shell {
+    @apply max-w-md mx-auto min-h-screen bg-mana-cream text-mana-charcoal antialiased;
+  }
+
+  .screen-shell-centered {
+    @apply screen-shell flex flex-col items-center justify-between;
+  }
+
+  /* ── Dotted background overlay ── */
+  .dotted-bg {
+    @apply fixed inset-0 pointer-events-none -z-10;
+    opacity: 0.02;
+    background-image: radial-gradient(circle, hsl(var(--mana-charcoal)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* ── Home indicator bar ── */
+  .home-indicator {
+    @apply w-32 h-1 rounded-full bg-foreground/10 mx-auto;
+  }
+
+  /* ── Typography primitives ── */
+  .label-micro {
+    @apply text-[10px] tracking-[0.15em] uppercase font-bold text-foreground/40;
+  }
+
+  .label-micro-te {
+    @apply text-[10px] tracking-[0.025em] font-bold text-foreground/40;
+  }
+
+  .label-brand {
+    @apply text-[10px] tracking-[0.3em] uppercase font-bold text-foreground/40;
+  }
+
+  .text-subtitle {
+    @apply text-sm font-medium tracking-[0.15em] uppercase text-foreground/60;
+  }
+
+  .text-subtitle-te {
+    @apply text-sm font-medium tracking-[0.025em] text-foreground/60;
+  }
+
+  /* ── Input primitives ── */
+  .input-auth {
+    @apply w-full bg-transparent rounded-xl px-4 py-4 text-base outline-none transition-all
+           border border-foreground/10 text-foreground
+           focus:border-primary focus:ring-1 focus:ring-primary;
+  }
+
+  .input-village {
+    @apply w-full px-4 py-4 text-lg rounded-xl border-2 border-border
+           focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
+           placeholder:text-muted-foreground/60;
+    min-height: 56px;
+  }
+
+  .input-otp-cell {
+    @apply w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-medium rounded-xl
+           bg-white border border-foreground/10 text-foreground
+           outline-none transition-all
+           focus:border-primary focus:ring-[3px] focus:ring-primary/15;
+  }
+
+  .input-otp-cell-filled {
+    @apply input-otp-cell border-primary;
+  }
+
+  /* ── Button primitives ── */
+  .btn-village {
+    @apply px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200
+           active:scale-[0.98] touch-manipulation;
+    min-height: 56px;
+  }
+
+  .btn-primary {
+    @apply btn-village bg-primary text-primary-foreground
+           hover:opacity-90 active:opacity-95;
+  }
+
+  .btn-primary-pill {
+    @apply w-full flex items-center justify-center gap-3 text-lg font-medium
+           text-primary-foreground bg-primary rounded-full
+           shadow-lg shadow-primary/20
+           active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .btn-primary-block {
+    @apply w-full font-semibold py-4 rounded-xl bg-primary text-primary-foreground
+           shadow-lg shadow-primary/20
+           active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-accent {
+    @apply btn-village bg-accent text-accent-foreground
+           hover:opacity-90 active:opacity-95;
+  }
+
+  .btn-secondary {
+    @apply btn-village bg-secondary text-secondary-foreground
+           hover:bg-muted;
+  }
+
+  /* ── Card primitives ── */
+  .shop-card {
+    @apply bg-card rounded-2xl p-4 shadow-sm border border-border;
+    @apply transition-all duration-200 touch-manipulation;
+  }
+
+  .shop-card-active {
+    @apply shop-card cursor-pointer hover:shadow-md active:scale-[0.99];
+  }
+
+  .shop-card-closed {
+    @apply shop-card opacity-60 cursor-not-allowed;
+  }
+
+  .card-notice {
+    @apply border border-foreground/10 p-4 rounded-xl shadow-sm bg-mana-cream/90;
+  }
+
+  /* ── Divider primitives ── */
+  .divider-thin {
+    @apply w-10 h-px bg-foreground/20;
+  }
+
+  .divider-section {
+    @apply w-full h-px bg-border;
+  }
+
+  /* ── Language Toggle ── */
+  .lang-toggle {
+    @apply relative flex items-center p-1 rounded-full bg-secondary border border-foreground/5;
+  }
+
+  .lang-toggle-slider {
+    @apply absolute rounded-full bg-primary transition-all duration-300 ease-in-out;
+    height: calc(100% - 8px);
+    width: calc(50% - 4px);
+    top: 4px;
+  }
+
+  .lang-toggle-btn {
+    @apply flex-1 px-4 py-1.5 text-center relative z-10 font-medium transition-colors duration-300;
+    font-size: 13px;
+    font-family: 'Fraunces', serif;
+  }
+
+  /* ── Product row styling ── */
+  .product-row {
+    @apply flex items-center justify-between py-4 border-b border-border last:border-b-0;
+  }
+
+  /* ── Status badges ── */
+  .badge-open {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    background-color: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+  }
+
+  .badge-closed {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    background-color: hsl(var(--shop-closed) / 0.15);
+    color: hsl(var(--shop-closed));
+  }
+
+  .badge-status {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium;
+  }
+
+  .badge-placed {
+    @apply badge-status;
+    background-color: hsl(var(--status-placed) / 0.15);
+    color: hsl(var(--status-placed));
+  }
+
+  .badge-accepted {
+    @apply badge-status;
+    background-color: hsl(var(--status-accepted) / 0.15);
+    color: hsl(var(--status-accepted));
+  }
+
+  .badge-ready {
+    @apply badge-status;
+    background-color: hsl(var(--status-ready) / 0.15);
+    color: hsl(var(--status-ready));
+  }
+
+  .badge-delivered {
+    @apply badge-status;
+    background-color: hsl(var(--status-delivered) / 0.15);
+    color: hsl(var(--status-delivered));
+  }
+
+  .badge-rejected {
+    @apply badge-status;
+    background-color: hsl(var(--destructive) / 0.15);
+    color: hsl(var(--destructive));
+  }
+
+  .trust-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium;
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+  }
+
+  /* ── Mobile container ── */
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen;
+  }
+
+  /* Safe area padding */
+  .safe-bottom {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .safe-bottom-new {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Screen header */
+  .screen-header {
+    @apply sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border;
+  }
+
+  /* Sticky nav bar (OTP, etc.) */
+  .sticky-nav {
+    @apply sticky top-0 w-full px-6 py-4 flex items-center justify-between z-10
+           bg-mana-cream/80 backdrop-blur-md;
+  }
+
+  /* ── Quantity controls ── */
+  .qty-btn {
+    @apply w-10 h-10 rounded-full flex items-center justify-center
+           bg-secondary text-secondary-foreground font-bold text-xl
+           active:scale-95 transition-transform touch-manipulation;
+  }
+
+  /* ── Checkbox ── */
+  .checkbox-primary {
+    @apply w-4 h-4 rounded border border-foreground/20 cursor-pointer accent-primary;
+  }
+
+  .checkbox-primary-lg {
+    @apply w-5 h-5 rounded border border-foreground/20 cursor-pointer accent-primary;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITY ANIMATIONS
+   ═══════════════════════════════════════════════ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }

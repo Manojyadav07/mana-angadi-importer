@@ -1,0 +1,455 @@
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import type { UserRole } from "@/types";
+import {
+  ensureRole,
+  fetchProfile,
+  fetchRole,
+  createRoleForUser,
+  updateMerchantStatus,
+  waitForProfile,
+  fetchOnboardingApplication,
+  createOnboardingApplication,
+  type ProfileRow,
+  type MerchantStatus,
+  type OnboardingStatus,
+  type OnboardingApplicationRow,
+} from "@/context/auth/authHelpers";
+
+const sb = supabase as any;
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  profile: ProfileRow | null;
+  role: UserRole | null;
+  onboardingStatus: OnboardingStatus;
+  isLoading: boolean;
+  authError: string | null;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithOtp: (credential: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (credential: string, token: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updateProfile: (updates: Partial<ProfileRow>) => Promise<{ error: Error | null }>;
+  setInitialRole: (role: UserRole) => Promise<{ error: Error | null }>;
+  refresh: () => Promise<{ error: Error | null; profile: ProfileRow | null; role: UserRole | null }>;
+  retryHydration: () => Promise<void>;
+  signUpWithRole: (email: string, password: string, displayName: string, selectedRole: UserRole) => Promise<{ error: Error | null; userId?: string }>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: React.ReactNode;
+  onSignOut?: () => void;
+}
+
+export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const hydrationInFlightRef = useRef<Promise<void> | null>(null);
+
+  const hydrateUser = useCallback(async (nextUser: User) => {
+    try {
+      setAuthError(null);
+
+      const [profileResult, roleResult] = await Promise.all([
+        fetchProfile(nextUser.id),
+        fetchRole(nextUser.id),
+      ]);
+
+      if (profileResult.error && !profileResult.error.message?.includes("No rows")) {
+        console.error("Profile fetch error:", profileResult.error);
+      }
+      if (roleResult.error && !roleResult.error.message?.includes("No rows")) {
+        console.error("Role fetch error:", roleResult.error);
+      }
+
+      let finalProfile = profileResult.data as ProfileRow | null;
+      if (!finalProfile) {
+        const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+        finalProfile = retriedProfile;
+      }
+
+      let finalRole = roleResult.data?.role as UserRole | null;
+
+      // Auto-assign customer role if none exists
+      if (!finalRole) {
+        const { role: created } = await createRoleForUser(nextUser.id, "customer");
+        finalRole = created ?? "customer";
+      }
+
+      // Fetch onboarding status for merchant/delivery
+      let finalOnboardingStatus: OnboardingStatus = null;
+      if (finalRole === "merchant" || finalRole === "delivery") {
+        const { data: app } = await fetchOnboardingApplication(nextUser.id);
+        finalOnboardingStatus = (app?.status as OnboardingStatus) ?? null;
+      }
+
+      setProfile(finalProfile);
+      setRole(finalRole);
+      setOnboardingStatus(finalOnboardingStatus);
+    } catch (e: any) {
+      console.error("Auth hydration failed:", e);
+      setAuthError(e?.message ?? "Failed to load account data");
+      setProfile(null);
+      setRole(null);
+      setOnboardingStatus(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const startHydration = useCallback(
+    (nextUser: User) => {
+      if (!hydrationInFlightRef.current) {
+        hydrationInFlightRef.current = hydrateUser(nextUser).finally(() => {
+          hydrationInFlightRef.current = null;
+        });
+      }
+      return hydrationInFlightRef.current;
+    },
+    [hydrateUser]
+  );
+
+  const retryHydration = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    setAuthError(null);
+    await hydrateUser(user);
+  }, [hydrateUser, user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!isMounted) return;
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      if (!newSession?.user) {
+        setProfile(null);
+        setRole(null);
+        setOnboardingStatus(null);
+        setAuthError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      void startHydration(newSession.user);
+    });
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      setSession(data?.session ?? null);
+      setUser(data?.session?.user ?? null);
+
+      if (!data?.session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      void startHydration(data.session.user);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [startHydration]);
+
+  const signUp = async (email: string, password: string, displayName?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { display_name: displayName || email.split("@")[0] },
+      },
+    });
+    return { error };
+  };
+
+  const signUpWithRole = async (
+    email: string,
+    password: string,
+    displayName: string,
+    selectedRole: UserRole
+  ): Promise<{ error: Error | null; userId?: string }> => {
+    setAuthError(null);
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { display_name: displayName || email.split("@")[0] },
+      },
+    });
+
+    if (signUpError) return { error: signUpError };
+    const newUser = signUpData.user;
+    if (!newUser) return { error: new Error("Signup succeeded but no user returned") };
+
+    const { data: newProfile } = await waitForProfile(newUser.id, 5, 400);
+
+    // Create role
+    const { role: createdRole, error: roleError } = await createRoleForUser(newUser.id, selectedRole);
+    if (roleError) console.error("Role creation failed:", roleError);
+
+    // For merchant/delivery, create onboarding application
+    let finalOnboardingStatus: OnboardingStatus = null;
+    if (selectedRole === "merchant" || selectedRole === "delivery") {
+      const { data: app, error: appError } = await createOnboardingApplication(newUser.id, selectedRole);
+      if (appError) console.error("Onboarding application creation failed:", appError);
+      finalOnboardingStatus = (app?.status as OnboardingStatus) ?? "pending";
+      
+      // Also update merchant_status on profile for backward compatibility
+      if (selectedRole === "merchant" && newProfile) {
+        await updateMerchantStatus(newUser.id, "pending");
+        newProfile.merchant_status = "pending";
+      }
+    }
+
+    if (newProfile) setProfile(newProfile);
+    if (createdRole) setRole(createdRole);
+    setOnboardingStatus(finalOnboardingStatus);
+
+    return { error: null, userId: newUser.id };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    setAuthError(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  };
+
+  const signInWithOtp = async (credential: string) => {
+    setAuthError(null);
+    const isEmailCred = credential.includes("@");
+
+    if (isEmailCred) {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: credential,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth/callback",
+        },
+      });
+      return { error };
+    } else {
+      // Phone OTP via edge function + Twilio
+      try {
+        const res = await supabase.functions.invoke("send-phone-otp", {
+          body: { phone: credential },
+        });
+        if (res.error) return { error: new Error(res.error.message || "Failed to send code") };
+        const data = res.data as any;
+        if (data?.error) return { error: new Error(data.error) };
+        return { error: null };
+      } catch (e: any) {
+        return { error: new Error(e?.message || "Failed to send code") };
+      }
+    }
+  };
+
+  const verifyOtp = async (credential: string, token: string) => {
+    setAuthError(null);
+    const isEmailCred = credential.includes("@");
+
+    if (isEmailCred) {
+      const { error } = await supabase.auth.verifyOtp({
+        email: credential,
+        token,
+        type: "email",
+      });
+      if (!error) {
+        // Ensure customer role for new OTP users
+        const { data: sessionData } = await supabase.auth.getSession();
+        const otpUser = sessionData.session?.user;
+        if (otpUser) {
+          const { data: existingRole } = await fetchRole(otpUser.id);
+          if (!existingRole?.role) {
+            await createRoleForUser(otpUser.id, "customer");
+            setRole("customer");
+          }
+        }
+      }
+      return { error };
+    } else {
+      // Phone OTP verification via edge function
+      try {
+        const res = await supabase.functions.invoke("verify-phone-otp", {
+          body: { phone: credential, code: token },
+        });
+        if (res.error) return { error: new Error(res.error.message || "Verification failed") };
+        const data = res.data as any;
+        if (data?.error) return { error: new Error(data.error) };
+
+        if (data?.token_hash) {
+          // Exchange the token hash for a session
+          const { error: verifyErr } = await supabase.auth.verifyOtp({
+            token_hash: data.token_hash,
+            type: "magiclink",
+          });
+          if (verifyErr) return { error: verifyErr };
+        }
+
+        return { error: null };
+      } catch (e: any) {
+        return { error: new Error(e?.message || "Verification failed") };
+      }
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    setRole(null);
+    setOnboardingStatus(null);
+    setAuthError(null);
+    hydrationInFlightRef.current = null;
+    onSignOut?.();
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    return { error };
+  };
+
+  const refresh = useCallback(async () => {
+    try {
+      setAuthError(null);
+      setIsLoading(true);
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+
+      const nextUser = sessionData.session?.user ?? null;
+      setSession(sessionData.session ?? null);
+      setUser(nextUser);
+
+      if (!nextUser) {
+        setProfile(null);
+        setRole(null);
+        setOnboardingStatus(null);
+        setIsLoading(false);
+        return { error: null, profile: null, role: null };
+      }
+
+      const [{ data: prof }, { data: roleRow }] = await Promise.all([
+        fetchProfile(nextUser.id),
+        fetchRole(nextUser.id),
+      ]);
+
+      let finalProfile = (prof as ProfileRow | null) ?? null;
+      if (!finalProfile) {
+        const { data: retriedProfile } = await waitForProfile(nextUser.id, 3, 200);
+        finalProfile = retriedProfile;
+      }
+
+      let finalRole = (roleRow?.role as UserRole | null) ?? null;
+
+      // Auto-assign customer role if none exists
+      if (!finalRole) {
+        const { role: created } = await createRoleForUser(nextUser.id, "customer");
+        finalRole = created ?? "customer";
+      }
+
+      let finalOnboardingStatus: OnboardingStatus = null;
+      if (finalRole === "merchant" || finalRole === "delivery") {
+        const { data: app } = await fetchOnboardingApplication(nextUser.id);
+        finalOnboardingStatus = (app?.status as OnboardingStatus) ?? null;
+      }
+
+      setProfile(finalProfile);
+      setRole(finalRole);
+      setOnboardingStatus(finalOnboardingStatus);
+      setIsLoading(false);
+
+      return { error: null, profile: finalProfile, role: finalRole };
+    } catch (e: any) {
+      console.error("Auth refresh failed:", e);
+      setAuthError(e?.message ?? "Failed to refresh session");
+      setIsLoading(false);
+      return { error: e as Error, profile: null, role: null };
+    }
+  }, []);
+
+  const updateProfile = async (updates: Partial<ProfileRow>) => {
+    if (!user) return { error: new Error("Not authenticated") };
+    const { error } = await sb.from("profiles").update(updates).eq("user_id", user.id);
+    if (!error) setProfile((prev: ProfileRow | null) => (prev ? { ...prev, ...updates } : prev));
+    return { error };
+  };
+
+  const setInitialRole = async (newRole: UserRole) => {
+    if (!user) return { error: new Error("Not authenticated") };
+
+    const { error } = await sb
+      .from("user_roles")
+      .upsert({ user_id: user.id, role: newRole }, { onConflict: "user_id" });
+
+    if (error) return { error };
+
+    // For merchant/delivery, create onboarding application
+    if (newRole === "merchant" || newRole === "delivery") {
+      const { data: app } = await createOnboardingApplication(user.id, newRole);
+      setOnboardingStatus((app?.status as OnboardingStatus) ?? "pending");
+
+      if (newRole === "merchant") {
+        await sb.from("profiles").update({ merchant_status: "pending" }).eq("user_id", user.id);
+        setProfile((prev: ProfileRow | null) => prev ? { ...prev, merchant_status: "pending" as MerchantStatus } : prev);
+      }
+    }
+
+    setRole(newRole);
+    return { error: null };
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        role,
+        onboardingStatus,
+        isLoading,
+        authError,
+        signUp,
+        signUpWithRole,
+        signIn,
+        signInWithOtp,
+        verifyOtp,
+        signOut,
+        resetPassword,
+        updateProfile,
+        setInitialRole,
+        refresh,
+        retryHydration,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+}
