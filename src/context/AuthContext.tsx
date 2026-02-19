@@ -3,10 +3,9 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types";
 import {
-  ensureRole,
+  resolveRole,
   fetchProfile,
   fetchRole,
-  createRoleForUser,
   updateMerchantStatus,
   waitForProfile,
   fetchOnboardingApplication,
@@ -34,10 +33,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<ProfileRow>) => Promise<{ error: Error | null }>;
-  setInitialRole: (role: UserRole) => Promise<{ error: Error | null }>;
   refresh: () => Promise<{ error: Error | null; profile: ProfileRow | null; role: UserRole | null }>;
   retryHydration: () => Promise<void>;
-  signUpWithRole: (email: string, password: string, displayName: string, selectedRole: UserRole) => Promise<{ error: Error | null; userId?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,14 +61,11 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
 
       const [profileResult, roleResult] = await Promise.all([
         fetchProfile(nextUser.id),
-        fetchRole(nextUser.id),
+        resolveRole(nextUser.id),
       ]);
 
       if (profileResult.error && !profileResult.error.message?.includes("No rows")) {
         console.error("Profile fetch error:", profileResult.error);
-      }
-      if (roleResult.error && !roleResult.error.message?.includes("No rows")) {
-        console.error("Role fetch error:", roleResult.error);
       }
 
       let finalProfile = profileResult.data as ProfileRow | null;
@@ -80,13 +74,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         finalProfile = retriedProfile;
       }
 
-      let finalRole = roleResult.data?.role as UserRole | null;
-
-      // Auto-assign customer role if none exists
-      if (!finalRole) {
-        const { role: created } = await createRoleForUser(nextUser.id, "customer");
-        finalRole = created ?? "customer";
-      }
+      const finalRole = roleResult.role;
 
       // Fetch onboarding status for merchant/delivery
       let finalOnboardingStatus: OnboardingStatus = null;
@@ -181,53 +169,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
-  const signUpWithRole = async (
-    email: string,
-    password: string,
-    displayName: string,
-    selectedRole: UserRole
-  ): Promise<{ error: Error | null; userId?: string }> => {
-    setAuthError(null);
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { display_name: displayName || email.split("@")[0] },
-      },
-    });
-
-    if (signUpError) return { error: signUpError };
-    const newUser = signUpData.user;
-    if (!newUser) return { error: new Error("Signup succeeded but no user returned") };
-
-    const { data: newProfile } = await waitForProfile(newUser.id, 5, 400);
-
-    // Create role
-    const { role: createdRole, error: roleError } = await createRoleForUser(newUser.id, selectedRole);
-    if (roleError) console.error("Role creation failed:", roleError);
-
-    // For merchant/delivery, create onboarding application
-    let finalOnboardingStatus: OnboardingStatus = null;
-    if (selectedRole === "merchant" || selectedRole === "delivery") {
-      const { data: app, error: appError } = await createOnboardingApplication(newUser.id, selectedRole);
-      if (appError) console.error("Onboarding application creation failed:", appError);
-      finalOnboardingStatus = (app?.status as OnboardingStatus) ?? "pending";
-      
-      // Also update merchant_status on profile for backward compatibility
-      if (selectedRole === "merchant" && newProfile) {
-        await updateMerchantStatus(newUser.id, "pending");
-        newProfile.merchant_status = "pending";
-      }
-    }
-
-    if (newProfile) setProfile(newProfile);
-    if (createdRole) setRole(createdRole);
-    setOnboardingStatus(finalOnboardingStatus);
-
-    return { error: null, userId: newUser.id };
-  };
-
   const signIn = async (email: string, password: string) => {
     setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -247,7 +188,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       });
       return { error };
     } else {
-      // Phone OTP via Supabase native phone auth
       const { error } = await supabase.auth.signInWithOtp({ phone: credential });
       return { error };
     }
@@ -263,37 +203,13 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         token,
         type: "email",
       });
-      if (!error) {
-        // Ensure customer role for new OTP users
-        const { data: sessionData } = await supabase.auth.getSession();
-        const otpUser = sessionData.session?.user;
-        if (otpUser) {
-          const { data: existingRole } = await fetchRole(otpUser.id);
-          if (!existingRole?.role) {
-            await createRoleForUser(otpUser.id, "customer");
-            setRole("customer");
-          }
-        }
-      }
       return { error };
     } else {
-      // Phone OTP via Supabase native phone auth
       const { error } = await supabase.auth.verifyOtp({
         phone: credential,
         token,
         type: "sms",
       });
-      if (!error) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const otpUser = sessionData.session?.user;
-        if (otpUser) {
-          const { data: existingRole } = await fetchRole(otpUser.id);
-          if (!existingRole?.role) {
-            await createRoleForUser(otpUser.id, "customer");
-            setRole("customer");
-          }
-        }
-      }
       return { error };
     }
   };
@@ -337,9 +253,9 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         return { error: null, profile: null, role: null };
       }
 
-      const [{ data: prof }, { data: roleRow }] = await Promise.all([
+      const [{ data: prof }, roleResult] = await Promise.all([
         fetchProfile(nextUser.id),
-        fetchRole(nextUser.id),
+        resolveRole(nextUser.id),
       ]);
 
       let finalProfile = (prof as ProfileRow | null) ?? null;
@@ -348,13 +264,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         finalProfile = retriedProfile;
       }
 
-      let finalRole = (roleRow?.role as UserRole | null) ?? null;
-
-      // Auto-assign customer role if none exists
-      if (!finalRole) {
-        const { role: created } = await createRoleForUser(nextUser.id, "customer");
-        finalRole = created ?? "customer";
-      }
+      const finalRole = roleResult.role;
 
       let finalOnboardingStatus: OnboardingStatus = null;
       if (finalRole === "merchant" || finalRole === "delivery") {
@@ -383,30 +293,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
-  const setInitialRole = async (newRole: UserRole) => {
-    if (!user) return { error: new Error("Not authenticated") };
-
-    const { error } = await sb
-      .from("user_roles")
-      .upsert({ user_id: user.id, role: newRole }, { onConflict: "user_id" });
-
-    if (error) return { error };
-
-    // For merchant/delivery, create onboarding application
-    if (newRole === "merchant" || newRole === "delivery") {
-      const { data: app } = await createOnboardingApplication(user.id, newRole);
-      setOnboardingStatus((app?.status as OnboardingStatus) ?? "pending");
-
-      if (newRole === "merchant") {
-        await sb.from("profiles").update({ merchant_status: "pending" }).eq("user_id", user.id);
-        setProfile((prev: ProfileRow | null) => prev ? { ...prev, merchant_status: "pending" as MerchantStatus } : prev);
-      }
-    }
-
-    setRole(newRole);
-    return { error: null };
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -418,14 +304,12 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         isLoading,
         authError,
         signUp,
-        signUpWithRole,
         signIn,
         signInWithOtp,
         verifyOtp,
         signOut,
         resetPassword,
         updateProfile,
-        setInitialRole,
         refresh,
         retryHydration,
       }}
