@@ -110,7 +110,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Generate magic link for the fake email – user exists with this email so it works
+    // Generate magic link and verify it server-side to get a full session
     const { data: signInData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: fakeEmail,
@@ -124,12 +124,39 @@ serve(async (req: Request) => {
       );
     }
 
+    // Verify the token server-side to obtain a real session
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      },
+      body: JSON.stringify({
+        token_hash: signInData.properties.hashed_token,
+        type: "magiclink",
+      }),
+    });
+
+    const sessionData = await verifyRes.json();
+
+    if (!verifyRes.ok || !sessionData.access_token) {
+      console.error("Server-side verify failed:", sessionData);
+      return new Response(
+        JSON.stringify({ error: "Failed to create session" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         user_id: userId,
         is_new: isNew,
-        token_hash: signInData.properties.hashed_token,
+        access_token: sessionData.access_token,
+        refresh_token: sessionData.refresh_token,
+        expires_in: sessionData.expires_in,
+        expires_at: sessionData.expires_at,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

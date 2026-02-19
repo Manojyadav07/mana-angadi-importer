@@ -311,13 +311,13 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         const { data, error } = await invokeEdgeFunction("verify-phone-otp", { phone: credential, code: token });
         if (error) return { error };
 
-        if (data?.token_hash) {
-          // Exchange the token hash for a session
-          const { error: verifyErr } = await supabase.auth.verifyOtp({
-            token_hash: data.token_hash,
-            type: "magiclink",
+        if (data?.access_token && data?.refresh_token) {
+          // Set the session directly from the edge function response
+          const { error: sessionErr } = await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
           });
-          if (verifyErr) return { error: verifyErr };
+          if (sessionErr) return { error: sessionErr };
         }
 
         return { error: null };
