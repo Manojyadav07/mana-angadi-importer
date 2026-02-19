@@ -234,6 +234,30 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
+  const invokeEdgeFunction = async (fnName: string, body: Record<string, unknown>) => {
+    // Edge functions are deployed to the Lovable Cloud project, not the external Supabase.
+    // Use VITE_SUPABASE_PROJECT_ID from config.toml (rhtxwutgbzptvyxutytm) via the auto-populated env vars.
+    const cloudProjectRef = "rhtxwutgbzptvyxutytm";
+    const url = `https://${cloudProjectRef}.supabase.co/functions/v1/${fnName}`;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${anonKey}`,
+        "apikey": anonKey,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      return { data: null, error: new Error(data.error || `Function ${fnName} failed`) };
+    }
+    return { data, error: null };
+  };
+
   const signInWithOtp = async (credential: string) => {
     setAuthError(null);
     const isEmailCred = credential.includes("@");
@@ -249,12 +273,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     } else {
       // Phone OTP via edge function + Twilio
       try {
-        const res = await supabase.functions.invoke("send-phone-otp", {
-          body: { phone: credential },
-        });
-        if (res.error) return { error: new Error(res.error.message || "Failed to send code") };
-        const data = res.data as any;
-        if (data?.error) return { error: new Error(data.error) };
+        const { data, error } = await invokeEdgeFunction("send-phone-otp", { phone: credential });
+        if (error) return { error };
         return { error: null };
       } catch (e: any) {
         return { error: new Error(e?.message || "Failed to send code") };
@@ -288,12 +308,8 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     } else {
       // Phone OTP verification via edge function
       try {
-        const res = await supabase.functions.invoke("verify-phone-otp", {
-          body: { phone: credential, code: token },
-        });
-        if (res.error) return { error: new Error(res.error.message || "Verification failed") };
-        const data = res.data as any;
-        if (data?.error) return { error: new Error(data.error) };
+        const { data, error } = await invokeEdgeFunction("verify-phone-otp", { phone: credential, code: token });
+        if (error) return { error };
 
         if (data?.token_hash) {
           // Exchange the token hash for a session
