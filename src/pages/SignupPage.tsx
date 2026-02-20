@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, updateProfile } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,6 +36,11 @@ export function SignupPage() {
         toast.error(signUpError.message);
         setError(signUpError.message);
         return;
+      }
+      // Store phone in profile if provided (after signup creates the session)
+      const trimmedPhone = phone.trim();
+      if (trimmedPhone) {
+        await updateProfile({ phone: trimmedPhone }).catch(() => {});
       }
       toast.success("Check your email to confirm your account!");
       navigate("/login", { replace: true });
