@@ -5,12 +5,14 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import welcomeCyclist from "@/assets/welcome-cyclist.png";
 import { toast } from "sonner";
 
-export function LoginPage() {
+export function SignupPage() {
   const navigate = useNavigate();
-  const { signIn, isLoading: authLoading } = useAuth();
+  const { signUp } = useAuth();
 
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,17 +24,21 @@ export function LoginPage() {
       setError("Please enter your email and password.");
       return;
     }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const { error: signInError } = await signIn(email.trim(), password);
-      if (signInError) {
-        toast.error(signInError.message);
-        setError(signInError.message);
+      const { error: signUpError } = await signUp(email.trim(), password, displayName.trim() || undefined);
+      if (signUpError) {
+        toast.error(signUpError.message);
+        setError(signUpError.message);
         return;
       }
-      toast.success("Logged in!");
-      navigate("/home", { replace: true });
+      toast.success("Check your email to confirm your account!");
+      navigate("/login", { replace: true });
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -40,31 +46,32 @@ export function LoginPage() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="screen-shell flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="screen-shell flex flex-col px-8 py-12 relative font-sans">
-      {/* Header */}
-      <div className="flex flex-col items-center pt-16 pb-8">
+      <div className="flex flex-col items-center pt-12 pb-6">
         <img
           src={welcomeCyclist}
           alt="Mana Angadi"
           className="rounded-full mb-6 object-contain w-20 h-20"
         />
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
-          Welcome Back
+          Create Account
         </h1>
-        <p className="mt-2 text-subtitle">SIGN IN TO MANA ANGADI</p>
+        <p className="mt-2 text-subtitle">JOIN MANA ANGADI</p>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+      <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+        <div>
+          <label className="block mb-2 ml-1 label-micro">Display Name</label>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Your name"
+            className="input-auth"
+          />
+        </div>
+
         <div>
           <label className="block mb-2 ml-1 label-micro">Email Address</label>
           <input
@@ -74,6 +81,7 @@ export function LoginPage() {
             placeholder="you@example.com"
             className="input-auth"
             autoComplete="email"
+            required
           />
         </div>
 
@@ -83,26 +91,32 @@ export function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(null); }}
-            placeholder="Enter password"
+            placeholder="Min 6 characters"
             className="input-auth"
-            autoComplete="current-password"
+            autoComplete="new-password"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 ml-1 label-micro">Phone (optional)</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+91XXXXXXXXXX"
+            className="input-auth"
           />
         </div>
 
         {error && <p className="text-xs mt-1 px-1 text-destructive">{error}</p>}
-
-        <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-            Forgot password?
-          </Link>
-        </div>
 
         <button type="submit" disabled={isSubmitting} className="btn-primary-block">
           {isSubmitting ? (
             <Loader2 className="w-5 h-5 animate-spin mx-auto" />
           ) : (
             <>
-              Sign In
+              Sign Up
               <ArrowRight size={20} className="ml-2 inline" />
             </>
           )}
@@ -110,9 +124,9 @@ export function LoginPage() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground mt-8">
-        Don't have an account?{" "}
-        <Link to="/signup" className="text-primary font-medium hover:underline">
-          Sign Up
+        Already have an account?{" "}
+        <Link to="/login" className="text-primary font-medium hover:underline">
+          Sign In
         </Link>
       </p>
 

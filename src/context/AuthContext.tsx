@@ -29,8 +29,6 @@ interface AuthContextType {
   authError: string | null;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithOtp: (credential: string) => Promise<{ error: Error | null }>;
-  verifyOtp: (credential: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<ProfileRow>) => Promise<{ error: Error | null }>;
@@ -181,44 +179,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     return { error };
   };
 
-  const signInWithOtp = async (credential: string) => {
-    setAuthError(null);
-    const isEmailCred = credential.includes("@");
-
-    if (isEmailCred) {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: credential,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth/callback",
-        },
-      });
-      return { error };
-    } else {
-      const { error } = await supabase.auth.signInWithOtp({ phone: credential });
-      return { error };
-    }
-  };
-
-  const verifyOtp = async (credential: string, token: string) => {
-    setAuthError(null);
-    const isEmailCred = credential.includes("@");
-
-    if (isEmailCred) {
-      const { error } = await supabase.auth.verifyOtp({
-        email: credential,
-        token,
-        type: "email",
-      });
-      return { error };
-    } else {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: credential,
-        token,
-        type: "sms",
-      });
-      return { error };
-    }
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -311,8 +271,6 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         authError,
         signUp,
         signIn,
-        signInWithOtp,
-        verifyOtp,
         signOut,
         resetPassword,
         updateProfile,
