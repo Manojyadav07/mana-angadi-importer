@@ -26,10 +26,10 @@ interface Translations {
   back: string;
   
   // Login
-  enterMobileNumber: string;
-  mobileNumber: string;
-  sendOtp: string;
-  invalidPhone: string;
+  enterEmail: string;
+  password: string;
+  signIn: string;
+  invalidEmail: string;
   merchantLogin: string;
   customerLogin: string;
   loginAs: string;
@@ -230,7 +230,7 @@ const teluguTranslations: Translations = {
   continue: 'కొనసాగించండి',
   skip: 'దాటవేయండి',
   logout: 'లాగ్ అవుట్',
-  testingMode: '🧪 టెస్టింగ్ మోడ్ - OTP అవసరం లేదు',
+  testingMode: '',
   villageBadge: '📍 Metlachittapur, Metpally',
   trustBadge: 'మన ఊరి నమ్మకమైన అంగడి',
   trustedLocalShop: 'మన ఊరి నమ్మకమైన అంగడి',
@@ -243,10 +243,10 @@ const teluguTranslations: Translations = {
   back: 'వెనుకకు',
   
   // Login
-  enterMobileNumber: 'మీ నెంబర్ నమోదు చేయండి',
-  mobileNumber: 'మొబైల్ నెంబర్',
-  sendOtp: 'OTP పంపండి',
-  invalidPhone: 'దయచేసి సరైన నెంబర్ నమోదు చేయండి',
+  enterEmail: 'మీ ఈమెయిల్ నమోదు చేయండి',
+  password: 'పాస్‌వర్డ్',
+  signIn: 'ప్రవేశించండి',
+  invalidEmail: 'దయచేసి సరైన ఈమెయిల్ నమోదు చేయండి',
   merchantLogin: 'వ్యాపారి లాగిన్',
   customerLogin: 'కస్టమర్ లాగిన్',
   loginAs: 'లాగిన్ చేయండి',
@@ -447,7 +447,7 @@ const englishTranslations: Translations = {
   continue: 'Continue',
   skip: 'Skip',
   logout: 'Logout',
-  testingMode: '🧪 Testing Mode - No OTP required',
+  testingMode: '',
   villageBadge: '📍 Metlachittapur, Metpally',
   trustBadge: 'Trusted Local Shop',
   trustedLocalShop: 'Trusted Local Shop',
@@ -460,10 +460,10 @@ const englishTranslations: Translations = {
   back: 'Back',
   
   // Login
-  enterMobileNumber: 'Enter your mobile number',
-  mobileNumber: 'Mobile Number',
-  sendOtp: 'Send OTP',
-  invalidPhone: 'Please enter a valid mobile number',
+  enterEmail: 'Enter your email address',
+  password: 'Password',
+  signIn: 'Sign In',
+  invalidEmail: 'Please enter a valid email address',
   merchantLogin: 'Merchant Login',
   customerLogin: 'Customer Login',
   loginAs: 'Login as',
