@@ -219,17 +219,6 @@
     min-height: 56px;
   }
 
-  .input-otp-cell {
-    @apply w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-medium rounded-xl
-           bg-white border border-foreground/10 text-foreground
-           outline-none transition-all
-           focus:border-primary focus:ring-[3px] focus:ring-primary/15;
-  }
-
-  .input-otp-cell-filled {
-    @apply input-otp-cell border-primary;
-  }
-
   /* ── Button primitives ── */
   .btn-village {
     @apply px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200
