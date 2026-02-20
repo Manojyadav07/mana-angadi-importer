@@ -1,3 +1,4 @@
+/* AuthContext – provides auth state to the component tree */
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
