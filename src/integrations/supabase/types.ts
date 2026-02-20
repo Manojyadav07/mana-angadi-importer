@@ -259,7 +259,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      ensure_user_bootstrap: { Args: never; Returns: undefined }
     }
     Enums: {
       order_status:
