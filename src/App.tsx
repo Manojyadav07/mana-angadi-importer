@@ -1,6 +1,6 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AddressProvider } from "@/context/AddressContext";
@@ -38,7 +38,6 @@ import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
 import { AdminFeesPage } from "./pages/admin/AdminFeesPage";
 import { AdminOrdersPage } from "./pages/admin/AdminOrdersPage";
 import { AdminProfilePage } from "./pages/admin/AdminProfilePage";
-
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -51,7 +50,6 @@ function LoadingScreen() {
   );
 }
 
-/** Auth guard: redirects unauthenticated users to /login */
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -59,15 +57,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Login route guard: redirects authenticated users to /home */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
-/** Customer-only routes */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -76,7 +72,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Admin-only routes */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, role, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -85,7 +80,6 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Merchant routes requiring approved onboarding */
 function MerchantRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -98,7 +92,6 @@ function MerchantRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Merchant routes requiring approved onboarding + shop */
 function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
@@ -113,7 +106,6 @@ function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Merchant pending page — only for merchants with pending/rejected applications */
 function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -124,7 +116,6 @@ function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Delivery routes requiring approved onboarding */
 function DeliveryRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -137,7 +128,6 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Delivery pending page */
 function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -148,19 +138,18 @@ function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Apply page — for merchant/delivery without an application */
 function ApplyRoute({ children }: { children: React.ReactNode }) {
   const { user, role, onboardingStatus, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role === "customer" || role === "admin") return <Navigate to={getRouteForRoleSync(role)} replace />;
-  // If already has an application, go to pending page
   if (onboardingStatus) {
     return <Navigate to={role === "merchant" ? "/merchant/pending" : "/delivery/pending"} replace />;
   }
   return <>{children}</>;
 }
 
+/** AppRoutes – safe to call useAuth() here since AuthProvider is above in main.tsx */
 function AppRoutes() {
   const { isLoading } = useAuth();
 
@@ -169,54 +158,53 @@ function AppRoutes() {
   }
 
   return (
-    <BrowserRouter>
-      <LanguageProvider>
-        <UserModeProvider>
-          <AppProvider>
-            <AddressProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-                <Route path="/login/success" element={<LoginSuccessPage />} />
-                <Route path="/auth/callback" element={<AuthCallbackPage />} />
-                <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
-                <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-                <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
-                <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
-                <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
-                <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-                <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-                <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-                <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
-                <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-                <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/merchant/pending" element={<MerchantPendingRoute><MerchantPendingPage /></MerchantPendingRoute>} />
-                <Route path="/merchant/setup" element={<MerchantRoute><MerchantShopSetupPage /></MerchantRoute>} />
-                <Route path="/merchant/orders" element={<MerchantWithShopRoute><MerchantOrdersPage /></MerchantWithShopRoute>} />
-                <Route path="/merchant/products" element={<MerchantWithShopRoute><MerchantProductsPage /></MerchantWithShopRoute>} />
-                <Route path="/merchant/profile" element={<MerchantWithShopRoute><MerchantProfilePage /></MerchantWithShopRoute>} />
-                <Route path="/delivery/pending" element={<DeliveryPendingRoute><DeliveryPendingPage /></DeliveryPendingRoute>} />
-                <Route path="/delivery/onboarding" element={<DeliveryRoute><DeliveryOnboardingPage /></DeliveryRoute>} />
-                <Route path="/delivery/orders" element={<DeliveryRoute><DeliveryOrdersPage /></DeliveryRoute>} />
-                <Route path="/delivery/earnings" element={<DeliveryRoute><DeliveryEarningsPage /></DeliveryRoute>} />
-                <Route path="/delivery/profile" element={<DeliveryRoute><DeliveryProfilePage /></DeliveryRoute>} />
-                <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
-                <Route path="/admin/onboarding" element={<AdminRoute><AdminOnboardingPage /></AdminRoute>} />
-                <Route path="/admin/shops" element={<AdminRoute><AdminShopsPage /></AdminRoute>} />
-                <Route path="/admin/fees" element={<AdminRoute><AdminFeesPage /></AdminRoute>} />
-                <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
-                <Route path="/admin/profile" element={<AdminRoute><AdminProfilePage /></AdminRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AddressProvider>
-          </AppProvider>
-        </UserModeProvider>
-      </LanguageProvider>
-    </BrowserRouter>
+    <LanguageProvider>
+      <UserModeProvider>
+        <AppProvider>
+          <AddressProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+              <Route path="/login/success" element={<LoginSuccessPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
+              <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
+              <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
+              <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
+              <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+              <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+              <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+              <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
+              <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+              <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/merchant/pending" element={<MerchantPendingRoute><MerchantPendingPage /></MerchantPendingRoute>} />
+              <Route path="/merchant/setup" element={<MerchantRoute><MerchantShopSetupPage /></MerchantRoute>} />
+              <Route path="/merchant/orders" element={<MerchantWithShopRoute><MerchantOrdersPage /></MerchantWithShopRoute>} />
+              <Route path="/merchant/products" element={<MerchantWithShopRoute><MerchantProductsPage /></MerchantWithShopRoute>} />
+              <Route path="/merchant/profile" element={<MerchantWithShopRoute><MerchantProfilePage /></MerchantWithShopRoute>} />
+              <Route path="/delivery/pending" element={<DeliveryPendingRoute><DeliveryPendingPage /></DeliveryPendingRoute>} />
+              <Route path="/delivery/onboarding" element={<DeliveryRoute><DeliveryOnboardingPage /></DeliveryRoute>} />
+              <Route path="/delivery/orders" element={<DeliveryRoute><DeliveryOrdersPage /></DeliveryRoute>} />
+              <Route path="/delivery/earnings" element={<DeliveryRoute><DeliveryEarningsPage /></DeliveryRoute>} />
+              <Route path="/delivery/profile" element={<DeliveryRoute><DeliveryProfilePage /></DeliveryRoute>} />
+              <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+              <Route path="/admin/onboarding" element={<AdminRoute><AdminOnboardingPage /></AdminRoute>} />
+              <Route path="/admin/shops" element={<AdminRoute><AdminShopsPage /></AdminRoute>} />
+              <Route path="/admin/fees" element={<AdminRoute><AdminFeesPage /></AdminRoute>} />
+              <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
+              <Route path="/admin/profile" element={<AdminRoute><AdminProfilePage /></AdminRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AddressProvider>
+        </AppProvider>
+      </UserModeProvider>
+    </LanguageProvider>
   );
 }
 
+/** App – dumb shell, does NOT call useAuth() */
 const App = () => (
   <TooltipProvider>
     <Sonner />
