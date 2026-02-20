@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Loader2 } from "lucide-react";
 import welcomeCyclist from "@/assets/welcome-cyclist.png";
 import { toast } from "sonner";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +41,10 @@ export function LoginPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (showWelcome) {
+    return <WelcomeScreen onStart={() => setShowWelcome(false)} />;
+  }
 
   if (authLoading) {
     return (
