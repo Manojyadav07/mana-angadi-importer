@@ -10,7 +10,7 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 
 const t = {
   te: {
-    heading: "తిరిగి స్వాగతం",
+    heading: "స్వాగతం",
     subtitle: "మన అంగడిలోకి ప్రవేశించండి",
     emailLabel: "ఈమెయిల్ చిరునామా",
     emailPlaceholder: "you@example.com",
@@ -25,7 +25,7 @@ const t = {
     somethingWrong: "ఏదో తప్పు జరిగింది",
   },
   en: {
-    heading: "Welcome Back",
+    heading: "Welcome",
     subtitle: "SIGN IN TO MANA ANGADI",
     emailLabel: "Email Address",
     emailPlaceholder: "you@example.com",
