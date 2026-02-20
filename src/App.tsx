@@ -1,4 +1,3 @@
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/context/AppContext";
@@ -207,7 +206,6 @@ function AppRoutes() {
 /** App – dumb shell, does NOT call useAuth() */
 const App = () => (
   <TooltipProvider>
-    <Sonner />
     <AppRoutes />
   </TooltipProvider>
 );
