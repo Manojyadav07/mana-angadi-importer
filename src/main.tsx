@@ -14,14 +14,16 @@ function Root() {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider onSignOut={handleSignOut}>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider onSignOut={handleSignOut}>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
       <Sonner />
-    </QueryClientProvider>
+    </>
   );
 }
 
