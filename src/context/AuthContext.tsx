@@ -60,6 +60,11 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     try {
       setAuthError(null);
 
+      // Harmless fallback: ensure profile + role rows exist server-side
+      await sb.rpc("ensure_user_bootstrap").catch((e: any) =>
+        console.warn("[auth] ensure_user_bootstrap RPC failed (non-fatal):", e?.message)
+      );
+
       const [profileResult, roleResult] = await Promise.all([
         fetchProfile(nextUser.id),
         resolveRole(nextUser.id),
