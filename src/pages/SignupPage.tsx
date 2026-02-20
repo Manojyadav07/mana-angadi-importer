@@ -1,13 +1,58 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, Loader2 } from "lucide-react";
 import welcomeCyclist from "@/assets/welcome-cyclist.png";
 import { toast } from "sonner";
+import { LanguageToggle } from "@/components/LanguageToggle";
+
+const t = {
+  te: {
+    heading: "ఖాతా సృష్టించండి",
+    subtitle: "మన అంగడిలో చేరండి",
+    nameLabel: "పేరు",
+    namePlaceholder: "మీ పేరు",
+    emailLabel: "ఈమెయిల్ చిరునామా",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "పాస్‌వర్డ్",
+    passwordPlaceholder: "కనీసం 6 అక్షరాలు",
+    phoneLabel: "ఫోన్ (ఐచ్ఛికం)",
+    phonePlaceholder: "+91XXXXXXXXXX",
+    signUp: "నమోదు చేయండి",
+    hasAccount: "ఇప్పటికే ఖాతా ఉందా?",
+    signIn: "ప్రవేశించండి",
+    errorEmpty: "దయచేసి ఈమెయిల్ మరియు పాస్‌వర్డ్ నమోదు చేయండి.",
+    errorShort: "పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి.",
+    success: "మీ ఈమెయిల్‌ను నిర్ధారించడానికి తనిఖీ చేయండి!",
+    somethingWrong: "ఏదో తప్పు జరిగింది",
+  },
+  en: {
+    heading: "Create Account",
+    subtitle: "JOIN MANA ANGADI",
+    nameLabel: "Display Name",
+    namePlaceholder: "Your name",
+    emailLabel: "Email Address",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Min 6 characters",
+    phoneLabel: "Phone (optional)",
+    phonePlaceholder: "+91XXXXXXXXXX",
+    signUp: "Sign Up",
+    hasAccount: "Already have an account?",
+    signIn: "Sign In",
+    errorEmpty: "Please enter your email and password.",
+    errorShort: "Password must be at least 6 characters.",
+    success: "Check your email to confirm your account!",
+    somethingWrong: "Something went wrong",
+  },
+};
 
 export function SignupPage() {
   const navigate = useNavigate();
   const { signUp, updateProfile } = useAuth();
+  const { language } = useLanguage();
+  const labels = t[language];
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,11 +66,11 @@ export function SignupPage() {
     setError(null);
 
     if (!email.trim() || !password) {
-      setError("Please enter your email and password.");
+      setError(labels.errorEmpty);
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(labels.errorShort);
       return;
     }
 
@@ -37,15 +82,14 @@ export function SignupPage() {
         setError(signUpError.message);
         return;
       }
-      // Store phone in profile if provided (after signup creates the session)
       const trimmedPhone = phone.trim();
       if (trimmedPhone) {
         await updateProfile({ phone: trimmedPhone }).catch(() => {});
       }
-      toast.success("Check your email to confirm your account!");
+      toast.success(labels.success);
       navigate("/login", { replace: true });
     } catch {
-      toast.error("Something went wrong");
+      toast.error(labels.somethingWrong);
     } finally {
       setIsSubmitting(false);
     }
@@ -53,6 +97,11 @@ export function SignupPage() {
 
   return (
     <div className="screen-shell flex flex-col px-8 py-12 relative font-sans">
+      {/* Language Toggle */}
+      <div className="absolute top-8 right-8 w-40">
+        <LanguageToggle />
+      </div>
+
       <div className="flex flex-col items-center pt-12 pb-6">
         <img
           src={welcomeCyclist}
@@ -60,30 +109,30 @@ export function SignupPage() {
           className="rounded-full mb-6 object-contain w-20 h-20"
         />
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
-          Create Account
+          {labels.heading}
         </h1>
-        <p className="mt-2 text-subtitle">JOIN MANA ANGADI</p>
+        <p className="mt-2 text-subtitle">{labels.subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 mt-4">
         <div>
-          <label className="block mb-2 ml-1 label-micro">Display Name</label>
+          <label className="block mb-2 ml-1 label-micro">{labels.nameLabel}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
+            placeholder={labels.namePlaceholder}
             className="input-auth"
           />
         </div>
 
         <div>
-          <label className="block mb-2 ml-1 label-micro">Email Address</label>
+          <label className="block mb-2 ml-1 label-micro">{labels.emailLabel}</label>
           <input
             type="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(null); }}
-            placeholder="you@example.com"
+            placeholder={labels.emailPlaceholder}
             className="input-auth"
             autoComplete="email"
             required
@@ -91,12 +140,12 @@ export function SignupPage() {
         </div>
 
         <div>
-          <label className="block mb-2 ml-1 label-micro">Password</label>
+          <label className="block mb-2 ml-1 label-micro">{labels.passwordLabel}</label>
           <input
             type="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(null); }}
-            placeholder="Min 6 characters"
+            placeholder={labels.passwordPlaceholder}
             className="input-auth"
             autoComplete="new-password"
             required
@@ -104,12 +153,12 @@ export function SignupPage() {
         </div>
 
         <div>
-          <label className="block mb-2 ml-1 label-micro">Phone (optional)</label>
+          <label className="block mb-2 ml-1 label-micro">{labels.phoneLabel}</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91XXXXXXXXXX"
+            placeholder={labels.phonePlaceholder}
             className="input-auth"
           />
         </div>
@@ -121,7 +170,7 @@ export function SignupPage() {
             <Loader2 className="w-5 h-5 animate-spin mx-auto" />
           ) : (
             <>
-              Sign Up
+              {labels.signUp}
               <ArrowRight size={20} className="ml-2 inline" />
             </>
           )}
@@ -129,9 +178,9 @@ export function SignupPage() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground mt-8">
-        Already have an account?{" "}
+        {labels.hasAccount}{" "}
         <Link to="/login" className="text-primary font-medium hover:underline">
-          Sign In
+          {labels.signIn}
         </Link>
       </p>
 
