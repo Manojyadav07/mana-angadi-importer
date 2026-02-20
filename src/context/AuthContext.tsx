@@ -58,10 +58,14 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
     try {
       setAuthError(null);
 
-      // Harmless fallback: ensure profile + role rows exist server-side
-      await sb.rpc("ensure_user_bootstrap").catch((e: any) =>
-        console.warn("[auth] ensure_user_bootstrap RPC failed (non-fatal):", e?.message)
-      );
+      // TODO(2026-02-21): Remove this RPC fallback after 24h once Auth Hook stability is confirmed.
+      // Harmless fallback: ensure profile + role rows exist server-side.
+      // Wrapped in try/catch — must never block login or crash the UI.
+      try {
+        await sb.rpc("ensure_user_bootstrap");
+      } catch (e: any) {
+        console.warn("[auth] ensure_user_bootstrap RPC failed (non-fatal):", e?.message);
+      }
 
       const [profileResult, roleResult] = await Promise.all([
         fetchProfile(nextUser.id),
