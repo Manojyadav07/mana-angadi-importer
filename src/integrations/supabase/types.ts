@@ -260,7 +260,9 @@ export type Database = {
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
-      ensure_user_bootstrap: { Args: never; Returns: undefined }
+      ensure_user_bootstrap:
+        | { Args: never; Returns: undefined }
+        | { Args: { p_phone?: string; p_user_id: string }; Returns: undefined }
     }
     Enums: {
       order_status:

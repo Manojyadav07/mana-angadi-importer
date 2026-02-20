@@ -9,6 +9,9 @@ import { getRouteForRoleSync } from "@/context/auth/postAuthRedirect";
 import { useMerchantShopCheck } from "@/hooks/useMerchantShopCheck";
 import Index from "./pages/Index";
 import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
 import { CategoryListingPage } from "./pages/CategoryListingPage";
@@ -30,7 +33,7 @@ import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
 import { DeliveryPendingPage } from "./pages/DeliveryPendingPage";
 import { ApplyPage } from "./pages/ApplyPage";
-import { LoginSuccessPage } from "./pages/LoginSuccessPage";
+
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminOnboardingPage } from "./pages/admin/AdminOnboardingPage";
 import { AdminShopsPage } from "./pages/admin/AdminShopsPage";
@@ -164,7 +167,9 @@ function AppRoutes() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-              <Route path="/login/success" element={<LoginSuccessPage />} />
+              <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
+              <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
