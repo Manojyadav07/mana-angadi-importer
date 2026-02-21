@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getRouteForRoleSync } from "@/context/auth/postAuthRedirect";
 import { useMerchantShopCheck } from "@/hooks/useMerchantShopCheck";
 import { BrowsePage } from "./pages/BrowsePage";
+import { WelcomePage } from "./pages/WelcomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -61,16 +62,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Redirect authenticated users to /login/success; otherwise allow access */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to="/login/success" replace />;
   return <>{children}</>;
-}
-
-/** LoginPage handles its own post-login redirect to /login/success */
-function LoginPageRoute() {
-  return <LoginPage />;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -172,8 +169,9 @@ function AppRoutes() {
         <AppProvider>
           <AddressProvider>
             <Routes>
-              <Route path="/" element={<BrowsePage />} />
-              <Route path="/login" element={<LoginPageRoute />} />
+              <Route path="/" element={<Navigate to="/welcome" replace />} />
+              <Route path="/welcome" element={<PublicOnlyRoute><WelcomePage /></PublicOnlyRoute>} />
+              <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
               <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
