@@ -62,11 +62,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Redirect authenticated users to /login/success; otherwise allow access */
+/** Redirect authenticated users to /login/success ONLY if welcome has been seen this session */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (user) return <Navigate to="/login/success" replace />;
+  if (user && sessionStorage.getItem("mana_angadi_welcome_seen") === "1") {
+    return <Navigate to="/login/success" replace />;
+  }
   return <>{children}</>;
 }
 

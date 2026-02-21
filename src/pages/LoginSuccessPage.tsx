@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LogOut } from "lucide-react";
 import loginSuccessCyclist from "@/assets/login-success-cyclist.png";
 import { formatHonorific } from "@/lib/formatHonorific";
 
@@ -27,8 +27,14 @@ const translations = {
 export function LoginSuccessPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const { profile, user } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const t = translations[language];
+
+  const handleLogout = async () => {
+    sessionStorage.removeItem("mana_angadi_welcome_seen");
+    await signOut();
+    navigate("/welcome", { replace: true });
+  };
 
   // Resolve display name: profile > email prefix > fallback
   const userName =
@@ -89,6 +95,15 @@ export function LoginSuccessPage() {
         >
           <span>{t.button}</span>
           <ArrowRight className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-medium transition-colors border"
+          style={{ borderColor: "rgba(0,0,0,0.15)", color: "rgba(0,0,0,0.5)" }}
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Log out</span>
         </button>
 
         <div className="mt-6 flex justify-center">
