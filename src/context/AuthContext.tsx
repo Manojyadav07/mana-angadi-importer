@@ -130,7 +130,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!isMounted) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -145,9 +145,12 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         return;
       }
 
-      setIsLoading(true);
-      setAuthReady(false);
-      void startHydration(newSession.user);
+      // Defer hydration to avoid Supabase client deadlock and keep authReady stable
+      setTimeout(() => {
+        if (!isMounted) return;
+        setIsLoading(true);
+        void startHydration(newSession.user);
+      }, 0);
     });
 
     supabase.auth.getSession().then(({ data }) => {
