@@ -4,6 +4,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useShop } from '@/hooks/useShops';
 import { useProducts } from '@/hooks/useProducts';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLocalizedName, getLocalizedShopType } from '@/types';
 import {
@@ -29,6 +30,7 @@ export function ShopPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { cart, addToCart, updateQuantity, getCartItemCount, getCartTotal } = useCart();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
@@ -232,7 +234,14 @@ export function ShopPage() {
                     </div>
                   ) : quantity === 0 ? (
                     <button
-                      onClick={() => addToCart(product)}
+                      onClick={() => {
+                        if (!user) {
+                          sessionStorage.setItem('post-login-redirect', `/shop/${shopId}`);
+                          navigate('/login');
+                          return;
+                        }
+                        addToCart(product);
+                      }}
                       className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-95 transition-transform"
                     >
                       <Plus className="w-5 h-5" />

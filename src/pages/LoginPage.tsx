@@ -71,7 +71,13 @@ export function LoginPage() {
         return;
       }
       toast.success(labels.loggedIn);
-      navigate("/home", { replace: true });
+      const redirect = sessionStorage.getItem('post-login-redirect');
+      if (redirect) {
+        sessionStorage.removeItem('post-login-redirect');
+        navigate(redirect, { replace: true });
+      } else {
+        navigate("/home", { replace: true });
+      }
     } catch {
       toast.error(labels.somethingWrong);
     } finally {
