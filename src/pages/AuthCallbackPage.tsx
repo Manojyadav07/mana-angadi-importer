@@ -38,7 +38,7 @@ export function AuthCallbackPage() {
             if (session) {
               subscription.unsubscribe();
               localStorage.setItem(USER_MODE_KEY, localStorage.getItem(USER_MODE_KEY) || "customer");
-              navigate("/home", { replace: true });
+              navigate("/login/success", { replace: true });
             }
           });
 
@@ -54,7 +54,7 @@ export function AuthCallbackPage() {
         if (!localStorage.getItem(USER_MODE_KEY)) {
           localStorage.setItem(USER_MODE_KEY, "customer");
         }
-        navigate("/home", { replace: true });
+        navigate("/login/success", { replace: true });
       } catch (e: any) {
         setError(e?.message || "Something went wrong");
       }
