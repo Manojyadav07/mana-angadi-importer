@@ -8,7 +8,7 @@ export function WelcomePage() {
 
   const handleContinue = () => {
     sessionStorage.setItem("mana_angadi_welcome_seen", "1");
-    navigate(user ? "/login/success" : "/login");
+    navigate("/login");
   };
 
   return <WelcomeScreen onStart={handleContinue} />;
