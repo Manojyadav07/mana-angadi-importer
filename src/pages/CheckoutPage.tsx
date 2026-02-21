@@ -45,8 +45,7 @@ export function CheckoutPage() {
 
   const en = language === 'en';
 
-  const getProductName = (product: { name_te: string; name_en: string }) =>
-    en ? product.name_en : product.name_te;
+  // no-op: product name helper removed, using item_name directly
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(SUPPORT_CONFIG.upiVpa);
@@ -79,12 +78,12 @@ export function CheckoutPage() {
         shopPickupLat: shop.pickupLat,
         shopPickupLng: shop.pickupLng,
         items: cart.map(item => ({
-          productId: item.product_id,
-          productNameTe: item.product.name_te,
-          productNameEn: item.product.name_en,
-          price: item.product.price,
+          productId: item.item_id,
+          productNameTe: item.item_name,
+          productNameEn: item.item_name,
+          price: item.item_price,
           quantity: item.quantity,
-          imageUrl: item.product.image,
+          imageUrl: item.item_image_url,
         })),
         subtotal,
         deliveryFee,
@@ -205,13 +204,11 @@ export function CheckoutPage() {
           </p>
 
           <div className="space-y-3">
-            {cart.map(item => {
-              const productName = getProductName(item.product);
-              return (
-                <div key={item.product_id} className="flex items-center gap-3">
+            {cart.map(item => (
+                <div key={item.id} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {item.product.image ? (
-                      <img src={item.product.image} alt={productName} className="w-full h-full object-cover" />
+                    {item.item_image_url ? (
+                      <img src={item.item_image_url} alt={item.item_name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-4 h-4 text-muted-foreground" />
@@ -219,13 +216,12 @@ export function CheckoutPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground truncate">{productName}</p>
-                    <p className="text-xs text-muted-foreground">{item.quantity} × ₹{item.product.price}</p>
+                    <p className="text-sm text-foreground truncate">{item.item_name}</p>
+                    <p className="text-xs text-muted-foreground">{item.quantity} × ₹{item.item_price}</p>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">₹{item.product.price * item.quantity}</span>
+                  <span className="text-sm font-semibold text-foreground">₹{item.item_price * item.quantity}</span>
                 </div>
-              );
-            })}
+            ))}
           </div>
 
           <div className="border-t border-foreground/5 mt-4 pt-4 space-y-2">
