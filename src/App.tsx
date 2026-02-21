@@ -64,13 +64,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (user) return <Navigate to="/login/success" replace />;
+  if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
-/** Route that checks for post-login redirect stored in sessionStorage */
-function LoginPageWithRedirect() {
-  return <PublicOnlyRoute><LoginPage /></PublicOnlyRoute>;
+/** LoginPage handles its own post-login redirect to /login/success */
+function LoginPageRoute() {
+  return <LoginPage />;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -173,7 +173,7 @@ function AppRoutes() {
           <AddressProvider>
             <Routes>
               <Route path="/" element={<BrowsePage />} />
-              <Route path="/login" element={<LoginPageWithRedirect />} />
+              <Route path="/login" element={<LoginPageRoute />} />
               <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

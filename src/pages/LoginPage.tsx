@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, Loader2 } from "lucide-react";
@@ -44,16 +44,22 @@ const t = {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, refresh, isLoading: authLoading } = useAuth();
+  const { signIn, refresh, isLoading: authLoading, user } = useAuth();
   const { language } = useLanguage();
   const labels = t[language];
 
+  const loginInProgressRef = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
+
+  // If already logged in and not mid-login, redirect to home
+  if (user && !loginInProgressRef.current && !showNamePrompt) {
+    return <Navigate to="/home" replace />;
+  }
 
   const proceedAfterLogin = () => {
     const redirect = sessionStorage.getItem('post-login-redirect');
@@ -75,6 +81,7 @@ export function LoginPage() {
     }
 
     setIsSubmitting(true);
+    loginInProgressRef.current = true;
     try {
       const { error: signInError } = await signIn(email.trim(), password);
       if (signInError) {
