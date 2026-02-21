@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowRight, Leaf } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import welcomeCyclist from "@/assets/welcome-cyclist.png";
 
 const translations = {
   te: {
@@ -56,7 +57,7 @@ export function LoginSuccessPage() {
           className="w-24 h-24 rounded-full flex items-center justify-center mb-8"
           style={{ backgroundColor: "#E8F3E8" }}
         >
-          <Leaf className="w-12 h-12" style={{ color: "#2DB92D" }} />
+          <img src={welcomeCyclist} alt="Mana Angadi" className="w-16 h-16 object-contain" />
         </div>
 
         <div className="max-w-sm text-center space-y-3">
