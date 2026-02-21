@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, Loader2 } from "lucide-react";
-import welcomeCyclist from "@/assets/welcome-cyclist.png";
+import manaAngadiLogo from "@/assets/mana-angadi-logo.png";
 import { toast } from "sonner";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -119,11 +119,8 @@ export function LoginPage() {
 
       {/* Header */}
       <div className="flex flex-col items-center pt-16 pb-8">
-        <div
-          className="rounded-full mb-6 w-20 h-20 overflow-hidden border-2 shadow-lg"
-          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
-        >
-          <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
+        <div className="rounded-full mb-6 w-20 h-20 overflow-hidden">
+          <img src={manaAngadiLogo} alt="Mana Angadi" className="w-full h-full object-cover" />
         </div>
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
           {labels.heading}
