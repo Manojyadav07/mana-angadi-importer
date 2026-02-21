@@ -34,6 +34,7 @@ import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
 import { DeliveryPendingPage } from "./pages/DeliveryPendingPage";
 import { ApplyPage } from "./pages/ApplyPage";
+import { LoginSuccessPage } from "./pages/LoginSuccessPage";
 
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminOnboardingPage } from "./pages/admin/AdminOnboardingPage";
@@ -177,6 +178,7 @@ function AppRoutes() {
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              <Route path="/login/success" element={<AuthGuard><LoginSuccessPage /></AuthGuard>} />
               <Route path="/apply" element={<ApplyRoute><ApplyPage /></ApplyRoute>} />
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
