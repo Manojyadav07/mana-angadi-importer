@@ -24,6 +24,7 @@ const t = {
     signIn: "ప్రవేశించండి",
     errorEmpty: "దయచేసి ఈమెయిల్ మరియు పాస్‌వర్డ్ నమోదు చేయండి.",
     errorShort: "పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి.",
+    errorName: "పేరు 2-40 అక్షరాలు, అక్షరాలు & ఖాళీలు మాత్రమే.",
     success: "మీ ఈమెయిల్‌ను నిర్ధారించడానికి తనిఖీ చేయండి!",
     somethingWrong: "ఏదో తప్పు జరిగింది",
   },
@@ -43,6 +44,7 @@ const t = {
     signIn: "Sign In",
     errorEmpty: "Please enter your email and password.",
     errorShort: "Password must be at least 6 characters.",
+    errorName: "Name must be 2-40 characters, letters & spaces only.",
     success: "Check your email to confirm your account!",
     somethingWrong: "Something went wrong",
   },
@@ -61,10 +63,17 @@ export function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const NAME_REGEX = /^[\p{L}\s]{2,40}$/u;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    const trimmedName = displayName.trim().replace(/\s+/g, " ");
+    if (trimmedName && !NAME_REGEX.test(trimmedName)) {
+      setError(labels.errorName);
+      return;
+    }
     if (!email.trim() || !password) {
       setError(labels.errorEmpty);
       return;

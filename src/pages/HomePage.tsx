@@ -5,20 +5,23 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/hooks/useCart';
 import welcomeCyclist from '@/assets/welcome-cyclist.png';
+import { formatHonorific } from '@/lib/formatHonorific';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { getCartItemCount } = useCart();
   const isTeluguActive = language === 'te';
   const cartCount = getCartItemCount();
 
-  const displayName =
+  const rawName =
+    profile?.display_name ||
     localStorage.getItem('mana-angadi-user-name') ||
     user?.user_metadata?.display_name ||
     user?.user_metadata?.full_name ||
     (user?.email ? user.email.split('@')[0] : 'Guest');
+  const displayName = rawName;
 
   const tabClass = (active: boolean) =>
     `flex flex-col items-center gap-1 ${active ? 'text-primary' : 'opacity-30'}`;
@@ -37,7 +40,7 @@ export function HomePage() {
             <div>
               <p className="label-micro opacity-100 mb-0.5">{t.welcomeHome}</p>
               <h1 className="text-2xl font-medium leading-tight text-mana-charcoal">
-                {t.namaskaram}, <br />{displayName} {t.gaaru}
+                {t.namaskaram}, <br />{formatHonorific(displayName, language)}
               </h1>
             </div>
           </div>

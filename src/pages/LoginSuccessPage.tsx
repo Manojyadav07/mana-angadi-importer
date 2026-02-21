@@ -3,6 +3,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight } from "lucide-react";
 import welcomeCyclist from "@/assets/welcome-cyclist.png";
+import { formatHonorific } from "@/lib/formatHonorific";
 
 const translations = {
   te: {
@@ -67,7 +68,7 @@ export function LoginSuccessPage() {
           >
             {t.greeting}
             <br />
-            <span className="italic">{userName}</span>{t.suffix}
+            <span className="italic">{formatHonorific(userName, language)}</span>{t.suffix}
           </h1>
 
           <p

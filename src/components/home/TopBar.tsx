@@ -3,18 +3,20 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { GampaIcon } from './GampaIcon';
 import villageHeaderBg from '@/assets/village-header-bg.jpg';
+import { formatHonorific } from '@/lib/formatHonorific';
 
 export function TopBar() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { language } = useLanguage();
 
-  const displayName = localStorage.getItem("mana-angadi-user-name")
+  const displayName = profile?.display_name
+    || localStorage.getItem("mana-angadi-user-name")
     || user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || (user?.email ? user.email.split('@')[0] : null);
 
   const greeting = displayName
-    ? (language === 'en' ? `${displayName} Gaaru` : `${displayName} గారు`)
+    ? formatHonorific(displayName, language)
     : (language === 'en' ? 'Welcome back' : 'తిరిగి స్వాగతం');
 
   return (
