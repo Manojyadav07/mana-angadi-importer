@@ -1,78 +1,99 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
-import { ArrowRight } from "lucide-react";
-import welcomeCyclist from "@/assets/welcome-cyclist.png";
+import { useAuth } from "@/context/AuthContext";
+import { ArrowRight, Leaf } from "lucide-react";
 
 const translations = {
   te: {
-    brand: "MANA ANGADI",
+    brand: "Mana Angadi",
     greeting: "నమస్కారం,",
-    suffix: "గారు!",
+    suffix: "!",
     subtitle: "మీ గ్రామ అంగడికి మళ్లీ స్వాగతం",
-    button: "అంగడి అన్వేషించండి",
+    button: "మన అంగడిలోకి ప్రవేశించండి",
+    fallbackName: "మిత్రమా",
   },
   en: {
-    brand: "MANA ANGADI",
+    brand: "Mana Angadi",
     greeting: "Namaskaram,",
-    suffix: "Gaaru!",
+    suffix: "!",
     subtitle: "Welcome back to your village store",
-    button: "Explore Angadi",
+    button: "Enter Mana Angadi",
+    fallbackName: "Friend",
   },
 };
 
 export function LoginSuccessPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { language } = useLanguage();
+  const { profile, user } = useAuth();
   const t = translations[language];
 
-  const userName = (location.state as any)?.userName
-    || localStorage.getItem("mana-angadi-user-name")
-    || "User";
+  // Resolve display name: profile > email prefix > fallback
+  const userName =
+    profile?.display_name ||
+    user?.email?.split("@")[0] ||
+    t.fallbackName;
 
   return (
-    <div className="screen-shell flex flex-col px-8 py-12 relative overflow-hidden font-display">
-      {/* Dotted background overlay */}
-      <div className="dotted-bg" />
-
+    <div
+      className="min-h-screen flex flex-col px-8 py-12 relative overflow-hidden"
+      style={{ backgroundColor: "#F9F8F4" }}
+    >
       {/* Brand label */}
-      <header className="relative z-10 pt-4 text-center">
-        <span className="label-brand">{t.brand}</span>
+      <header className="pt-6 text-center">
+        <span
+          className="text-xs font-medium tracking-[0.25em] uppercase"
+          style={{ color: "rgba(0,0,0,0.35)" }}
+        >
+          {t.brand}
+        </span>
       </header>
 
-      {/* Main center content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center">
-        <img
-          src={welcomeCyclist}
-          alt="Mana Angadi"
-          className="rounded-full mb-10 object-contain w-24 h-24"
-        />
+      {/* Center content */}
+      <main className="flex-1 flex flex-col items-center justify-center -mt-8">
+        {/* Eco icon circle */}
+        <div
+          className="w-24 h-24 rounded-full flex items-center justify-center mb-8"
+          style={{ backgroundColor: "#E8F3E8" }}
+        >
+          <Leaf className="w-12 h-12" style={{ color: "#2DB92D" }} />
+        </div>
 
-        <div className="max-w-sm text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight text-foreground">
+        <div className="max-w-sm text-center space-y-3">
+          <h1
+            className="text-3xl md:text-4xl font-serif font-normal tracking-tight leading-tight"
+            style={{ color: "#1a1a1a", fontFamily: "'Newsreader', 'Georgia', serif" }}
+          >
             {t.greeting}
             <br />
-            <span className="italic">{userName}</span> {t.suffix}
+            <span className="italic">{userName}</span>{t.suffix}
           </h1>
 
-          <p className="text-lg font-light text-foreground/60">
+          <p
+            className="text-base font-light"
+            style={{ color: "rgba(0,0,0,0.45)" }}
+          >
             {t.subtitle}
           </p>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 pb-8">
+      <footer className="pb-8">
         <button
           onClick={() => navigate("/home", { replace: true })}
-          className="btn-primary-pill"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-full text-white font-medium text-base transition-colors"
+          style={{ backgroundColor: "#2DB92D" }}
         >
           <span>{t.button}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
 
-        <div className="mt-8 flex justify-center">
-          <div className="home-indicator" />
+        <div className="mt-6 flex justify-center">
+          <div
+            className="w-32 h-1 rounded-full"
+            style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+          />
         </div>
       </footer>
     </div>

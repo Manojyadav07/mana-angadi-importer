@@ -48,7 +48,7 @@ export function ResetPasswordPage() {
         return;
       }
       toast.success("Password updated!");
-      navigate("/home", { replace: true });
+      navigate("/login/success", { replace: true });
     } catch {
       toast.error("Something went wrong");
     } finally {

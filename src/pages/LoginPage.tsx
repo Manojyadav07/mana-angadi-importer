@@ -76,7 +76,7 @@ export function LoginPage() {
         sessionStorage.removeItem('post-login-redirect');
         navigate(redirect, { replace: true });
       } else {
-        navigate("/home", { replace: true });
+        navigate("/login/success", { replace: true });
       }
     } catch {
       toast.error(labels.somethingWrong);
