@@ -17,6 +17,7 @@ import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
 import { PublicShopPage } from "./pages/PublicShopPage";
 import { CategoryListingPage } from "./pages/CategoryListingPage";
+import { CategoryShopsPage } from "./pages/CategoryShopsPage";
 import { ShopListingPage } from "./pages/ShopListingPage";
 import { CartPage } from "./pages/CartPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
@@ -172,6 +173,7 @@ function AppRoutes() {
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
               <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
+              <Route path="/category/:categoryKey" element={<ProtectedRoute><CategoryShopsPage /></ProtectedRoute>} />
               <Route path="/shop/:shopId" element={<PublicShopPage />} />
               <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
               <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
