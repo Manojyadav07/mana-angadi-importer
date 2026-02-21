@@ -56,8 +56,8 @@ function LoadingScreen() {
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -68,24 +68,24 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role && role !== "customer") return <Navigate to={getRouteForRoleSync(role)} replace />;
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "admin") return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
 function MerchantRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, onboardingStatus, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "merchant") {
@@ -96,9 +96,9 @@ function MerchantRoute({ children }: { children: React.ReactNode }) {
 }
 
 function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
+  const { user, role, onboardingStatus, authReady } = useAuth();
   const { data: shopCheck, isLoading: shopCheckLoading } = useMerchantShopCheck(user?.id);
-  if (isLoading || shopCheckLoading) return <LoadingScreen />;
+  if (!authReady || shopCheckLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "merchant") {
@@ -110,8 +110,8 @@ function MerchantWithShopRoute({ children }: { children: React.ReactNode }) {
 }
 
 function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, onboardingStatus, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "merchant") return <Navigate to="/home" replace />;
   if (onboardingStatus === "approved") return <Navigate to="/merchant/orders" replace />;
@@ -120,8 +120,8 @@ function MerchantPendingRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DeliveryRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, onboardingStatus, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "delivery" && role !== "admin") return <Navigate to="/home" replace />;
   if (role === "delivery") {
@@ -132,8 +132,8 @@ function DeliveryRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, onboardingStatus, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role !== "delivery") return <Navigate to="/home" replace />;
   if (onboardingStatus === "approved") return <Navigate to="/delivery/orders" replace />;
@@ -142,8 +142,8 @@ function DeliveryPendingRoute({ children }: { children: React.ReactNode }) {
 }
 
 function ApplyRoute({ children }: { children: React.ReactNode }) {
-  const { user, role, onboardingStatus, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
+  const { user, role, onboardingStatus, authReady } = useAuth();
+  if (!authReady) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (role === "customer" || role === "admin") return <Navigate to={getRouteForRoleSync(role)} replace />;
   if (onboardingStatus) {

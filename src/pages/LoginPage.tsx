@@ -82,10 +82,8 @@ export function LoginPage() {
       }
       toast.success(labels.loggedIn);
 
-      // Wait for auth hydration to complete so guards see the session
+      // refresh() hydrates AuthContext so guards see the session immediately
       const { profile: freshProfile } = await refresh();
-      // Small delay to let AuthContext settle after refresh
-      await new Promise(r => setTimeout(r, 100));
       if (!freshProfile?.display_name?.trim()) {
         setShowNamePrompt(true);
       } else {
