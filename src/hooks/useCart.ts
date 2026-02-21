@@ -1,196 +1,109 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Product } from '@/types';
 
-export interface DBCartItem {
+export interface CartItemRow {
   id: string;
-  product_id: string;
+  item_id: string;
   shop_id: string;
   quantity: number;
-  product: Product;
+  item_name: string;
+  item_price: number;
+  item_image_url: string | null;
+  shop_name: string;
 }
 
-interface RawCartRow {
-  id: string;
-  product_id: string;
-  shop_id: string;
-  quantity: number;
-  products: {
-    id: string;
-    shop_id: string;
-    name_te: string;
-    name_en: string;
-    price: number;
-    in_stock: boolean | null;
-    is_active: boolean | null;
-    unit: string | null;
-    image_url: string | null;
-  };
-}
-
-function rowToCartItem(row: RawCartRow): DBCartItem {
-  const p = row.products;
-  return {
-    id: row.id,
-    product_id: row.product_id,
-    shop_id: row.shop_id,
-    quantity: row.quantity,
-    product: {
-      id: p.id,
-      shopId: p.shop_id,
-      name_te: p.name_te,
-      name_en: p.name_en,
-      price: Number(p.price),
-      inStock: p.in_stock ?? true,
-      isActive: p.is_active ?? true,
-      unit_te: p.unit ?? undefined,
-      unit_en: p.unit ?? undefined,
-      image: p.image_url ?? undefined,
-    },
-  };
-}
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=60';
 
 export function useCart() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const userId = user?.id;
+  const [cart, setCart] = useState<CartItemRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const cartQuery = useQuery({
-    queryKey: ['cart', userId],
-    queryFn: async () => {
-      if (!userId) return [];
+  const fetchCart = useCallback(async () => {
+    if (!userId) { setCart([]); return; }
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('id, item_id, shop_id, quantity')
+      .eq('user_id', userId)
+      .order('created_at');
+    if (error || !data || data.length === 0) {
+      setCart([]);
+      setIsLoading(false);
+      return;
+    }
 
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('id, product_id, shop_id, quantity, products(id, shop_id, name_te, name_en, price, in_stock, is_active, unit, image_url)')
-        .eq('user_id', userId)
-        .order('created_at');
+    // Fetch items and shops
+    const itemIds = [...new Set(data.map(r => r.item_id))];
+    const shopIds = [...new Set(data.map(r => r.shop_id))];
 
-      if (error) throw error;
-      return (data as unknown as RawCartRow[]).map(rowToCartItem);
-    },
-    enabled: !!userId,
-  });
+    const [itemsRes, shopsRes] = await Promise.all([
+      supabase.from('items').select('id, name, price, image_url').in('id', itemIds),
+      supabase.from('shops').select('id, name').in('id', shopIds),
+    ]);
 
-  const cart = cartQuery.data ?? [];
+    const itemsMap = new Map((itemsRes.data || []).map((i: any) => [i.id, i]));
+    const shopsMap = new Map((shopsRes.data || []).map((s: any) => [s.id, s]));
+
+    const rows: CartItemRow[] = data.map((c: any) => {
+      const item = itemsMap.get(c.item_id) || { name: 'Unknown', price: 0, image_url: null };
+      const shop = shopsMap.get(c.shop_id) || { name: 'Shop' };
+      return {
+        id: c.id,
+        item_id: c.item_id,
+        shop_id: c.shop_id,
+        quantity: c.quantity,
+        item_name: item.name,
+        item_price: Number(item.price),
+        item_image_url: item.image_url,
+        shop_name: shop.name,
+      };
+    });
+    setCart(rows);
+    setIsLoading(false);
+  }, [userId]);
+
+  useEffect(() => { fetchCart(); }, [fetchCart]);
+
+  const updateQuantity = useCallback(async (cartRowId: string, newQty: number) => {
+    if (!userId) return;
+    if (newQty <= 0) {
+      await supabase.from('cart_items').delete().eq('id', cartRowId);
+    } else {
+      await supabase.from('cart_items').update({ quantity: newQty }).eq('id', cartRowId);
+    }
+    fetchCart();
+  }, [userId, fetchCart]);
+
+  const removeFromCart = useCallback(async (cartRowId: string) => {
+    if (!userId) return;
+    await supabase.from('cart_items').delete().eq('id', cartRowId);
+    fetchCart();
+  }, [userId, fetchCart]);
+
+  const clearCart = useCallback(async () => {
+    if (!userId) return;
+    await supabase.from('cart_items').delete().eq('user_id', userId);
+    fetchCart();
+  }, [userId, fetchCart]);
+
+  const getCartTotal = useCallback(() => cart.reduce((s, c) => s + c.item_price * c.quantity, 0), [cart]);
+  const getCartItemCount = useCallback(() => cart.reduce((s, c) => s + c.quantity, 0), [cart]);
   const cartShopId = cart.length > 0 ? cart[0].shop_id : null;
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['cart', userId] });
-
-  // Add to cart (upsert quantity +1)
-  const addToCartMutation = useMutation({
-    mutationFn: async (product: Product) => {
-      if (!userId) throw new Error('Not authenticated');
-
-      // Check if switching shops
-      if (cartShopId && cartShopId !== product.shopId) {
-        // Use the clear_cart_and_add function
-        const { error } = await supabase.rpc('clear_cart_and_add', {
-          _user_id: userId,
-          _product_id: product.id,
-          _shop_id: product.shopId,
-          _quantity: 1,
-        });
-        if (error) throw error;
-        return;
-      }
-
-      // Upsert: insert or increment quantity
-      const existing = cart.find(c => c.product_id === product.id);
-      if (existing) {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: existing.quantity + 1 })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: userId,
-            product_id: product.id,
-            shop_id: product.shopId,
-            quantity: 1,
-          });
-        if (error) throw error;
-      }
-    },
-    onSuccess: invalidate,
-  });
-
-  // Update quantity
-  const updateQuantityMutation = useMutation({
-    mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
-      if (!userId) throw new Error('Not authenticated');
-
-      if (quantity <= 0) {
-        const { error } = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', userId)
-          .eq('product_id', productId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity })
-          .eq('user_id', userId)
-          .eq('product_id', productId);
-        if (error) throw error;
-      }
-    },
-    onSuccess: invalidate,
-  });
-
-  // Remove from cart
-  const removeFromCartMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      if (!userId) throw new Error('Not authenticated');
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', userId)
-        .eq('product_id', productId);
-      if (error) throw error;
-    },
-    onSuccess: invalidate,
-  });
-
-  // Clear cart
-  const clearCartMutation = useMutation({
-    mutationFn: async () => {
-      if (!userId) throw new Error('Not authenticated');
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: invalidate,
-  });
-
-  // Computed values
-  const getCartTotal = () => cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
-  const getCartItemCount = () => cart.reduce((count, item) => count + item.quantity, 0);
-
-  // Convenience wrappers matching old API
-  const addToCart = (product: Product) => addToCartMutation.mutate(product);
-  const updateQuantity = (productId: string, quantity: number) =>
-    updateQuantityMutation.mutate({ productId, quantity });
-  const removeFromCart = (productId: string) => removeFromCartMutation.mutate(productId);
-  const clearCart = () => clearCartMutation.mutate();
 
   return {
     cart,
     cartShopId,
-    isLoading: cartQuery.isLoading,
-    addToCart,
-    removeFromCart,
+    isLoading,
     updateQuantity,
+    removeFromCart,
     clearCart,
-    clearCartAsync: clearCartMutation.mutateAsync,
+    clearCartAsync: clearCart,
     getCartTotal,
     getCartItemCount,
+    refetch: fetchCart,
+    fallbackImage: FALLBACK_IMAGE,
   };
 }
