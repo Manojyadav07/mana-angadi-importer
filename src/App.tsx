@@ -7,13 +7,14 @@ import { UserModeProvider } from "@/context/UserModeContext";
 import { useAuth } from "@/context/AuthContext";
 import { getRouteForRoleSync } from "@/context/auth/postAuthRedirect";
 import { useMerchantShopCheck } from "@/hooks/useMerchantShopCheck";
-import Index from "./pages/Index";
+import { BrowsePage } from "./pages/BrowsePage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { HomePage } from "./pages/HomePage";
 import { ShopPage } from "./pages/ShopPage";
+import { PublicShopPage } from "./pages/PublicShopPage";
 import { CategoryListingPage } from "./pages/CategoryListingPage";
 import { ShopListingPage } from "./pages/ShopListingPage";
 import { CartPage } from "./pages/CartPage";
@@ -64,6 +65,11 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) return <LoadingScreen />;
   if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
+}
+
+/** Route that checks for post-login redirect stored in sessionStorage */
+function LoginPageWithRedirect() {
+  return <PublicOnlyRoute><LoginPage /></PublicOnlyRoute>;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -165,8 +171,8 @@ function AppRoutes() {
         <AppProvider>
           <AddressProvider>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+              <Route path="/" element={<BrowsePage />} />
+              <Route path="/login" element={<LoginPageWithRedirect />} />
               <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
               <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -175,7 +181,7 @@ function AppRoutes() {
               <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
               <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
-              <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
+              <Route path="/shop/:shopId" element={<PublicShopPage />} />
               <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
               <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
