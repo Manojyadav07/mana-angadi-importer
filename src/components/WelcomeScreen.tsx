@@ -9,12 +9,11 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
       {/* Center content */}
       <div className="flex flex-col items-center text-center">
         {/* Decorative concentric circles with logo */}
-        <div className="relative flex items-center justify-center w-48 h-48 sm:w-60 sm:h-60 mb-8 sm:mb-12">
-          <div className="absolute w-48 h-48 sm:w-60 sm:h-60 border-[0.5px] rounded-full border-primary/20" />
-          <div className="relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden">
-
-            <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
-          </div>
+        <div
+          className="w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-2 mb-8 sm:mb-12"
+          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
+        >
+          <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
         </div>
 
         {/* Brand Heading */}
