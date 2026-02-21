@@ -54,10 +54,10 @@ export function LoginSuccessPage() {
       <main className="flex-1 flex flex-col items-center justify-center -mt-8">
         {/* Eco icon circle */}
         <div
-          className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center mb-8"
-          style={{ backgroundColor: "#E8F3E8" }}
+          className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center mb-8 border-2 shadow-lg"
+          style={{ backgroundColor: "#E8F3E8", borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
         >
-          <img src={welcomeCyclist} alt="Mana Angadi" className="w-24 h-24 object-cover rounded-full" />
+          <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
         </div>
 
         <div className="max-w-sm text-center space-y-3">
