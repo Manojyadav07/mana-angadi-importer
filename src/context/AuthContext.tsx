@@ -146,6 +146,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       }
 
       setIsLoading(true);
+      setAuthReady(false);
       void startHydration(newSession.user);
     });
 
@@ -251,6 +252,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       setRole(finalRole);
       setOnboardingStatus(finalOnboardingStatus);
       setIsLoading(false);
+      setAuthReady(true);
 
       return { error: null, profile: finalProfile, role: finalRole };
     } catch (e: any) {
