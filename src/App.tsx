@@ -174,7 +174,7 @@ function AppRoutes() {
               <Route path="/categories" element={<ProtectedRoute><CategoryListingPage /></ProtectedRoute>} />
               <Route path="/shops" element={<ProtectedRoute><ShopListingPage /></ProtectedRoute>} />
               <Route path="/category/:categoryKey" element={<ProtectedRoute><CategoryShopsPage /></ProtectedRoute>} />
-              <Route path="/shop/:shopId" element={<PublicShopPage />} />
+              <Route path="/shop/:shopId" element={<ProtectedRoute><ShopPage /></ProtectedRoute>} />
               <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
               <Route path="/basket" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />

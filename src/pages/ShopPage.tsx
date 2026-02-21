@@ -1,299 +1,338 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useShop } from '@/hooks/useShops';
-import { useProducts } from '@/hooks/useProducts';
-import { useCart } from '@/hooks/useCart';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getLocalizedName, getLocalizedShopType } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { BottomNav } from '@/components/layout/BottomNav';
+import { toast } from 'sonner';
 import {
-  ArrowLeft, Search, Star, MapPin,
-  Plus, Minus, Loader2, Package, ShoppingBag,
+  ArrowLeft, Search, MapPin, X, Plus, Minus, Package, Loader2,
 } from 'lucide-react';
 
-import shopGroceryImg from '@/assets/shop-grocery-1.jpg';
-import shopFoodImg from '@/assets/shop-food-1.jpg';
-import shopMedicalImg from '@/assets/shop-medical-1.jpg';
+interface ShopRow {
+  id: string;
+  name: string;
+  address: string | null;
+}
 
-const SHOP_IMAGES: Record<string, string> = {
-  kirana: shopGroceryImg,
-  restaurant: shopFoodImg,
-  medical: shopMedicalImg,
-};
+interface ItemRow {
+  id: string;
+  shop_id: string;
+  name: string;
+  price: number;
+  is_active: boolean | null;
+}
 
-const TABS_EN = ['All', 'Popular', 'Recommended'];
-const TABS_TE = ['అన్నీ', 'ప్రసిద్ధ', 'సిఫార్సు'];
+interface CartRow {
+  id: string;
+  item_id: string;
+  quantity: number;
+}
 
 export function ShopPage() {
   const { shopId } = useParams<{ shopId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { cart, addToCart, updateQuantity, getCartItemCount, getCartTotal } = useCart();
   const { user } = useAuth();
-  const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState(0);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { language } = useLanguage();
+  const queryClient = useQueryClient();
 
-  const { data: shop, isLoading: shopLoading } = useShop(shopId);
-  const { data: products = [], isLoading: productsLoading } = useProducts(shopId);
+  const [shop, setShop] = useState<ShopRow | null>(null);
+  const [items, setItems] = useState<ItemRow[]>([]);
+  const [cartItems, setCartItems] = useState<CartRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [shopNotFound, setShopNotFound] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [addingId, setAddingId] = useState<string | null>(null);
 
-  const cartCount = getCartItemCount();
-  const cartTotal = getCartTotal();
-  const isLoading = shopLoading || productsLoading;
+  // Fetch shop + items + cart
+  useEffect(() => {
+    if (!shopId) return;
+    let cancelled = false;
 
-  const filteredProducts = useMemo(() => {
-    let filtered = products.filter(p => p.isActive);
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.name_en.toLowerCase().includes(q) || p.name_te.includes(q)
-      );
+    async function load() {
+      setIsLoading(true);
+
+      const [shopRes, itemsRes] = await Promise.all([
+        supabase.from('shops').select('id, name, address').eq('id', shopId).maybeSingle(),
+        supabase.from('items').select('id, shop_id, name, price, is_active').eq('shop_id', shopId).eq('is_active', true).order('created_at', { ascending: false }),
+      ]);
+
+      if (cancelled) return;
+
+      if (!shopRes.data) {
+        setShopNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setShop(shopRes.data as ShopRow);
+      setItems((itemsRes.data ?? []) as ItemRow[]);
+      setIsLoading(false);
     }
-    return filtered;
-  }, [products, searchQuery]);
 
-  const getCartItem = (productId: string) =>
-    cart.find(item => item.product_id === productId);
+    load();
+    return () => { cancelled = true; };
+  }, [shopId]);
 
-  const handleBack = () => {
-    const fromCategory = searchParams.get('from');
-    if (fromCategory) {
-      navigate(`/shops?category=${fromCategory}`);
-    } else {
-      navigate(-1);
+  // Fetch user's cart items for this shop
+  useEffect(() => {
+    if (!user || !shopId) return;
+
+    async function loadCart() {
+      const { data } = await supabase
+        .from('cart_items')
+        .select('id, item_id, quantity')
+        .eq('user_id', user!.id)
+        .eq('shop_id', shopId!);
+      setCartItems((data ?? []) as CartRow[]);
+    }
+
+    loadCart();
+  }, [user, shopId]);
+
+  const filteredItems = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.trim().toLowerCase();
+    return items.filter((i) => i.name.toLowerCase().includes(q));
+  }, [items, search]);
+
+  const getCartQty = (itemId: string) => {
+    return cartItems.find((c) => c.item_id === itemId)?.quantity ?? 0;
+  };
+
+  const handleAdd = async (item: ItemRow) => {
+    if (!user) {
+      sessionStorage.setItem('post-login-redirect', `/shop/${shopId}`);
+      navigate('/login');
+      return;
+    }
+
+    setAddingId(item.id);
+    try {
+      const existing = cartItems.find((c) => c.item_id === item.id);
+      if (existing) {
+        await supabase
+          .from('cart_items')
+          .update({ quantity: existing.quantity + 1 })
+          .eq('id', existing.id);
+        setCartItems((prev) =>
+          prev.map((c) => c.id === existing.id ? { ...c, quantity: c.quantity + 1 } : c)
+        );
+      } else {
+        const { data } = await supabase
+          .from('cart_items')
+          .insert({ user_id: user.id, item_id: item.id, shop_id: item.shop_id, quantity: 1 })
+          .select('id, item_id, quantity')
+          .single();
+        if (data) setCartItems((prev) => [...prev, data as CartRow]);
+      }
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      toast.success(language === 'te' ? 'బుట్టకు జోడించబడింది' : 'Added to basket');
+    } catch {
+      toast.error(language === 'te' ? 'లోపం సంభవించింది' : 'Something went wrong');
+    } finally {
+      setAddingId(null);
     }
   };
 
+  const handleUpdateQty = async (itemId: string, newQty: number) => {
+    const existing = cartItems.find((c) => c.item_id === itemId);
+    if (!existing) return;
+
+    try {
+      if (newQty <= 0) {
+        await supabase.from('cart_items').delete().eq('id', existing.id);
+        setCartItems((prev) => prev.filter((c) => c.id !== existing.id));
+      } else {
+        await supabase.from('cart_items').update({ quantity: newQty }).eq('id', existing.id);
+        setCartItems((prev) =>
+          prev.map((c) => c.id === existing.id ? { ...c, quantity: newQty } : c)
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    } catch {
+      toast.error(language === 'te' ? 'లోపం' : 'Error');
+    }
+  };
+
+  const totalCartItems = cartItems.reduce((s, c) => s + c.quantity, 0);
+  const totalCartValue = cartItems.reduce((s, c) => {
+    const item = items.find((i) => i.id === c.item_id);
+    return s + (item ? item.price * c.quantity : 0);
+  }, 0);
+
+  // ── Loading ──
   if (isLoading) {
     return (
-      <MobileLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </MobileLayout>
+      <div className="mobile-container bg-mana-cream min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
     );
   }
 
-  if (!shop) {
+  // ── Not found ──
+  if (shopNotFound || !shop) {
     return (
-      <MobileLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground font-display text-lg">{t.shopNotFound}</p>
+      <div className="mobile-container bg-mana-cream min-h-screen flex flex-col">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-mana-charcoal/5">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-mana-cream flex items-center justify-center">
+              <ArrowLeft className="w-[18px] h-[18px] text-mana-charcoal" />
+            </button>
+            <h1 className="text-lg font-semibold text-mana-charcoal font-display">
+              {language === 'en' ? 'Shop' : 'అంగడి'}
+            </h1>
+          </div>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+          <Package className="w-14 h-14 text-muted-foreground/30 mb-4" />
+          <h2 className="text-lg font-semibold text-mana-charcoal font-display">
+            {language === 'en' ? 'Shop not found' : 'అంగడి కనుగొనబడలేదు'}
+          </h2>
+          <button onClick={() => navigate(-1)} className="btn-primary-pill text-sm px-6 py-2.5 mt-5">
+            {language === 'en' ? 'Go Back' : 'వెనుకకు వెళ్ళండి'}
+          </button>
         </div>
-      </MobileLayout>
+        <BottomNav />
+      </div>
     );
   }
-
-  const shopName = getLocalizedName(shop, language);
-  const shopType = getLocalizedShopType(shop, language);
-  const heroImg = SHOP_IMAGES[shop.type] || shopGroceryImg;
-  const tabs = language === 'en' ? TABS_EN : TABS_TE;
 
   return (
-    <MobileLayout>
-      {/* ═══ 1. STICKY HEADER ═══ */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-foreground/5">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={handleBack}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+    <div className="mobile-container bg-mana-cream min-h-screen">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-mana-charcoal/5">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-mana-cream flex items-center justify-center">
+            <ArrowLeft className="w-[18px] h-[18px] text-mana-charcoal" />
           </button>
-          <h1 className="font-display text-lg font-semibold text-foreground truncate mx-3 flex-1 text-center">
-            {shopName}
-          </h1>
-          <button
-            onClick={() => setShowSearch(!showSearch)}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
-          >
-            <Search className="w-5 h-5 text-foreground" />
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="text-[10px] uppercase tracking-[0.18em] font-semibold">Yadadri Bhuvanagiri</span>
+          </div>
+          <button onClick={() => setSearchOpen((o) => !o)} className="w-9 h-9 rounded-full bg-mana-cream flex items-center justify-center">
+            {searchOpen
+              ? <X className="w-[18px] h-[18px] text-mana-charcoal" />
+              : <Search className="w-[18px] h-[18px] text-mana-charcoal" />}
           </button>
         </div>
-        {showSearch && (
-          <div className="px-4 pb-3">
+
+        <div className="px-5 pb-1">
+          <h1 className="text-[22px] font-semibold tracking-tight text-mana-charcoal font-display">{shop.name}</h1>
+          {shop.address && (
+            <p className="text-xs text-muted-foreground mt-0.5">{shop.address}</p>
+          )}
+        </div>
+
+        {searchOpen && (
+          <div className="px-4 pb-3 pt-1">
             <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={language === 'en' ? 'Search products...' : 'ఉత్పత్తులు వెతకండి...'}
-              className="w-full px-4 py-2.5 rounded-full bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={language === 'en' ? 'Search items…' : 'వస్తువులు వెతకండి…'}
+              className="w-full h-10 rounded-full bg-mana-cream border border-mana-charcoal/10 px-4 text-sm text-mana-charcoal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         )}
       </header>
 
-      {/* ═══ 2. HERO SECTION ═══ */}
-      <div className="px-4 pt-4">
-        <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted shadow-sm">
-          <img src={heroImg} alt={shopName} className="w-full h-full object-cover" />
-          {shop.isOpen && (
-            <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm px-3 py-1 rounded-full">
-              <span className="text-primary text-xs font-semibold">
-                {language === 'en' ? 'Open Now' : 'ఇప్పుడు తెరిచి ఉంది'}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ 3. SHOP INFO BLOCK ═══ */}
-      <div className="px-4 pt-4 pb-2">
-        <h2 className="font-display text-2xl font-semibold text-foreground">{shopName}</h2>
-        <p className="text-muted-foreground text-sm italic mt-1">{shopType}</p>
-        <div className="flex items-center gap-4 mt-3">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-primary fill-primary" />
-            <span className="text-sm font-medium text-foreground">4.8</span>
-          </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">1.2 km</span>
-          </div>
-        </div>
-        <div className="h-px bg-border mt-4" />
-      </div>
-
-      {/* ═══ 4. CATEGORY TABS ═══ */}
-      <div className="px-4 pt-2 pb-3">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab, idx) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(idx)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === idx
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card border border-border text-muted-foreground'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ 5. PRODUCT LIST ═══ */}
-      <div className="px-4 pb-36 space-y-3">
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">
-              {language === 'en' ? 'No products available' : 'ఉత్పత్తులు అందుబాటులో లేవు'}
-            </p>
+      {/* ── Items ── */}
+      <section className="px-4 pt-4 pb-36">
+        {filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+            <Package className="w-14 h-14 text-muted-foreground/30 mb-4" />
+            <h2 className="text-lg font-semibold text-mana-charcoal font-display">
+              {language === 'en' ? 'No items available right now' : 'ఇప్పుడు వస్తువులు అందుబాటులో లేవు'}
+            </h2>
           </div>
         ) : (
-          filteredProducts.map(product => {
-            const cartItem = getCartItem(product.id);
-            const quantity = cartItem?.quantity || 0;
-            const productName = getLocalizedName(product, language);
-            const unit = language === 'en' ? product.unit_en : product.unit_te;
+          <div className="flex flex-col gap-3">
+            {filteredItems.map((item) => {
+              const qty = getCartQty(item.id);
+              const isAdding = addingId === item.id;
 
-            return (
-              <div
-                key={product.id}
-                className="bg-card rounded-xl shadow-sm p-4 flex items-center gap-4"
-              >
-                {/* Square Thumbnail */}
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={productName}
-                      className={`w-full h-full object-cover ${!product.inStock ? 'opacity-50 grayscale' : ''}`}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-6 h-6 text-muted-foreground/40" />
-                    </div>
-                  )}
-                </div>
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-xl bg-white border border-mana-charcoal/5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 flex items-center gap-4"
+                >
+                  {/* Icon placeholder */}
+                  <div className="w-12 h-12 rounded-lg bg-mana-cream flex items-center justify-center flex-shrink-0">
+                    <Package className="w-5 h-5 text-muted-foreground/40" />
+                  </div>
 
-                {/* Product Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className={`font-medium text-sm leading-tight ${!product.inStock ? 'text-muted-foreground' : 'text-foreground'}`}>
-                    {productName}
-                  </h4>
-                  {unit && (
-                    <p className="text-muted-foreground text-xs mt-0.5">{unit}</p>
-                  )}
-                  <p className="text-foreground font-semibold text-sm mt-1">₹{product.price}</p>
-                  {!product.inStock && (
-                    <span className="text-destructive text-xs">{t.outOfStock}</span>
-                  )}
-                </div>
+                  {/* Name + price */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-mana-charcoal leading-tight truncate">
+                      {item.name}
+                    </h4>
+                    <p className="text-sm font-bold text-mana-charcoal mt-1">₹{item.price}</p>
+                  </div>
 
-                {/* Add / Quantity Stepper */}
-                <div className="flex-shrink-0">
-                  {!product.inStock ? (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center opacity-40">
-                      <Plus className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  ) : quantity === 0 ? (
-                    <button
-                      onClick={() => {
-                        if (!user) {
-                          sessionStorage.setItem('post-login-redirect', `/shop/${shopId}`);
-                          navigate('/login');
-                          return;
-                        }
-                        addToCart(product);
-                      }}
-                      className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm active:scale-95 transition-transform"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-1 bg-primary/10 rounded-full h-10 px-1">
+                  {/* Add / stepper */}
+                  <div className="flex-shrink-0">
+                    {qty === 0 ? (
                       <button
-                        onClick={() => updateQuantity(product.id, quantity - 1)}
-                        className="w-8 h-8 rounded-full border border-foreground/10 flex items-center justify-center active:scale-95 transition-transform"
+                        onClick={() => handleAdd(item)}
+                        disabled={isAdding}
+                        className="btn-primary-pill text-xs px-4 py-2 flex items-center gap-1 disabled:opacity-60"
                       >
-                        <Minus className="w-4 h-4 text-foreground" />
+                        {isAdding ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        {language === 'en' ? 'Add' : 'జోడించు'}
                       </button>
-                      <span className="w-7 text-center font-bold text-sm text-foreground">{quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(product.id, quantity + 1)}
-                        className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-95 transition-transform"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex items-center gap-1 bg-primary/10 rounded-full h-9 px-1">
+                        <button
+                          onClick={() => handleUpdateQty(item.id, qty - 1)}
+                          className="w-7 h-7 rounded-full border border-mana-charcoal/10 flex items-center justify-center"
+                        >
+                          <Minus className="w-3.5 h-3.5 text-mana-charcoal" />
+                        </button>
+                        <span className="w-6 text-center font-bold text-xs text-mana-charcoal">{qty}</span>
+                        <button
+                          onClick={() => handleUpdateQty(item.id, qty + 1)}
+                          className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
-      </div>
+      </section>
 
-      {/* ═══ 6. FLOATING BASKET BAR ═══ */}
-      {cartCount > 0 && (
-        <div className="fixed bottom-24 left-4 right-4 max-w-md mx-auto z-30 animate-slide-up">
+      {/* ── Floating basket bar ── */}
+      {totalCartItems > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-30 animate-slide-up">
           <button
-            onClick={() => navigate('/basket')}
-            className="w-full bg-primary text-primary-foreground rounded-full px-5 py-3.5 flex items-center justify-between shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
+            onClick={() => navigate('/cart')}
+            className="w-full bg-primary text-primary-foreground rounded-full px-5 py-3 flex items-center justify-between shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5" />
-              </div>
-              <span className="font-medium">
-                {cartCount} {cartCount === 1 ? (language === 'en' ? 'item' : 'వస్తువు') : (language === 'en' ? 'items' : 'వస్తువులు')}
-              </span>
-            </div>
+            <span className="font-medium text-sm">
+              {totalCartItems} {totalCartItems === 1 ? (language === 'en' ? 'item' : 'వస్తువు') : (language === 'en' ? 'items' : 'వస్తువులు')}
+            </span>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-lg">₹{cartTotal}</span>
-              <span className="text-sm opacity-70">
+              <span className="font-bold">₹{totalCartValue}</span>
+              <span className="text-xs opacity-70">
                 {language === 'en' ? 'View Basket' : 'బుట్ట చూడండి'} ›
               </span>
             </div>
           </button>
         </div>
       )}
-    </MobileLayout>
+
+      <BottomNav />
+    </div>
   );
 }
