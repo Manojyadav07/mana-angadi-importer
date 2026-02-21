@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight } from "lucide-react";
-import welcomeCyclist from "@/assets/welcome-cyclist.png";
+import loginSuccessCyclist from "@/assets/login-success-cyclist.png";
 import { formatHonorific } from "@/lib/formatHonorific";
 
 const translations = {
@@ -55,10 +55,10 @@ export function LoginSuccessPage() {
       <main className="flex-1 flex flex-col items-center justify-center -mt-8">
         {/* Eco icon circle */}
         <div
-          className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center mb-8 border-2 shadow-lg"
-          style={{ backgroundColor: "#E8F3E8", borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
+          className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center mb-8 border-2"
+          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
         >
-          <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
+          <img src={loginSuccessCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
         </div>
 
         <div className="max-w-sm text-center space-y-3">
