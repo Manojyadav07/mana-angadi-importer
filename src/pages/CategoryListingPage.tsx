@@ -21,13 +21,13 @@ interface CategoryDef {
 
 const CATEGORIES: CategoryDef[] = [
   { title_en: 'Food', title_te: 'భోజనం', slug: 'food', image: categoryFood },
-  { title_en: 'Groceries', title_te: 'కిరాణా', slug: 'grocery', image: categoryGroceries },
-  { title_en: 'Pharmacy', title_te: 'మందుల షాపు', slug: 'medical', image: categoryPharmacy },
-  { title_en: 'Vegetables & Fruits', title_te: 'కూరగాయలు & పండ్లు', slug: 'vegetables', image: categoryVegetables },
-  { title_en: 'Dairy & Fresh', title_te: 'పాల ఉత్పత్తులు', slug: 'dairy', image: categoryDairy },
-  { title_en: 'Household', title_te: 'ఇంటి సామాను', slug: 'household', image: categoryHousehold },
+  { title_en: 'Groceries', title_te: 'కిరాణా', slug: 'groceries', image: categoryGroceries },
+  { title_en: 'Pharmacy', title_te: 'మందుల షాపు', slug: 'pharmacy', image: categoryPharmacy },
+  { title_en: 'Vegetables & Fruits', title_te: 'కూరగాయలు & పండ్లు', slug: 'vegfruits', image: categoryVegetables },
+  { title_en: 'Dairy & Fresh', title_te: 'పాల ఉత్పత్తులు', slug: 'dairyfresh', image: categoryDairy },
+  { title_en: 'Household', title_te: 'ఇంటి సామాను', slug: 'households', image: categoryHousehold },
   { title_en: 'Artisans', title_te: 'చేతివృత్తులు', slug: 'artisans', image: categoryArtisans },
-  { title_en: 'Rythu Crops', title_te: 'రైతు పంటలు', slug: 'rythu', image: categoryRythu },
+  { title_en: 'Rythu Crops', title_te: 'రైతు పంటలు', slug: 'rythucrops', image: categoryRythu },
 ];
 
 export function CategoryListingPage() {
@@ -66,7 +66,7 @@ export function CategoryListingPage() {
             return (
               <button
                 key={cat.slug}
-                onClick={() => navigate(`/shops?category=${cat.slug}`)}
+                onClick={() => navigate(`/category/${cat.slug}`)}
                 className="group flex flex-col rounded-xl bg-white border border-mana-charcoal/5 shadow-sm overflow-hidden text-left active:scale-95 transition-transform duration-200 touch-manipulation"
               >
                 {/* Image */}
