@@ -84,6 +84,8 @@ export function LoginPage() {
 
       // refresh() hydrates AuthContext so guards see the session immediately
       const { profile: freshProfile } = await refresh();
+      // Allow React to commit the auth state updates before navigating
+      await new Promise(r => setTimeout(r, 0));
       if (!freshProfile?.display_name?.trim()) {
         setShowNamePrompt(true);
       } else {
