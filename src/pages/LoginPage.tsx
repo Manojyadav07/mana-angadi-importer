@@ -7,6 +7,7 @@ import welcomeCyclist from "@/assets/welcome-cyclist.png";
 import { toast } from "sonner";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { NamePromptDialog } from "@/components/NamePromptDialog";
 
 const t = {
   te: {
@@ -43,7 +44,7 @@ const t = {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, isLoading: authLoading } = useAuth();
+  const { signIn, refresh, isLoading: authLoading } = useAuth();
   const { language } = useLanguage();
   const labels = t[language];
 
@@ -52,6 +53,17 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+
+  const proceedAfterLogin = () => {
+    const redirect = sessionStorage.getItem('post-login-redirect');
+    if (redirect) {
+      sessionStorage.removeItem('post-login-redirect');
+      navigate(redirect, { replace: true });
+    } else {
+      navigate("/login/success", { replace: true });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +83,13 @@ export function LoginPage() {
         return;
       }
       toast.success(labels.loggedIn);
-      const redirect = sessionStorage.getItem('post-login-redirect');
-      if (redirect) {
-        sessionStorage.removeItem('post-login-redirect');
-        navigate(redirect, { replace: true });
+
+      // Check if profile has display_name; if not, prompt
+      const { profile: freshProfile } = await refresh();
+      if (!freshProfile?.display_name?.trim()) {
+        setShowNamePrompt(true);
       } else {
-        navigate("/login/success", { replace: true });
+        proceedAfterLogin();
       }
     } catch {
       toast.error(labels.somethingWrong);
@@ -174,6 +187,14 @@ export function LoginPage() {
       <div className="mt-auto pt-10 flex justify-center">
         <div className="home-indicator" />
       </div>
+
+      <NamePromptDialog
+        open={showNamePrompt}
+        onComplete={() => {
+          setShowNamePrompt(false);
+          proceedAfterLogin();
+        }}
+      />
     </div>
   );
 }
