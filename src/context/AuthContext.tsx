@@ -26,6 +26,7 @@ interface AuthContextType {
   role: UserRole | null;
   onboardingStatus: OnboardingStatus;
   isLoading: boolean;
+  authReady: boolean;
   authError: string | null;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -50,6 +51,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const hydrationInFlightRef = useRef<Promise<void> | null>(null);
@@ -102,6 +104,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
       setOnboardingStatus(null);
     } finally {
       setIsLoading(false);
+      setAuthReady(true);
     }
   }, []);
 
@@ -138,6 +141,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         setOnboardingStatus(null);
         setAuthError(null);
         setIsLoading(false);
+        setAuthReady(true);
         return;
       }
 
@@ -152,6 +156,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
 
       if (!data?.session?.user) {
         setIsLoading(false);
+        setAuthReady(true);
         return;
       }
 
@@ -272,6 +277,7 @@ export function AuthProvider({ children, onSignOut }: AuthProviderProps) {
         role,
         onboardingStatus,
         isLoading,
+        authReady,
         authError,
         signUp,
         signIn,
