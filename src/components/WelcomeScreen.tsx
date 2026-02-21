@@ -12,10 +12,8 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
         <div className="relative flex items-center justify-center w-48 h-48 sm:w-60 sm:h-60 mb-8 sm:mb-12">
           <div className="absolute w-48 h-48 sm:w-60 sm:h-60 border-[0.5px] rounded-full border-primary/20" />
           <div className="absolute w-40 h-40 sm:w-52 sm:h-52 border-[1px] rounded-full border-primary/10" />
-          <div
-            className="relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-2 shadow-lg"
-            style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
-          >
+          <div className="relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden">
+
             <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
           </div>
         </div>
