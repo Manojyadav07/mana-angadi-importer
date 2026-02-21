@@ -154,12 +154,6 @@ function ApplyRoute({ children }: { children: React.ReactNode }) {
 
 /** AppRoutes – safe to call useAuth() here since AuthProvider is above in main.tsx */
 function AppRoutes() {
-  const { isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   return (
     <LanguageProvider>
       <UserModeProvider>
