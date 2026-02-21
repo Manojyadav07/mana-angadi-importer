@@ -62,13 +62,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Redirect authenticated users to /login/success ONLY if welcome has been seen this session */
-function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return <LoadingScreen />;
-  if (user && sessionStorage.getItem("mana_angadi_welcome_seen") === "1") {
-    return <Navigate to="/login/success" replace />;
-  }
+/** Public pages — no auto-redirect for authenticated users */
+function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
@@ -172,10 +167,10 @@ function AppRoutes() {
           <AddressProvider>
             <Routes>
               <Route path="/" element={<Navigate to="/welcome" replace />} />
-              <Route path="/welcome" element={<PublicOnlyRoute><WelcomePage /></PublicOnlyRoute>} />
-              <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-              <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
-              <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
+              <Route path="/welcome" element={<WelcomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/login/success" element={<AuthGuard><LoginSuccessPage /></AuthGuard>} />
