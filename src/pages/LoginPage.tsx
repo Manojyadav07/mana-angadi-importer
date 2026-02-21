@@ -106,11 +106,12 @@ export function LoginPage() {
 
       {/* Header */}
       <div className="flex flex-col items-center pt-16 pb-8">
-        <img
-          src={welcomeCyclist}
-          alt="Mana Angadi"
-          className="rounded-full mb-6 object-contain w-20 h-20"
-        />
+        <div
+          className="rounded-full mb-6 w-20 h-20 overflow-hidden border-2 shadow-lg"
+          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
+        >
+          <img src={welcomeCyclist} alt="Mana Angadi" className="w-full h-full object-cover" />
+        </div>
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
           {labels.heading}
         </h1>
