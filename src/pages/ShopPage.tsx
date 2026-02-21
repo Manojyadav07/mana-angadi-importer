@@ -16,11 +16,14 @@ interface ShopRow {
   address: string | null;
 }
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=60';
+
 interface ItemRow {
   id: string;
   shop_id: string;
   name: string;
   price: number;
+  image_url: string | null;
   is_active: boolean | null;
 }
 
@@ -56,7 +59,7 @@ export function ShopPage() {
 
       const [shopRes, itemsRes] = await Promise.all([
         supabase.from('shops').select('id, name, address').eq('id', shopId).maybeSingle(),
-        supabase.from('items').select('id, shop_id, name, price, is_active').eq('shop_id', shopId).eq('is_active', true).order('created_at', { ascending: false }),
+        supabase.from('items').select('id, shop_id, name, price, image_url, is_active').eq('shop_id', shopId).eq('is_active', true).order('created_at', { ascending: false }),
       ]);
 
       if (cancelled) return;
@@ -260,8 +263,13 @@ export function ShopPage() {
                   className="rounded-xl bg-white border border-mana-charcoal/5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 flex items-center gap-4"
                 >
                   {/* Icon placeholder */}
-                  <div className="w-12 h-12 rounded-lg bg-mana-cream flex items-center justify-center flex-shrink-0">
-                    <Package className="w-5 h-5 text-muted-foreground/40" />
+                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-mana-cream flex-shrink-0">
+                    <img
+                      src={item.image_url || FALLBACK_IMAGE}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    />
                   </div>
 
                   {/* Name + price */}
