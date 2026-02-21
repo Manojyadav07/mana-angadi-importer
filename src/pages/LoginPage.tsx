@@ -119,7 +119,7 @@ export function LoginPage() {
 
       {/* Header */}
       <div className="flex flex-col items-center pt-16 pb-8">
-        <div className="rounded-full mb-6 w-20 h-20 overflow-hidden">
+        <div className="rounded-full mb-6 w-28 h-28 overflow-hidden">
           <img src={manaAngadiLogo} alt="Mana Angadi" className="w-full h-full object-cover" />
         </div>
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
