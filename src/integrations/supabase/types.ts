@@ -60,6 +60,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           price: number
@@ -68,6 +69,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           price: number
@@ -76,6 +78,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           price?: number
