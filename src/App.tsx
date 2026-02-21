@@ -64,7 +64,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
-  if (user) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to="/login/success" replace />;
   return <>{children}</>;
 }
 
