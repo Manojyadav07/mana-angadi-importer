@@ -118,6 +118,8 @@ interface PlaceOrderInput {
     item_name: string;
     shop_name: string;
   }[];
+  paymentMethod?: 'cod' | 'upi';
+  cashChangeFor?: number | null;
 }
 
 export function useCreateOrder() {
@@ -151,7 +153,9 @@ export function useCreateOrder() {
             delivery_fee,
             total_amount,
             status: 'pending',
-          })
+            payment_method: input.paymentMethod || 'cod',
+            cash_change_for: input.cashChangeFor ?? null,
+          } as any)
           .select('id')
           .single();
 
