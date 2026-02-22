@@ -6,97 +6,61 @@ export function OrderSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
-  const orderId = location.state?.orderId;
-  const etaMin = location.state?.etaMin;
-  const etaMax = location.state?.etaMax;
 
-  // Generate short display ID
-  const displayId = orderId ? `#MA${String(orderId).slice(-4).toUpperCase()}` : '#MA0000';
+  const orderIds: string[] = location.state?.orderIds || [];
+  const shopNames: string[] = location.state?.shopNames || [];
+  const totals: number[] = location.state?.totals || [];
 
-  // Estimate delivery time
-  const getDeliveryEstimate = () => {
-    const now = new Date();
-    const deliveryMinutes = etaMax || 45;
-    const eta = new Date(now.getTime() + deliveryMinutes * 60000);
-    const hours = eta.getHours();
-    const minutes = eta.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
-
-    if (language === 'en') {
-      return `Today ${displayHours}:${displayMinutes} ${ampm}`;
-    }
-    return `ఈ రోజు ${displayHours}:${displayMinutes} ${ampm}`;
-  };
-
-  const texts = {
-    heading: language === 'en' ? 'Dhanyavadalu!' : 'ధన్యవాదాలు!',
-    subheading: language === 'en'
-      ? 'Your order has been placed successfully.'
-      : 'మీ ఆర్డర్ విజయవంతంగా ఇవ్వబడింది.',
-    orderRef: language === 'en' ? 'ORDER REFERENCE' : 'ఆర్డర్ రిఫరెన్స్',
-    estDelivery: language === 'en' ? 'ESTIMATED DELIVERY' : 'అంచనా డెలివరీ',
-    infoMessage: language === 'en'
-      ? 'A local delivery partner from your village will arrive shortly.'
-      : 'మీ ఊరి నుండి ఒక స్థానిక డెలివరీ భాగస్వామి త్వరలో వస్తారు.',
-    trackOrder: language === 'en' ? 'Track My Order' : 'నా ఆర్డర్‌ను ట్రాక్ చేయండి',
-    backHome: language === 'en' ? 'Back to Home' : 'హోమ్‌కు తిరిగి వెళ్ళండి',
-  };
+  const en = language === 'en';
 
   return (
-    <div className="screen-shell min-h-screen bg-mana-cream flex flex-col items-center px-6 pt-14 pb-10">
-      {/* 1. Top Branding */}
+    <div className="screen-shell min-h-screen bg-background flex flex-col items-center px-6 pt-14 pb-10">
+      {/* Branding */}
       <div className="text-center mb-10">
-        <p className="text-xs uppercase tracking-[0.3em] text-mana-charcoal/40 font-sans">MANA</p>
-        <p className="text-xs uppercase tracking-[0.3em] text-mana-charcoal/40 font-sans -mt-0.5">ANGADI</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-foreground/40 font-sans">MANA</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-foreground/40 font-sans -mt-0.5">ANGADI</p>
       </div>
 
-      {/* 2. Success Icon */}
+      {/* Success icon */}
       <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-8">
         <Check className="w-10 h-10 text-primary" strokeWidth={2.5} />
       </div>
 
-      {/* 3. Main Heading */}
-      <h1 className="font-display text-3xl font-semibold text-mana-charcoal text-center mb-2">
-        {texts.heading}
+      <h1 className="font-display text-3xl font-semibold text-foreground text-center mb-2">
+        {en ? 'Dhanyavadalu!' : 'ధన్యవాదాలు!'}
       </h1>
-      <p className="text-mana-charcoal/60 text-center text-sm mb-8">
-        {texts.subheading}
+      <p className="text-foreground/60 text-center text-sm mb-8">
+        {en ? 'Your order has been placed successfully.' : 'మీ ఆర్డర్ విజయవంతంగా ఇవ్వబడింది.'}
       </p>
 
-      {/* 4. Order Information Card */}
-      <div className="w-full bg-card rounded-xl shadow-sm p-5 mb-6">
-        <div className="mb-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-mana-charcoal/50 mb-1">{texts.orderRef}</p>
-          <p className="font-bold text-mana-charcoal text-lg">{displayId}</p>
+      {/* Order summary cards */}
+      {orderIds.length > 0 && (
+        <div className="w-full space-y-3 mb-8">
+          {orderIds.map((id, i) => (
+            <div key={id} className="bg-card rounded-xl shadow-sm p-4 flex justify-between items-center">
+              <div>
+                <p className="font-semibold text-foreground text-sm">{shopNames[i] || 'Shop'}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">#{id.slice(0, 8).toUpperCase()}</p>
+              </div>
+              <p className="font-bold text-foreground">₹{totals[i]}</p>
+            </div>
+          ))}
         </div>
-        <div className="border-t border-mana-charcoal/5 my-3" />
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-mana-charcoal/50 mb-1">{texts.estDelivery}</p>
-          <p className="font-bold text-mana-charcoal text-lg">{getDeliveryEstimate()}</p>
-        </div>
-      </div>
+      )}
 
-      {/* 5. Informational Message */}
-      <p className="text-mana-charcoal/50 text-sm text-center italic mb-10 px-4">
-        {texts.infoMessage}
-      </p>
-
-      {/* 6. Primary Action */}
+      {/* CTAs */}
       <button
         onClick={() => navigate('/orders')}
-        className="btn-primary-pill w-full py-4 text-base font-semibold active:scale-[0.98] transition-transform"
+        className="w-full bg-primary text-primary-foreground font-semibold text-base py-4 rounded-full shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
       >
-        {texts.trackOrder}
+        {en ? 'View My Orders' : 'నా ఆర్డర్లు చూడండి'}
       </button>
 
-      {/* 7. Secondary Action */}
       <button
         onClick={() => navigate('/home')}
-        className="mt-4 text-mana-charcoal/50 text-sm font-sans hover:text-mana-charcoal transition-colors"
+        className="mt-4 text-foreground/50 text-sm font-sans hover:text-foreground transition-colors"
       >
-        {texts.backHome}
+        {en ? 'Continue Shopping' : 'షాపింగ్ కొనసాగించండి'}
       </button>
     </div>
   );
