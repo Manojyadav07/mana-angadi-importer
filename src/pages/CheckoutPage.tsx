@@ -4,7 +4,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCreateOrder } from '@/hooks/useOrders';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, Banknote, CreditCard, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CheckoutPage() {
@@ -15,11 +15,18 @@ export function CheckoutPage() {
   const createOrder = useCreateOrder();
 
   const [isPlacing, setIsPlacing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi'>('cod');
+  const [changeFor, setChangeFor] = useState<number | null>(null);
 
   const en = language === 'en';
   const subtotal = getCartTotal();
   const deliveryFee = 25;
   const total = subtotal + deliveryFee;
+
+  const handlePaymentChange = (method: 'cod' | 'upi') => {
+    setPaymentMethod(method);
+    if (method === 'upi') setChangeFor(null);
+  };
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -43,9 +50,11 @@ export function CheckoutPage() {
           item_name: c.item_name,
           shop_name: c.shop_name,
         })),
+        paymentMethod,
+        cashChangeFor: changeFor,
       });
 
-      refetch(); // refresh cart (should be empty now)
+      refetch();
       navigate('/order-success', {
         state: {
           orderIds: result.orderIds,
@@ -79,6 +88,12 @@ export function CheckoutPage() {
   }
 
   const FALLBACK = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=60';
+  const changeOptions = [
+    { value: null, label: en ? 'None' : 'వద్దు' },
+    { value: 200, label: '₹200' },
+    { value: 500, label: '₹500' },
+    { value: 1000, label: '₹1000' },
+  ];
 
   return (
     <div className="screen-shell min-h-screen flex flex-col bg-background">
@@ -100,7 +115,7 @@ export function CheckoutPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 pb-40 space-y-5 pt-5">
         {/* Order Summary */}
-        <div className="bg-card rounded-xl shadow-sm p-5">
+        <div className="bg-card rounded-2xl shadow-sm p-5">
           <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
             {en ? 'Order Summary' : 'ఆర్డర్ సారాంశం'}
           </p>
@@ -141,6 +156,82 @@ export function CheckoutPage() {
             </div>
           </div>
         </div>
+
+        {/* Payment Method */}
+        <div className="bg-card rounded-2xl shadow-sm p-5">
+          <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
+            {en ? 'Payment Method' : 'చెల్లింపు విధానం'}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* COD tile */}
+            <button
+              onClick={() => handlePaymentChange('cod')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                paymentMethod === 'cod'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-card hover:border-primary/30'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                paymentMethod === 'cod' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Banknote className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                {en ? 'Cash on Delivery' : 'డెలివరీ నగదు'}
+              </span>
+              {paymentMethod === 'cod' && (
+                <Check className="w-4 h-4 text-primary" />
+              )}
+            </button>
+
+            {/* UPI tile */}
+            <button
+              onClick={() => handlePaymentChange('upi')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                paymentMethod === 'upi'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-card hover:border-primary/30'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                paymentMethod === 'upi' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                {en ? 'UPI Payment' : 'UPI చెల్లింపు'}
+              </span>
+              {paymentMethod === 'upi' && (
+                <Check className="w-4 h-4 text-primary" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Change chips (COD only) */}
+        {paymentMethod === 'cod' && (
+          <div className="bg-card rounded-2xl shadow-sm p-5">
+            <p className="text-sm font-medium text-foreground mb-3">
+              {en ? 'Need change for?' : 'చిల్లర కావాలి?'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {changeOptions.map(opt => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setChangeFor(opt.value)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    changeFor === opt.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky CTA */}

@@ -138,9 +138,11 @@ export type Database = {
       }
       orders: {
         Row: {
+          cash_change_for: number | null
           created_at: string | null
           delivery_fee: number
           id: string
+          payment_method: string | null
           shop_id: string
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -148,9 +150,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cash_change_for?: number | null
           created_at?: string | null
           delivery_fee: number
           id?: string
+          payment_method?: string | null
           shop_id: string
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -158,9 +162,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cash_change_for?: number | null
           created_at?: string | null
           delivery_fee?: number
           id?: string
+          payment_method?: string | null
           shop_id?: string
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
