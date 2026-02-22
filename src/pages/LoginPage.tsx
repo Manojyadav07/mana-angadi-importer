@@ -119,7 +119,7 @@ export function LoginPage() {
           className="rounded-full mb-6 w-32 h-32 overflow-hidden border-2"
           style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
         >
-          <img src={manaAngadiLogo} alt="Mana Angadi" className="w-full h-full object-cover" />
+          <img src={manaAngadiLogo} alt="Mana Angadi" className="w-full h-full object-cover scale-100" style={{ objectFit: 'cover' }} />
         </div>
         <h1 className="font-light italic tracking-tight text-4xl text-foreground font-display">
           {labels.heading}

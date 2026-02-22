@@ -3,7 +3,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, ArrowRight, ShoppingBasket } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import orderSuccessCyclist from '@/assets/order-success-cyclist.png';
 
 export function OrderSuccessPage() {
   const navigate = useNavigate();
@@ -78,16 +79,11 @@ export function OrderSuccessPage() {
         </div>
 
         {/* Hero illustration */}
-        <div className="relative w-28 h-28 mb-8">
-          {/* Soft green glow */}
-          <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl scale-125" />
-          <div className="relative w-28 h-28 rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center">
-            <ShoppingBasket className="w-12 h-12 text-primary/70" strokeWidth={1.5} />
-          </div>
-          {/* Green check badge */}
-          <div className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <Check className="w-5 h-5 text-white" strokeWidth={3} />
-          </div>
+        <div
+          className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center mb-8 border-2"
+          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
+        >
+          <img src={orderSuccessCyclist} alt="Order Success" className="w-full h-full object-cover" />
         </div>
 
         {/* Heading */}
