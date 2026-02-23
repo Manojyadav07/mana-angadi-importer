@@ -56,6 +56,38 @@ export type Database = {
           },
         ]
       }
+      delivery_assignments: {
+        Row: {
+          assigned_at: string | null
+          delivery_partner_id: string | null
+          id: string
+          order_id: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          delivery_partner_id?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          delivery_partner_id?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           created_at: string | null
@@ -93,6 +125,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json | null
+          status: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_applications: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -190,6 +276,7 @@ export type Database = {
           id: string
           merchant_status: string | null
           phone: string | null
+          role: string | null
           updated_at: string
           user_id: string
         }
@@ -199,6 +286,7 @@ export type Database = {
           id?: string
           merchant_status?: string | null
           phone?: string | null
+          role?: string | null
           updated_at?: string
           user_id: string
         }
@@ -208,10 +296,52 @@ export type Database = {
           id?: string
           merchant_status?: string | null
           phone?: string | null
+          role?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      settlements: {
+        Row: {
+          commission: number | null
+          created_at: string | null
+          gross_amount: number | null
+          id: string
+          merchant_id: string | null
+          net_amount: number | null
+          order_id: string | null
+          settlement_status: string | null
+        }
+        Insert: {
+          commission?: number | null
+          created_at?: string | null
+          gross_amount?: number | null
+          id?: string
+          merchant_id?: string | null
+          net_amount?: number | null
+          order_id?: string | null
+          settlement_status?: string | null
+        }
+        Update: {
+          commission?: number | null
+          created_at?: string | null
+          gross_amount?: number | null
+          id?: string
+          merchant_id?: string | null
+          net_amount?: number | null
+          order_id?: string | null
+          settlement_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shops: {
         Row: {
@@ -219,6 +349,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          owner_id: string | null
           shop_type: string | null
         }
         Insert: {
@@ -226,6 +357,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          owner_id?: string | null
           shop_type?: string | null
         }
         Update: {
@@ -233,6 +365,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
           shop_type?: string | null
         }
         Relationships: []
@@ -265,6 +398,30 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      villages: {
+        Row: {
+          created_at: string | null
+          delivery_fee: number
+          id: string
+          min_order: number
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_fee: number
+          id?: string
+          min_order: number
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_fee?: number
+          id?: string
+          min_order?: number
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
