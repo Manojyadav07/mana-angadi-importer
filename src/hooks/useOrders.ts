@@ -281,6 +281,38 @@ export function useUpdateOrderStatus() {
         .update({ status: String(status) })
         .eq('id', orderId);
       if (error) throw error;
+
+      // Auto-create settlement when order is delivered
+      if (String(status) === 'delivered') {
+        const { data: order } = await supabase
+          .from('orders')
+          .select('id, shop_id, total_amount')
+          .eq('id', orderId)
+          .single();
+
+        if (order) {
+          const { data: shop } = await supabase
+            .from('shops')
+            .select('owner_id')
+            .eq('id', (order as any).shop_id)
+            .single();
+
+          if (shop && (shop as any).owner_id) {
+            const commissionRate = 0.10;
+            const gross = Number((order as any).total_amount);
+            const commission = gross * commissionRate;
+            const netAmount = gross - commission;
+
+            await supabase.from('settlements').insert({
+              merchant_id: (shop as any).owner_id,
+              order_id: (order as any).id,
+              gross_amount: gross,
+              commission,
+              net_amount: netAmount,
+            });
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order'] });
