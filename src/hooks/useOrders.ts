@@ -228,7 +228,45 @@ export function useDeliveryOrders(deliveryPersonId: string | undefined) {
     queryKey: ['delivery-orders', deliveryPersonId],
     queryFn: async () => {
       if (!deliveryPersonId) return { available: [], assigned: [] };
-      return { available: [] as any[], assigned: [] as any[] };
+
+      const { data, error } = await supabase
+        .from('delivery_assignments')
+        .select(`
+          *,
+          orders (*)
+        `)
+        .eq('delivery_partner_id', deliveryPersonId);
+
+      if (error) throw error;
+
+      const assigned = (data || []).filter((d: any) => d.status === 'assigned');
+      const picked = (data || []).filter((d: any) => d.status === 'picked');
+
+      // Map to Order-like shape for the UI
+      const mapToOrder = (d: any) => {
+        const o = d.orders;
+        if (!o) return null;
+        return {
+          id: o.id,
+          customerId: o.user_id,
+          shopId: o.shop_id,
+          shopName_te: '', shopName_en: '',
+          shopType: 'kirana' as any,
+          status: (d.status === 'picked' ? 'pickedUp' : 'assigned') as import('@/types').OrderStatus,
+          subtotal: Number(o.subtotal),
+          deliveryFee: Number(o.delivery_fee),
+          total: Number(o.total_amount),
+          items: [],
+          createdAt: new Date(o.created_at),
+          paymentMethod: (o.payment_method || 'COD') as any,
+          paymentStatus: 'Unpaid' as any,
+        };
+      };
+
+      return {
+        available: [] as any[],
+        assigned: [...assigned, ...picked].map(mapToOrder).filter(Boolean),
+      };
     },
     enabled: !!deliveryPersonId,
   });
