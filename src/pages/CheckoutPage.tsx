@@ -4,7 +4,8 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCreateOrder } from '@/hooks/useOrders';
-import { ArrowLeft, Package, Banknote, CreditCard, Check } from 'lucide-react';
+import { useVillageDeliveryFee } from '@/hooks/useVillageDeliveryFee';
+import { ArrowLeft, Package, Banknote, CreditCard, Check, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CheckoutPage() {
@@ -20,7 +21,11 @@ export function CheckoutPage() {
 
   const en = language === 'en';
   const subtotal = getCartTotal();
-  const deliveryFee = 25;
+
+  // Tiered village delivery fee from Supabase
+  const { data: village, isLoading: villageLoading } = useVillageDeliveryFee('Main Village');
+  const deliveryFee = village?.delivery_fee ?? 25;
+  const minOrder = village?.min_order ?? 0;
   const total = subtotal + deliveryFee;
 
   const handlePaymentChange = (method: 'cod' | 'upi') => {
@@ -35,6 +40,10 @@ export function CheckoutPage() {
     }
     if (cart.length === 0) {
       toast.error(en ? 'Your basket is empty' : 'మీ బుట్ట ఖాళీగా ఉంది');
+      return;
+    }
+    if (subtotal < minOrder) {
+      toast.error(en ? `Minimum order is ₹${minOrder}` : `కనీస ఆర్డర్ ₹${minOrder}`);
       return;
     }
 
@@ -139,6 +148,18 @@ export function CheckoutPage() {
             ))}
           </div>
 
+          {/* Min order warning */}
+          {subtotal < minOrder && minOrder > 0 && (
+            <div className="mt-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">
+                {en
+                  ? `Minimum order is ₹${minOrder}. Add ₹${minOrder - subtotal} more.`
+                  : `కనీస ఆర్డర్ ₹${minOrder}. ₹${minOrder - subtotal} మరింత జోడించండి.`}
+              </p>
+            </div>
+          )}
+
           {/* Totals */}
           <div className="border-t border-foreground/5 mt-4 pt-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -147,7 +168,9 @@ export function CheckoutPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{en ? 'Village Delivery Fee' : 'గ్రామ డెలివరీ రుసుము'}</span>
-              <span className="text-primary font-medium">₹{deliveryFee}</span>
+              <span className="text-primary font-medium">
+                {villageLoading ? '...' : `₹${deliveryFee}`}
+              </span>
             </div>
             <div className="border-t border-dashed border-foreground/10 my-1" />
             <div className="flex justify-between items-center">
@@ -238,12 +261,14 @@ export function CheckoutPage() {
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-background/95 backdrop-blur-md border-t border-foreground/5 px-5 py-4 pb-8 z-40">
         <button
           onClick={handlePlaceOrder}
-          disabled={isPlacing}
+          disabled={isPlacing || (minOrder > 0 && subtotal < minOrder)}
           className="w-full bg-primary text-primary-foreground font-semibold text-base py-4 rounded-full shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-70"
         >
           {isPlacing
             ? (en ? 'Placing Order...' : 'ఆర్డర్ చేస్తోంది...')
-            : (en ? 'Place Order' : 'ఆర్డర్ చేయండి')}
+            : (en
+              ? `Place Order · ₹${total}`
+              : `ఆర్డర్ చేయండి · ₹${total}`)}
         </button>
       </div>
     </div>

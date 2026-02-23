@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/context/LanguageContext';
+import { useVillageDeliveryFee } from '@/hooks/useVillageDeliveryFee';
 import { ArrowLeft, Plus, Minus, X, Package, Truck } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 
@@ -13,7 +14,8 @@ export function CartPage() {
 
   const en = language === 'en';
   const subtotal = getCartTotal();
-  const deliveryFee = 25;
+  const { data: village, isLoading: villageLoading } = useVillageDeliveryFee('Main Village');
+  const deliveryFee = village?.delivery_fee ?? 25;
   const total = subtotal + deliveryFee;
 
   // ── EMPTY STATE ──
@@ -132,7 +134,7 @@ export function CartPage() {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-foreground">{en ? 'Village Delivery Fee' : 'గ్రామ డెలివరీ రుసుము'}</span>
-            <span className="text-primary font-medium">₹{deliveryFee}</span>
+            <span className="text-primary font-medium">{villageLoading ? '...' : `₹${deliveryFee}`}</span>
           </div>
           <div className="border-t border-dashed border-foreground/10 my-1" />
           <div className="flex justify-between items-center">
