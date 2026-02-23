@@ -276,7 +276,7 @@ export type Database = {
           id: string
           merchant_status: string | null
           phone: string | null
-          role: string | null
+          roles: string[] | null
           updated_at: string
           user_id: string
         }
@@ -286,7 +286,7 @@ export type Database = {
           id?: string
           merchant_status?: string | null
           phone?: string | null
-          role?: string | null
+          roles?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -296,7 +296,7 @@ export type Database = {
           id?: string
           merchant_status?: string | null
           phone?: string | null
-          role?: string | null
+          roles?: string[] | null
           updated_at?: string
           user_id?: string
         }
