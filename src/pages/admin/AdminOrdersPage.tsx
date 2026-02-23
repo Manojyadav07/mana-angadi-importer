@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAdminOrders } from '@/hooks/useAdminOrders';
+import { useDispatchOrders } from '@/hooks/useDispatchOrders';
 import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { Order, OrderStatus } from '@/types';
-import { Package, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import { Package, Clock, AlertTriangle, Loader2, Send } from 'lucide-react';
 
 export function AdminOrdersPage() {
   const { language } = useLanguage();
   const { data: orders = [], isLoading } = useAdminOrders();
+  const dispatch = useDispatchOrders();
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
 
   const labels = {
@@ -90,11 +92,23 @@ export function AdminOrdersPage() {
 
   return (
     <div className="mobile-container min-h-screen bg-background pb-24">
-      <header className="screen-header">
+      <header className="screen-header flex items-center justify-between">
         <div>
           <h1 className="font-bold text-xl text-foreground">{labels.title}</h1>
           <p className="text-sm text-muted-foreground">{labels.subtitle}</p>
         </div>
+        <button
+          onClick={() => dispatch.mutate()}
+          disabled={dispatch.isPending}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+        >
+          {dispatch.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+          {language === 'en' ? 'Dispatch' : 'పంపించు'}
+        </button>
       </header>
 
       <div className="px-4 space-y-4">

@@ -4,12 +4,10 @@ import { Order, OrderStatus, ShopType, PaymentMethod, PaymentStatus } from '@/ty
 
 function mapDbStatus(dbStatus: string): OrderStatus {
   const statusMap: Record<string, OrderStatus> = {
-    placed: 'placed',
-    accepted: 'accepted',
-    ready: 'ready',
-    assigned: 'assigned',
-    picked_up: 'pickedUp',
-    on_the_way: 'onTheWay',
+    pending: 'placed',
+    confirmed: 'accepted',
+    preparing: 'ready',
+    out_for_delivery: 'onTheWay',
     delivered: 'delivered',
     cancelled: 'rejected',
   };
@@ -27,7 +25,7 @@ function dbToOrder(dbOrder: any): Order {
     status: mapDbStatus(dbOrder.status),
     subtotal: Number(dbOrder.subtotal),
     deliveryFee: Number(dbOrder.delivery_fee || 0),
-    total: Number(dbOrder.total),
+    total: Number(dbOrder.total_amount || dbOrder.total),
     items: [],
     createdAt: new Date(dbOrder.created_at || dbOrder.placed_at),
     statusUpdatedAt: dbOrder.updated_at ? new Date(dbOrder.updated_at) : undefined,
