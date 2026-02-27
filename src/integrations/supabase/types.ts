@@ -428,6 +428,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_settlement_on_delivery: {
+        Args: { p_commission_rate?: number; p_order_id: string }
+        Returns: undefined
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       ensure_user_bootstrap:
         | { Args: never; Returns: undefined }
