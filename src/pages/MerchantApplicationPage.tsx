@@ -65,25 +65,34 @@ export function MerchantApplicationPage() {
   const [villages, setVillages] = useState<Village[]>([]);
   const [villagesLoading, setVillagesLoading] = useState(true);
   const [villagesError, setVillagesError] = useState(false);
+  const [fetchError, setFetchError] = useState<string>('');
   useEffect(() => {
     const fetchVillages = async () => {
       setVillagesLoading(true);
       setVillagesError(false);
+      setFetchError('');
       try {
-        // Ensure session is ready before querying
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        console.log('[VillageFetch] supabaseUrl:', url);
+        console.log('[VillageFetch] supabaseKey:', key?.slice(0, 10) + '…');
         await supabase.auth.getSession();
         const { data, error } = await supabase
           .from('villages')
           .select('id,name')
           .order('name', { ascending: true });
+        console.log('[VillageFetch] error:', error);
+        console.log('[VillageFetch] data:', data);
         if (error) {
           console.error('Failed to fetch villages:', error);
+          setFetchError(error.message);
           setVillagesError(true);
         } else {
           setVillages(data ?? []);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Village fetch exception:', err);
+        setFetchError(err?.message || 'Unknown error');
         setVillagesError(true);
       } finally {
         setVillagesLoading(false);
@@ -224,9 +233,9 @@ export function MerchantApplicationPage() {
                     <span>{en ? 'Loading villages…' : 'గ్రామాలు లోడ్ అవుతున్నాయి…'}</span>
                   </div>
                 ) : villagesError ? (
-                  <div className="mt-1 flex items-center gap-2 h-10 px-3 rounded-md border border-destructive bg-destructive/5 text-sm text-destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>{en ? 'Failed to load villages' : 'గ్రామాలు లోడ్ చేయడం విఫలమైంది'}</span>
+                  <div className="mt-1 flex items-center gap-2 min-h-[2.5rem] px-3 rounded-md border border-destructive bg-destructive/5 text-sm text-destructive">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{fetchError || (en ? 'Failed to load villages' : 'గ్రామాలు లోడ్ చేయడం విఫలమైంది')}</span>
                   </div>
                 ) : (
                   <Select value={villageId} onValueChange={setVillageId}>
