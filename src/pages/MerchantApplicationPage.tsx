@@ -63,9 +63,17 @@ export function MerchantApplicationPage() {
 
   // Villages
   const [villages, setVillages] = useState<Village[]>([]);
+  const [villagesLoading, setVillagesLoading] = useState(true);
+  const [villagesError, setVillagesError] = useState(false);
   useEffect(() => {
+    setVillagesLoading(true);
+    setVillagesError(false);
     (supabase as any).from('villages').select('id, name').order('name').then(
-      ({ data }: any) => { if (data) setVillages(data); }
+      ({ data, error }: any) => {
+        if (error || !data) { setVillagesError(true); }
+        else { setVillages(data); }
+        setVillagesLoading(false);
+      }
     );
   }, []);
 
@@ -195,14 +203,26 @@ export function MerchantApplicationPage() {
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">{en ? 'Village' : 'గ్రామం'} *</Label>
-                <Select value={villageId} onValueChange={setVillageId}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder={en ? 'Select village' : 'గ్రామం ఎంచుకోండి'} /></SelectTrigger>
-                  <SelectContent>
-                    {villages.map(v => (
-                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {villagesLoading ? (
+                  <div className="mt-1 flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{en ? 'Loading villages…' : 'గ్రామాలు లోడ్ అవుతున్నాయి…'}</span>
+                  </div>
+                ) : villagesError ? (
+                  <div className="mt-1 flex items-center gap-2 h-10 px-3 rounded-md border border-destructive bg-destructive/5 text-sm text-destructive">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{en ? 'Failed to load villages' : 'గ్రామాలు లోడ్ చేయడం విఫలమైంది'}</span>
+                  </div>
+                ) : (
+                  <Select value={villageId} onValueChange={setVillageId}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder={en ? 'Select Village' : 'గ్రామం ఎంచుకోండి'} /></SelectTrigger>
+                    <SelectContent>
+                      {villages.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </div>
