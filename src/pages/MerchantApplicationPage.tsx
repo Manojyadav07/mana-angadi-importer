@@ -66,15 +66,30 @@ export function MerchantApplicationPage() {
   const [villagesLoading, setVillagesLoading] = useState(true);
   const [villagesError, setVillagesError] = useState(false);
   useEffect(() => {
-    setVillagesLoading(true);
-    setVillagesError(false);
-    (supabase as any).from('villages').select('id, name').order('name').then(
-      ({ data, error }: any) => {
-        if (error || !data) { setVillagesError(true); }
-        else { setVillages(data); }
+    const fetchVillages = async () => {
+      setVillagesLoading(true);
+      setVillagesError(false);
+      try {
+        // Ensure session is ready before querying
+        await supabase.auth.getSession();
+        const { data, error } = await supabase
+          .from('villages')
+          .select('id,name')
+          .order('name', { ascending: true });
+        if (error) {
+          console.error('Failed to fetch villages:', error);
+          setVillagesError(true);
+        } else {
+          setVillages(data ?? []);
+        }
+      } catch (err) {
+        console.error('Village fetch exception:', err);
+        setVillagesError(true);
+      } finally {
         setVillagesLoading(false);
       }
-    );
+    };
+    fetchVillages();
   }, []);
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
