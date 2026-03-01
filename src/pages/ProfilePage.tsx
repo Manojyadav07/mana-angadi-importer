@@ -6,6 +6,7 @@ import { useUserMode } from '@/context/UserModeContext';
 import {
   User, ShoppingBag, Store, Truck, Globe, LogOut, ChevronRight, Loader2,
 } from 'lucide-react';
+import { LocationSelector } from '@/components/profile/LocationSelector';
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -119,6 +120,9 @@ export function ProfilePage() {
             </div>
           </div>
         ))}
+
+        {/* Location selector */}
+        <LocationSelector />
 
         {/* Language preference */}
         <div>

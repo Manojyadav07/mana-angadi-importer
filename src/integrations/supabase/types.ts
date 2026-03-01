@@ -160,6 +160,7 @@ export type Database = {
           id: string
           role: string
           status: string
+          town_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -169,6 +170,7 @@ export type Database = {
           id?: string
           role?: string
           status?: string
+          town_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -178,10 +180,19 @@ export type Database = {
           id?: string
           role?: string
           status?: string
+          town_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_applications_town_id_fkey"
+            columns: ["town_id"]
+            isOneToOne: false
+            referencedRelation: "towns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -296,6 +307,7 @@ export type Database = {
           merchant_status: string | null
           phone: string | null
           roles: string[] | null
+          town_id: string | null
           updated_at: string
           user_id: string
           village_id: string | null
@@ -307,6 +319,7 @@ export type Database = {
           merchant_status?: string | null
           phone?: string | null
           roles?: string[] | null
+          town_id?: string | null
           updated_at?: string
           user_id: string
           village_id?: string | null
@@ -318,11 +331,19 @@ export type Database = {
           merchant_status?: string | null
           phone?: string | null
           roles?: string[] | null
+          town_id?: string | null
           updated_at?: string
           user_id?: string
           village_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_town_id_fkey"
+            columns: ["town_id"]
+            isOneToOne: false
+            referencedRelation: "towns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_village_id_fkey"
             columns: ["village_id"]
