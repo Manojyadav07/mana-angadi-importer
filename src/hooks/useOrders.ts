@@ -128,7 +128,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: PlaceOrderInput): Promise<{ orderIds: string[]; shopNames: string[]; totals: number[] }> => {
+    mutationFn: async (input: PlaceOrderInput): Promise<{ orderIds: string[]; shopNames: string[]; totals: number[]; deliveryWarnings: string[] }> => {
       // Group by shop
       const byShop = new Map<string, typeof input.cartItems>();
       for (const ci of input.cartItems) {
@@ -140,6 +140,7 @@ export function useCreateOrder() {
       const orderIds: string[] = [];
       const shopNames: string[] = [];
       const totals: number[] = [];
+      const deliveryWarnings: string[] = [];
 
       for (const [shopId, items] of byShop) {
         const subtotal = items.reduce((s, i) => s + i.item_price * i.quantity, 0);
@@ -175,15 +176,28 @@ export function useCreateOrder() {
         const { error: iErr } = await supabase.from('order_items').insert(orderItemRows);
         if (iErr) throw iErr;
 
-        orderIds.push((order as any).id);
+        const orderId = (order as any).id;
+        orderIds.push(orderId);
         shopNames.push(items[0].shop_name);
         totals.push(total_amount);
+
+        // Auto-assign delivery partner via DB function
+        try {
+          const { error: assignErr } = await supabase.rpc('auto_assign_delivery', { p_order_id: orderId });
+          if (assignErr) {
+            console.warn('Auto-assign delivery failed for order', orderId, assignErr.message);
+            deliveryWarnings.push(orderId);
+          }
+        } catch (e) {
+          console.warn('Auto-assign delivery exception', e);
+          deliveryWarnings.push(orderId);
+        }
       }
 
       // Clear cart
       await supabase.from('cart_items').delete().eq('user_id', input.userId);
 
-      return { orderIds, shopNames, totals };
+      return { orderIds, shopNames, totals, deliveryWarnings };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-orders'] });

@@ -88,6 +88,36 @@ export type Database = {
           },
         ]
       }
+      delivery_partners: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_available: boolean | null
+          name: string | null
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_available?: boolean | null
+          name?: string | null
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_available?: boolean | null
+          name?: string | null
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           created_at: string | null
@@ -493,6 +523,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_assign_delivery: { Args: { p_order_id: string }; Returns: undefined }
       calculate_order_totals: {
         Args: { p_subtotal: number; p_user_id: string }
         Returns: Json
