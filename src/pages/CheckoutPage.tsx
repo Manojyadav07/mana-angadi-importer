@@ -70,6 +70,13 @@ export function CheckoutPage() {
       });
 
       refetch();
+
+      if (result.deliveryWarnings && result.deliveryWarnings.length > 0) {
+        toast.info(en
+          ? 'All delivery partners are currently busy. Your order will be assigned shortly.'
+          : 'అన్ని డెలివరీ భాగస్వాములు ప్రస్తుతం బిజీగా ఉన్నారు. మీ ఆర్డర్ త్వరలో కేటాయించబడుతుంది.');
+      }
+
       navigate('/order-success', {
         state: {
           orderIds: result.orderIds,
