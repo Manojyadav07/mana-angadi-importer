@@ -6,7 +6,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import manaAngadiLogo from "@/assets/mana-angadi-logo.png";
 import { toast } from "sonner";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { NamePromptDialog } from "@/components/NamePromptDialog";
+
 
 const t = {
   te: {
@@ -51,8 +51,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
-
   const proceedAfterLogin = () => {
     const redirect = sessionStorage.getItem('post-login-redirect');
     if (redirect) {
@@ -83,14 +81,10 @@ export function LoginPage() {
       toast.success(labels.loggedIn);
 
       // refresh() hydrates AuthContext so guards see the session immediately
-      const { profile: freshProfile } = await refresh();
+      await refresh();
       // Allow React to commit the auth state updates before navigating
       await new Promise(r => setTimeout(r, 0));
-      if (!freshProfile?.display_name?.trim()) {
-        setShowNamePrompt(true);
-      } else {
-        proceedAfterLogin();
-      }
+      proceedAfterLogin();
     } catch {
       toast.error(labels.somethingWrong);
     } finally {
@@ -184,13 +178,6 @@ export function LoginPage() {
         <div className="home-indicator" />
       </div>
 
-      <NamePromptDialog
-        open={showNamePrompt}
-        onComplete={() => {
-          setShowNamePrompt(false);
-          proceedAfterLogin();
-        }}
-      />
     </div>
   );
 }
