@@ -493,6 +493,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_order_totals: {
+        Args: { p_subtotal: number; p_user_id: string }
+        Returns: Json
+      }
       create_settlement_on_delivery: {
         Args: { p_commission_rate?: number; p_order_id: string }
         Returns: undefined

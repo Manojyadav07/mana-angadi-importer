@@ -4,7 +4,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCreateOrder } from '@/hooks/useOrders';
-import { useVillageDeliveryFee } from '@/hooks/useVillageDeliveryFee';
+import { useOrderTotals } from '@/hooks/useOrderTotals';
 import { ArrowLeft, Package, Banknote, CreditCard, Check, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,11 +22,11 @@ export function CheckoutPage() {
   const en = language === 'en';
   const subtotal = getCartTotal();
 
-  // Tiered village delivery fee from Supabase
-  const { data: village, isLoading: villageLoading } = useVillageDeliveryFee('Main Village');
-  const deliveryFee = village?.delivery_fee ?? 25;
-  const minOrder = village?.min_order ?? 0;
-  const total = subtotal + deliveryFee;
+  // Server-side delivery fee from calculate_order_totals RPC
+  const { data: totals, isLoading: totalsLoading, error: totalsError } = useOrderTotals(user?.id, subtotal);
+  const deliveryFee = totals?.delivery_fee ?? 0;
+  const minOrder = totals?.min_order ?? 0;
+  const total = totals?.total_amount ?? subtotal;
 
   const handlePaymentChange = (method: 'cod' | 'upi') => {
     setPaymentMethod(method);
@@ -42,8 +42,12 @@ export function CheckoutPage() {
       toast.error(en ? 'Your basket is empty' : 'మీ బుట్ట ఖాళీగా ఉంది');
       return;
     }
+    if (!totals) {
+      toast.error(en ? 'Please set your delivery village in Profile' : 'దయచేసి మీ గ్రామాన్ని ప్రొఫైల్‌లో సెట్ చేయండి');
+      return;
+    }
     if (subtotal < minOrder) {
-      toast.error(en ? `Minimum order is ₹${minOrder}` : `కనీస ఆర్డర్ ₹${minOrder}`);
+      toast.error(en ? `Minimum order for your village is ₹${minOrder}` : `మీ గ్రామానికి కనీస ఆర్డర్ ₹${minOrder}`);
       return;
     }
 
@@ -61,6 +65,8 @@ export function CheckoutPage() {
         })),
         paymentMethod,
         cashChangeFor: changeFor,
+        deliveryFee: totals.delivery_fee,
+        villageId: totals.village_id,
       });
 
       refetch();
@@ -123,6 +129,21 @@ export function CheckoutPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 pb-40 space-y-5 pt-5">
+        {/* Village not set warning */}
+        {totalsError && (
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-destructive">
+                {en ? 'Delivery location not set' : 'డెలివరీ స్థలం సెట్ చేయలేదు'}
+              </p>
+              <p className="text-xs text-destructive/80 mt-1">
+                {en ? 'Please update your village in Profile to proceed.' : 'కొనసాగించడానికి ప్రొఫైల్‌లో మీ గ్రామాన్ని అప్‌డేట్ చేయండి.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Order Summary */}
         <div className="bg-card rounded-2xl shadow-sm p-5">
           <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
@@ -154,8 +175,8 @@ export function CheckoutPage() {
               <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
               <p className="text-sm text-destructive">
                 {en
-                  ? `Minimum order is ₹${minOrder}. Add ₹${minOrder - subtotal} more.`
-                  : `కనీస ఆర్డర్ ₹${minOrder}. ₹${minOrder - subtotal} మరింత జోడించండి.`}
+                  ? `Minimum order for your village is ₹${minOrder}. Add ₹${minOrder - subtotal} more.`
+                  : `మీ గ్రామానికి కనీస ఆర్డర్ ₹${minOrder}. ₹${minOrder - subtotal} మరింత జోడించండి.`}
               </p>
             </div>
           )}
@@ -169,13 +190,15 @@ export function CheckoutPage() {
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{en ? 'Village Delivery Fee' : 'గ్రామ డెలివరీ రుసుము'}</span>
               <span className="text-primary font-medium">
-                {villageLoading ? '...' : `₹${deliveryFee}`}
+                {totalsLoading ? '...' : `₹${deliveryFee}`}
               </span>
             </div>
             <div className="border-t border-dashed border-foreground/10 my-1" />
             <div className="flex justify-between items-center">
               <span className="font-semibold text-foreground">{en ? 'Total' : 'మొత్తం'}</span>
-              <span className="text-2xl font-bold text-foreground">₹{total}</span>
+              <span className="text-2xl font-bold text-foreground">
+                {totalsLoading ? '...' : `₹${total}`}
+              </span>
             </div>
           </div>
         </div>
@@ -186,7 +209,6 @@ export function CheckoutPage() {
             {en ? 'Payment Method' : 'చెల్లింపు విధానం'}
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {/* COD tile */}
             <button
               onClick={() => handlePaymentChange('cod')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
@@ -203,12 +225,8 @@ export function CheckoutPage() {
               <span className="text-sm font-medium text-foreground">
                 {en ? 'Cash on Delivery' : 'డెలివరీ నగదు'}
               </span>
-              {paymentMethod === 'cod' && (
-                <Check className="w-4 h-4 text-primary" />
-              )}
+              {paymentMethod === 'cod' && <Check className="w-4 h-4 text-primary" />}
             </button>
-
-            {/* UPI tile */}
             <button
               onClick={() => handlePaymentChange('upi')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
@@ -225,9 +243,7 @@ export function CheckoutPage() {
               <span className="text-sm font-medium text-foreground">
                 {en ? 'UPI Payment' : 'UPI చెల్లింపు'}
               </span>
-              {paymentMethod === 'upi' && (
-                <Check className="w-4 h-4 text-primary" />
-              )}
+              {paymentMethod === 'upi' && <Check className="w-4 h-4 text-primary" />}
             </button>
           </div>
         </div>
@@ -261,14 +277,14 @@ export function CheckoutPage() {
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-background/95 backdrop-blur-md border-t border-foreground/5 px-5 py-4 pb-8 z-40">
         <button
           onClick={handlePlaceOrder}
-          disabled={isPlacing || (minOrder > 0 && subtotal < minOrder)}
+          disabled={isPlacing || !totals || (minOrder > 0 && subtotal < minOrder)}
           className="w-full bg-primary text-primary-foreground font-semibold text-base py-4 rounded-full shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-70"
         >
           {isPlacing
             ? (en ? 'Placing Order...' : 'ఆర్డర్ చేస్తోంది...')
-            : (en
-              ? `Place Order · ₹${total}`
-              : `ఆర్డర్ చేయండి · ₹${total}`)}
+            : totalsLoading
+              ? (en ? 'Calculating...' : 'లెక్కిస్తోంది...')
+              : (en ? `Place Order · ₹${total}` : `ఆర్డర్ చేయండి · ₹${total}`)}
         </button>
       </div>
     </div>

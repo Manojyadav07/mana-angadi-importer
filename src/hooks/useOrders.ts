@@ -120,6 +120,8 @@ interface PlaceOrderInput {
   }[];
   paymentMethod?: 'cod' | 'upi';
   cashChangeFor?: number | null;
+  deliveryFee: number;
+  villageId: string;
 }
 
 export function useCreateOrder() {
@@ -141,7 +143,7 @@ export function useCreateOrder() {
 
       for (const [shopId, items] of byShop) {
         const subtotal = items.reduce((s, i) => s + i.item_price * i.quantity, 0);
-        const delivery_fee = 25;
+        const delivery_fee = input.deliveryFee;
         const total_amount = subtotal + delivery_fee;
 
         const { data: order, error: oErr } = await supabase
@@ -155,6 +157,7 @@ export function useCreateOrder() {
             status: 'pending',
             payment_method: input.paymentMethod || 'cod',
             cash_change_for: input.cashChangeFor ?? null,
+            village_id: input.villageId,
           } as any)
           .select('id')
           .single();
