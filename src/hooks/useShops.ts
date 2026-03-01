@@ -28,16 +28,20 @@ function dbToShop(dbShop: any): Shop {
   };
 }
 
-export function useShops() {
+export function useShops(townId?: string | null) {
   return useQuery({
-    queryKey: ['shops'],
+    queryKey: ['shops', townId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('shops')
         .select('*')
-        .eq('is_active', true)
-        .order('name_en');
+        .order('name');
 
+      if (townId) {
+        query = query.eq('town_id', townId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data.map(dbToShop);
     }

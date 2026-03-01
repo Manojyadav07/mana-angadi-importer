@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, Search, MapPin, ChevronRight, X, Star } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useMemo } from 'react';
+import { useShops } from '@/hooks/useShops';
 import { BottomNav } from '@/components/layout/BottomNav';
 
 import shopFood1 from '@/assets/shop-food-1.jpg';
@@ -19,13 +20,6 @@ const FILTER_CHIPS = [
   { key: 'artisan', en: 'Local Artisans', te: 'స్థానిక కళాకారులు' },
 ];
 
-interface ShopRow {
-  id: string;
-  name: string;
-  address: string | null;
-  created_at: string | null;
-}
-
 function getShopBanner(name: string): string {
   const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return BANNER_IMAGES[hash % BANNER_IMAGES.length];
@@ -39,48 +33,36 @@ function getMockRating(name: string): number {
 export function ShopListingPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const [shops, setShops] = useState<ShopRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { profile } = useAuth();
+  const townId = (profile as any)?.town_id as string | undefined;
+  const { data: shops = [], isLoading } = useShops(townId);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    async function load() {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('shops')
-        .select('id, name, address, created_at')
-        .order('created_at', { ascending: false });
-      if (!error && data) setShops(data as ShopRow[]);
-      setIsLoading(false);
-    }
-    load();
-  }, []);
-
   const filteredShops = useMemo(() => {
     let list = shops;
 
-    // search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter((s) => s.name.toLowerCase().includes(q));
+      list = list.filter((s) => s.name_en.toLowerCase().includes(q) || s.name_te.toLowerCase().includes(q));
     }
 
-    // chip filter
     if (activeFilter === 'coop') {
       list = list.filter(
-        (s) => s.name.toLowerCase().includes('co-op') || s.name.toLowerCase().includes('rythu')
+        (s) => s.name_en.toLowerCase().includes('co-op') || s.name_en.toLowerCase().includes('rythu')
       );
     } else if (activeFilter === 'artisan') {
       list = list.filter(
-        (s) => s.name.toLowerCase().includes('art') || s.name.toLowerCase().includes('studio')
+        (s) => s.name_en.toLowerCase().includes('art') || s.name_en.toLowerCase().includes('studio')
       );
     }
-    // 'all' and 'nearby' show everything
 
     return list;
   }, [shops, search, activeFilter]);
+
+
+
 
   return (
     <div className="mobile-container bg-mana-cream min-h-screen">
@@ -175,7 +157,8 @@ export function ShopListingPage() {
         ) : (
           <div className="flex flex-col gap-5">
             {filteredShops.map((shop) => {
-              const rating = getMockRating(shop.name);
+              const name = language === 'en' ? shop.name_en : shop.name_te;
+              const rating = getMockRating(shop.name_en);
               return (
                 <div
                   key={shop.id}
@@ -184,8 +167,8 @@ export function ShopListingPage() {
                   {/* Banner image */}
                   <div className="relative h-44 overflow-hidden">
                     <img
-                      src={getShopBanner(shop.name)}
-                      alt={shop.name}
+                      src={getShopBanner(shop.name_en)}
+                      alt={name}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
@@ -196,10 +179,9 @@ export function ShopListingPage() {
 
                   {/* Card body */}
                   <div className="p-4">
-                    {/* Name + rating */}
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="text-lg font-semibold text-mana-charcoal font-display leading-tight">
-                        {shop.name}
+                        {name}
                       </h3>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <Star className="w-3.5 h-3.5 text-primary fill-primary" />
@@ -209,14 +191,12 @@ export function ShopListingPage() {
                       </div>
                     </div>
 
-                    {/* Tagline */}
                     <p className="text-sm text-muted-foreground italic font-display mt-1 leading-relaxed">
                       {language === 'en'
                         ? 'Local village store & daily essentials'
                         : 'స్థానిక గ్రామ దుకాణం & దైనందిన అవసరాలు'}
                     </p>
 
-                    {/* Distance + Explore */}
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <MapPin className="w-3.5 h-3.5" />

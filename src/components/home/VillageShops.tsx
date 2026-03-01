@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useShops } from '@/hooks/useShops';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 
 export function VillageShops() {
   const navigate = useNavigate();
-  const { data: shops = [] } = useShops();
+  const { data: shops = [] } = useShops((useAuth().profile as any)?.town_id);
   const { language } = useLanguage();
 
   const visibleShops = shops.filter((s) => s.isActive).slice(0, 6);
