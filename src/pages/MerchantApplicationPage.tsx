@@ -25,7 +25,7 @@ const BUSINESS_TYPES = [
   { value: 'other', en: 'Other', te: 'ఇతర' },
 ];
 
-interface Village {
+interface Town {
   id: string;
   name: string;
 }
@@ -41,7 +41,7 @@ export function MerchantApplicationPage() {
   const [phone, setPhone] = useState('');
   const [shopName, setShopName] = useState('');
   const [address, setAddress] = useState('');
-  const [villageId, setVillageId] = useState('');
+  const [townId, setTownId] = useState('');
   const [businessType, setBusinessType] = useState('');
   const [sellsFood, setSellsFood] = useState<string>('');
   const [fssaiAvailable, setFssaiAvailable] = useState<string>('');
@@ -61,44 +61,44 @@ export function MerchantApplicationPage() {
   const idInputRef = useRef<HTMLInputElement>(null);
   const shopInputRef = useRef<HTMLInputElement>(null);
 
-  // Villages
-  const [villages, setVillages] = useState<Village[]>([]);
-  const [villagesLoading, setVillagesLoading] = useState(true);
-  const [villagesError, setVillagesError] = useState(false);
+  // Towns
+  const [towns, setTowns] = useState<Town[]>([]);
+  const [townsLoading, setTownsLoading] = useState(true);
+  const [townsError, setTownsError] = useState(false);
   const [fetchError, setFetchError] = useState<string>('');
   useEffect(() => {
-    const fetchVillages = async () => {
-      setVillagesLoading(true);
-      setVillagesError(false);
+    const fetchTowns = async () => {
+      setTownsLoading(true);
+      setTownsError(false);
       setFetchError('');
       try {
         const url = import.meta.env.VITE_SUPABASE_URL;
         const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        console.log('[VillageFetch] supabaseUrl:', url);
-        console.log('[VillageFetch] supabaseKey:', key?.slice(0, 10) + '…');
+        console.log('[TownFetch] supabaseUrl:', url);
+        console.log('[TownFetch] supabaseKey:', key?.slice(0, 10) + '…');
         await supabase.auth.getSession();
         const { data, error } = await supabase
-          .from('villages')
+          .from('towns')
           .select('id,name')
           .order('name', { ascending: true });
-        console.log('[VillageFetch] error:', error);
-        console.log('[VillageFetch] data:', data);
+        console.log('[TownFetch] error:', error);
+        console.log('[TownFetch] data:', data);
         if (error) {
-          console.error('Failed to fetch villages:', error);
+          console.error('Failed to fetch towns:', error);
           setFetchError(error.message);
-          setVillagesError(true);
+          setTownsError(true);
         } else {
-          setVillages(data ?? []);
+          setTowns(data ?? []);
         }
       } catch (err: any) {
-        console.error('Village fetch exception:', err);
+        console.error('Town fetch exception:', err);
         setFetchError(err?.message || 'Unknown error');
-        setVillagesError(true);
+        setTownsError(true);
       } finally {
-        setVillagesLoading(false);
+        setTownsLoading(false);
       }
     };
-    fetchVillages();
+    fetchTowns();
   }, []);
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
@@ -129,7 +129,7 @@ export function MerchantApplicationPage() {
     setUploadingShop(false);
   };
 
-  const isBasicValid = fullName && phone && shopName && address && villageId;
+  const isBasicValid = fullName && phone && shopName && address && townId;
   const isBusinessValid = businessType && sellsFood;
   const isFoodCompliant = sellsFood === 'no' || (sellsFood === 'yes' && (fssaiAvailable === 'no' || (fssaiAvailable === 'yes' && fssaiNumber)));
   const canSubmit = isBasicValid && isBusinessValid && isFoodCompliant && idProofUrl && declaration && !submitting;
@@ -143,7 +143,7 @@ export function MerchantApplicationPage() {
       phone: phone.trim(),
       shop_name: shopName.trim(),
       address: address.trim(),
-      village_id: villageId,
+      town_id: townId,
       business_type: businessType,
       sells_food: sellsFood === 'yes',
       fssai_available: fssaiAvailable === 'yes',
@@ -226,26 +226,29 @@ export function MerchantApplicationPage() {
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder={en ? 'Full address' : 'పూర్తి చిరునామా'} className="mt-1" />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">{en ? 'Village' : 'గ్రామం'} *</Label>
-                {villagesLoading ? (
+                <Label className="text-sm text-muted-foreground">{en ? 'Town' : 'పట్టణం'} *</Label>
+                {townsLoading ? (
                   <div className="mt-1 flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{en ? 'Loading villages…' : 'గ్రామాలు లోడ్ అవుతున్నాయి…'}</span>
+                    <span>{en ? 'Loading towns…' : 'పట్టణాలు లోడ్ అవుతున్నాయి…'}</span>
                   </div>
-                ) : villagesError ? (
+                ) : townsError ? (
                   <div className="mt-1 flex items-center gap-2 min-h-[2.5rem] px-3 rounded-md border border-destructive bg-destructive/5 text-sm text-destructive">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                    <span>{fetchError || (en ? 'Failed to load villages' : 'గ్రామాలు లోడ్ చేయడం విఫలమైంది')}</span>
+                    <span>{fetchError || (en ? 'Failed to load towns' : 'పట్టణాలు లోడ్ చేయడం విఫలమైంది')}</span>
                   </div>
                 ) : (
-                  <Select value={villageId} onValueChange={setVillageId}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder={en ? 'Select Village' : 'గ్రామం ఎంచుకోండి'} /></SelectTrigger>
+                  <Select value={townId} onValueChange={setTownId}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder={en ? 'Select Town' : 'పట్టణం ఎంచుకోండి'} /></SelectTrigger>
                     <SelectContent>
-                      {villages.map(v => (
-                        <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                      {towns.map(t => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                )}
+                {!townId && !townsLoading && !townsError && (
+                  <p className="text-xs text-destructive mt-1">{en ? 'Please select your town.' : 'దయచేసి మీ పట్టణాన్ని ఎంచుకోండి.'}</p>
                 )}
               </div>
             </div>

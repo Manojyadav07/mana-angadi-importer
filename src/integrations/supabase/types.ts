@@ -230,6 +230,8 @@ export type Database = {
           cash_change_for: number | null
           created_at: string | null
           delivery_fee: number
+          dispatch_date: string | null
+          dispatch_slot: string | null
           id: string
           payment_method: string | null
           shop_id: string
@@ -237,11 +239,14 @@ export type Database = {
           subtotal: number
           total_amount: number
           user_id: string
+          village_id: string | null
         }
         Insert: {
           cash_change_for?: number | null
           created_at?: string | null
           delivery_fee: number
+          dispatch_date?: string | null
+          dispatch_slot?: string | null
           id?: string
           payment_method?: string | null
           shop_id: string
@@ -249,11 +254,14 @@ export type Database = {
           subtotal: number
           total_amount: number
           user_id: string
+          village_id?: string | null
         }
         Update: {
           cash_change_for?: number | null
           created_at?: string | null
           delivery_fee?: number
+          dispatch_date?: string | null
+          dispatch_slot?: string | null
           id?: string
           payment_method?: string | null
           shop_id?: string
@@ -261,6 +269,7 @@ export type Database = {
           subtotal?: number
           total_amount?: number
           user_id?: string
+          village_id?: string | null
         }
         Relationships: [
           {
@@ -268,6 +277,13 @@ export type Database = {
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_village_id_fkey"
+            columns: ["village_id"]
+            isOneToOne: false
+            referencedRelation: "villages"
             referencedColumns: ["id"]
           },
         ]
@@ -282,6 +298,7 @@ export type Database = {
           roles: string[] | null
           updated_at: string
           user_id: string
+          village_id: string | null
         }
         Insert: {
           created_at?: string
@@ -292,6 +309,7 @@ export type Database = {
           roles?: string[] | null
           updated_at?: string
           user_id: string
+          village_id?: string | null
         }
         Update: {
           created_at?: string
@@ -302,8 +320,17 @@ export type Database = {
           roles?: string[] | null
           updated_at?: string
           user_id?: string
+          village_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_village_id_fkey"
+            columns: ["village_id"]
+            isOneToOne: false
+            referencedRelation: "villages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settlements: {
         Row: {
@@ -354,6 +381,7 @@ export type Database = {
           name: string
           owner_id: string | null
           shop_type: string | null
+          town_id: string | null
         }
         Insert: {
           address?: string | null
@@ -362,6 +390,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           shop_type?: string | null
+          town_id?: string | null
         }
         Update: {
           address?: string | null
@@ -370,6 +399,33 @@ export type Database = {
           name?: string
           owner_id?: string | null
           shop_type?: string | null
+          town_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shops_town_id_fkey"
+            columns: ["town_id"]
+            isOneToOne: false
+            referencedRelation: "towns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      towns: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -377,25 +433,39 @@ export type Database = {
         Row: {
           created_at: string | null
           delivery_fee: number
+          distance_km: number | null
           id: string
           min_order: number
           name: string
+          town_id: string | null
         }
         Insert: {
           created_at?: string | null
           delivery_fee: number
+          distance_km?: number | null
           id?: string
           min_order: number
           name: string
+          town_id?: string | null
         }
         Update: {
           created_at?: string | null
           delivery_fee?: number
+          distance_km?: number | null
           id?: string
           min_order?: number
           name?: string
+          town_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "villages_town_id_fkey"
+            columns: ["town_id"]
+            isOneToOne: false
+            referencedRelation: "towns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
