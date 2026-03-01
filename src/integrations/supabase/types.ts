@@ -156,6 +156,7 @@ export type Database = {
       onboarding_applications: {
         Row: {
           created_at: string | null
+          form_data: Json | null
           id: string
           role: string
           status: string
@@ -164,6 +165,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          form_data?: Json | null
           id?: string
           role?: string
           status?: string
@@ -172,6 +174,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          form_data?: Json | null
           id?: string
           role?: string
           status?: string
@@ -369,35 +372,6 @@ export type Database = {
           shop_type?: string | null
         }
         Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
       }
       villages: {
         Row: {
