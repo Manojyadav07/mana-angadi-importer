@@ -36,6 +36,8 @@ import { DeliveryEarningsPage } from "./pages/DeliveryEarningsPage";
 import { DeliveryProfilePage } from "./pages/DeliveryProfilePage";
 import { DeliveryPendingPage } from "./pages/DeliveryPendingPage";
 import { ApplyPage } from "./pages/ApplyPage";
+import { MerchantApplicationPage } from "./pages/MerchantApplicationPage";
+import { MerchantApplicationStatusPage } from "./pages/MerchantApplicationStatusPage";
 import { LoginSuccessPage } from "./pages/LoginSuccessPage";
 
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -182,6 +184,8 @@ function AppRoutes() {
               <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
               <Route path="/order/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/merchant/apply" element={<AuthGuard><MerchantApplicationPage /></AuthGuard>} />
+              <Route path="/merchant/application-status" element={<AuthGuard><MerchantApplicationStatusPage /></AuthGuard>} />
               <Route path="/merchant/pending" element={<MerchantPendingRoute><MerchantPendingPage /></MerchantPendingRoute>} />
               <Route path="/merchant/setup" element={<MerchantRoute><MerchantShopSetupPage /></MerchantRoute>} />
               <Route path="/merchant/orders" element={<MerchantWithShopRoute><MerchantOrdersPage /></MerchantWithShopRoute>} />

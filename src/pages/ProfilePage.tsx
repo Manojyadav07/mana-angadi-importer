@@ -59,7 +59,7 @@ export function ProfilePage() {
         {
           icon: Store,
           label: language === 'en' ? 'Apply as Merchant' : 'వ్యాపారిగా దరఖాస్తు చేయండి',
-          onClick: () => navigate('/apply'),
+          onClick: () => navigate('/merchant/apply'),
         },
         {
           icon: Truck,
