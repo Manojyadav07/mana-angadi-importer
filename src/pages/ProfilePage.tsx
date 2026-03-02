@@ -6,7 +6,7 @@ import { useUserMode } from '@/context/UserModeContext';
 import {
   User, ShoppingBag, Store, Truck, Globe, LogOut, ChevronRight, Loader2,
 } from 'lucide-react';
-import { LocationSelector } from '@/components/profile/LocationSelector';
+
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ export function ProfilePage() {
         {
           icon: User,
           label: language === 'en' ? 'My Profile' : 'నా ప్రొఫైల్',
-          onClick: () => {},
+          onClick: () => navigate('/profile/edit'),
           subtitle: language === 'en' ? 'View your details' : 'మీ వివరాలు చూడండి',
         },
         {
@@ -120,9 +120,6 @@ export function ProfilePage() {
             </div>
           </div>
         ))}
-
-        {/* Location selector */}
-        <LocationSelector />
 
         {/* Language preference */}
         <div>
