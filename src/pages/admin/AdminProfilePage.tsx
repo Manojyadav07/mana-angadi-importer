@@ -4,7 +4,6 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useUserMode } from '@/context/UserModeContext';
 import { SwitchModeMenu } from '@/components/SwitchModeMenu';
-import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { User, LogOut, Globe, Shield } from 'lucide-react';
 
 export function AdminProfilePage() {
@@ -95,8 +94,11 @@ export function AdminProfilePage() {
           <span className="font-medium">{labels.logout}</span>
         </button>
       </div>
-
-      <AdminBottomNav />
     </div>
   );
 }
+
+
+
+
+

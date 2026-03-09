@@ -11,6 +11,8 @@ export interface DbOrder {
   total_amount: number;
   status: string | null;
   created_at: string | null;
+  delivery_address?: string | null;
+  delivery_phone?: string | null;
 }
 
 export interface DbOrderItem {
@@ -37,7 +39,7 @@ export function useCustomerOrders(userId: string | undefined) {
 
       const { data: orders, error } = await supabase
         .from('orders')
-        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at')
+        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at, delivery_address, delivery_phone')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -67,7 +69,7 @@ export function useOrder(orderId: string | undefined) {
 
       const { data: order, error } = await supabase
         .from('orders')
-        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at')
+        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at, delivery_address, delivery_phone')
         .eq('id', orderId)
         .maybeSingle();
 
@@ -75,7 +77,11 @@ export function useOrder(orderId: string | undefined) {
       if (!order) return null;
 
       // shop name
-      const { data: shop } = await supabase.from('shops').select('id, name').eq('id', (order as any).shop_id).maybeSingle();
+      const { data: shop } = await supabase
+        .from('shops')
+        .select('id, name')
+        .eq('id', (order as any).shop_id)
+        .maybeSingle();
 
       // order items
       const { data: rawItems } = await supabase
@@ -87,7 +93,10 @@ export function useOrder(orderId: string | undefined) {
       const itemIds = (rawItems || []).map((i: any) => i.item_id);
       let itemMap = new Map<string, { name: string; image_url: string | null }>();
       if (itemIds.length > 0) {
-        const { data: items } = await supabase.from('items').select('id, name, image_url').in('id', itemIds);
+        const { data: items } = await supabase
+          .from('items')
+          .select('id, name, image_url')
+          .in('id', itemIds);
         itemMap = new Map((items || []).map((i: any) => [i.id, { name: i.name, image_url: i.image_url }]));
       }
 
@@ -122,14 +131,21 @@ interface PlaceOrderInput {
   cashChangeFor?: number | null;
   deliveryFee: number;
   villageId: string;
+  deliveryAddress?: string;
+  deliveryPhone?: string;
 }
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: PlaceOrderInput): Promise<{ orderIds: string[]; shopNames: string[]; totals: number[]; deliveryWarnings: string[] }> => {
-      // Group by shop
+    mutationFn: async (input: PlaceOrderInput): Promise<{
+      orderIds: string[];
+      shopNames: string[];
+      totals: number[];
+      deliveryWarnings: string[];
+    }> => {
+      // Group cart items by shop
       const byShop = new Map<string, typeof input.cartItems>();
       for (const ci of input.cartItems) {
         const arr = byShop.get(ci.shop_id) || [];
@@ -159,6 +175,8 @@ export function useCreateOrder() {
             payment_method: input.paymentMethod || 'cod',
             cash_change_for: input.cashChangeFor ?? null,
             village_id: input.villageId,
+            delivery_address: input.deliveryAddress || null,
+            delivery_phone: input.deliveryPhone || null,
           } as any)
           .select('id')
           .single();
@@ -194,7 +212,7 @@ export function useCreateOrder() {
         }
       }
 
-      // Clear cart
+      // Clear cart after all orders placed
       await supabase.from('cart_items').delete().eq('user_id', input.userId);
 
       return { orderIds, shopNames, totals, deliveryWarnings };
@@ -205,9 +223,7 @@ export function useCreateOrder() {
   });
 }
 
-// ── Legacy exports used by Merchant/Delivery pages ──
-// These reference columns that may not exist in the simple schema,
-// but we keep them so those pages don't break at import time.
+// ── Merchant Orders ──
 
 export function useMerchantOrders(shopId: string | undefined) {
   return useQuery({
@@ -216,7 +232,7 @@ export function useMerchantOrders(shopId: string | undefined) {
       if (!shopId) return [];
       const { data, error } = await supabase
         .from('orders')
-        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at')
+        .select('id, user_id, shop_id, subtotal, delivery_fee, total_amount, status, created_at, delivery_address, delivery_phone')
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -230,6 +246,8 @@ export function useMerchantOrders(shopId: string | undefined) {
         subtotal: Number(o.subtotal),
         deliveryFee: Number(o.delivery_fee),
         total: Number(o.total_amount),
+        deliveryAddress: o.delivery_address || '',
+        deliveryPhone: o.delivery_phone || '',
         items: [],
         createdAt: new Date(o.created_at),
         paymentMethod: 'COD' as any,
@@ -240,6 +258,8 @@ export function useMerchantOrders(shopId: string | undefined) {
   });
 }
 
+// ── Delivery Orders ──
+
 export function useDeliveryOrders(deliveryPersonId: string | undefined) {
   return useQuery({
     queryKey: ['delivery-orders', deliveryPersonId],
@@ -248,10 +268,7 @@ export function useDeliveryOrders(deliveryPersonId: string | undefined) {
 
       const { data, error } = await supabase
         .from('delivery_assignments')
-        .select(`
-          *,
-          orders (*)
-        `)
+        .select(`*, orders (*)`)
         .eq('delivery_partner_id', deliveryPersonId);
 
       if (error) throw error;
@@ -259,7 +276,6 @@ export function useDeliveryOrders(deliveryPersonId: string | undefined) {
       const assigned = (data || []).filter((d: any) => d.status === 'assigned');
       const picked = (data || []).filter((d: any) => d.status === 'picked');
 
-      // Map to Order-like shape for the UI
       const mapToOrder = (d: any) => {
         const o = d.orders;
         if (!o) return null;
@@ -273,6 +289,8 @@ export function useDeliveryOrders(deliveryPersonId: string | undefined) {
           subtotal: Number(o.subtotal),
           deliveryFee: Number(o.delivery_fee),
           total: Number(o.total_amount),
+          deliveryAddress: o.delivery_address || '',
+          deliveryPhone: o.delivery_phone || '',
           items: [],
           createdAt: new Date(o.created_at),
           paymentMethod: (o.payment_method || 'COD') as any,
@@ -289,6 +307,8 @@ export function useDeliveryOrders(deliveryPersonId: string | undefined) {
   });
 }
 
+// ── Update Order Status ──
+
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -299,11 +319,9 @@ export function useUpdateOrderStatus() {
         .eq('id', orderId);
       if (error) throw error;
 
-      // Auto-create settlement when order is delivered (via secure DB function)
+      // Auto-create settlement when order is delivered
       if (String(status) === 'delivered') {
-        await supabase.rpc('create_settlement_on_delivery', {
-          p_order_id: orderId,
-        });
+        await supabase.rpc('create_settlement_on_delivery', { p_order_id: orderId });
       }
     },
     onSuccess: () => {
@@ -314,6 +332,27 @@ export function useUpdateOrderStatus() {
     },
   });
 }
+
+// ── Cancel Order ──
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+}
+
+// ── Accept Delivery ──
 
 export function useAcceptDelivery() {
   const queryClient = useQueryClient();

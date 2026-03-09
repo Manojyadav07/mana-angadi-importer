@@ -14,10 +14,10 @@ const BANNER_IMAGES = [shopGrocery1, shopFood1, shopMedical1, shopVegetables1];
 
 /** Maps categoryKey → allowed shop_type values */
 const CATEGORY_TYPE_MAP: Record<string, string[]> = {
-  food: ['restaurant', 'bakery', 'fast_food'],
-  groceries: ['general_store', 'kirana', 'grocery'],
-  pharmacy: ['pharmacy', 'medical'],
-  vegfruits: ['vegetables', 'fruits'],
+  food: ['restaurant', 'bakery', 'fast_food', 'tiffin', 'hotel'],
+  groceries: ['grocery', 'kirana', 'general_store', 'supermarket'],
+  pharmacy: ['pharmacy', 'medical', 'chemist'],
+  vegfruits: ['vegetables', 'fruits', 'vegfruits'],
 };
 
 const SUPPORTED_KEYS = Object.keys(CATEGORY_TYPE_MAP);

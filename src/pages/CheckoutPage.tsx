@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { useOrderTotals } from '@/hooks/useOrderTotals';
-import { ArrowLeft, Package, Banknote, CreditCard, Check, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeft, Package, Banknote, CreditCard, Check, AlertTriangle, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CheckoutPage() {
@@ -19,6 +20,13 @@ export function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi'>('cod');
   const [changeFor, setChangeFor] = useState<number | null>(null);
 
+  // Address state
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [doorNumber, setDoorNumber] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [deliveryPhone, setDeliveryPhone] = useState('');
+  const [villageName, setVillageName] = useState('');
+
   const en = language === 'en';
   const subtotal = getCartTotal();
 
@@ -27,6 +35,29 @@ export function CheckoutPage() {
   const deliveryFee = totals?.delivery_fee ?? 0;
   const minOrder = totals?.min_order ?? 0;
   const total = totals?.total_amount ?? subtotal;
+
+  // Load saved address from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('delivery_address, delivery_phone, village_id, villages(name)')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          const parts = ((data as any).delivery_address || '').split('|');
+          const door = parts[0]?.trim() || '';
+          const lmark = parts[1]?.trim() || '';
+          setDoorNumber(door);
+          setLandmark(lmark);
+          setDeliveryPhone((data as any).delivery_phone || '');
+          setVillageName((data as any).villages?.name || '');
+          // Auto-open edit if no address saved yet
+          if (!door) setEditingAddress(true);
+        }
+      });
+  }, [user]);
 
   const handlePaymentChange = (method: 'cod' | 'upi') => {
     setPaymentMethod(method);
@@ -50,9 +81,16 @@ export function CheckoutPage() {
       toast.error(en ? `Minimum order for your village is ₹${minOrder}` : `మీ గ్రామానికి కనీస ఆర్డర్ ₹${minOrder}`);
       return;
     }
+    if (!doorNumber.trim()) {
+      toast.error(en ? 'Please add your delivery address' : 'డెలివరీ చిరునామా జోడించండి');
+      setEditingAddress(true);
+      return;
+    }
 
     setIsPlacing(true);
     try {
+      const deliveryAddress = `${doorNumber.trim()} | ${landmark.trim()}`;
+
       const result = await createOrder.mutateAsync({
         userId: user.id,
         cartItems: cart.map(c => ({
@@ -67,6 +105,8 @@ export function CheckoutPage() {
         cashChangeFor: changeFor,
         deliveryFee: totals.delivery_fee,
         villageId: totals.village_id,
+        deliveryAddress,
+        deliveryPhone: deliveryPhone || '',
       });
 
       refetch();
@@ -92,7 +132,7 @@ export function CheckoutPage() {
     }
   };
 
-  // Empty cart
+  // Empty cart screen
   if (cart.length === 0) {
     return (
       <div className="screen-shell min-h-screen flex flex-col bg-background items-center justify-center px-8">
@@ -119,6 +159,7 @@ export function CheckoutPage() {
 
   return (
     <div className="screen-shell min-h-screen flex flex-col bg-background">
+
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-foreground/5">
         <div className="pt-12 px-5 pb-4">
@@ -136,6 +177,7 @@ export function CheckoutPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 pb-40 space-y-5 pt-5">
+
         {/* Village not set warning */}
         {totalsError && (
           <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
@@ -210,6 +252,111 @@ export function CheckoutPage() {
           </div>
         </div>
 
+        {/* ── DELIVERY ADDRESS ── */}
+        <div className="bg-card rounded-2xl shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <p className="text-xs uppercase tracking-widest text-primary font-semibold">
+                {en ? 'Delivery Address' : 'డెలివరీ చిరునామా'}
+              </p>
+            </div>
+            {!editingAddress && (
+              <button
+                onClick={() => setEditingAddress(true)}
+                className="text-xs text-primary font-medium"
+              >
+                {en ? 'Edit' : 'మార్చు'}
+              </button>
+            )}
+          </div>
+
+          {editingAddress ? (
+            <div className="space-y-3">
+              {/* Door Number */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  {en ? 'Door / House Number' : 'తలుపు / ఇంటి నంబర్'} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  value={doorNumber}
+                  onChange={e => setDoorNumber(e.target.value)}
+                  placeholder={en ? 'e.g. Door No. 4-5, Yadav Street' : 'ఉదా. తలుపు నం. 4-5, యాదవ్ వీధి'}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Landmark */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  {en ? 'Street / Landmark' : 'వీధి / లాండ్‌మార్క్'}
+                </label>
+                <input
+                  value={landmark}
+                  onChange={e => setLandmark(e.target.value)}
+                  placeholder={en ? 'e.g. Near Hanuman Temple' : 'ఉదా. హనుమాన్ గుడి దగ్గర'}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Village (read-only) */}
+              {villageName && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">
+                    {en ? 'Village' : 'గ్రామం'}
+                  </label>
+                  <input
+                    value={villageName}
+                    disabled
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-sm opacity-70"
+                  />
+                </div>
+              )}
+
+              {/* Delivery Phone */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  {en ? 'Phone for Delivery' : 'డెలివరీ ఫోన్'}
+                </label>
+                <input
+                  value={deliveryPhone}
+                  onChange={e => setDeliveryPhone(e.target.value)}
+                  placeholder={en ? 'Leave blank to use your profile phone' : 'ఖాళీగా వదిలితే మీ ప్రొఫైల్ ఫోన్ వాడతాం'}
+                  type="tel"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <button
+                onClick={() => setEditingAddress(false)}
+                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold"
+              >
+                {en ? 'Done' : 'సరే'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {doorNumber ? (
+                <>
+                  <p className="text-sm text-foreground">{doorNumber}</p>
+                  {landmark && <p className="text-sm text-muted-foreground">{landmark}</p>}
+                  {villageName && <p className="text-sm text-muted-foreground">{villageName}</p>}
+                  {deliveryPhone && (
+                    <p className="text-xs text-muted-foreground mt-1">📞 {deliveryPhone}</p>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="w-4 h-4" />
+                  <p className="text-sm">
+                    {en ? 'Please add delivery address' : 'డెలివరీ చిరునామా జోడించండి'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Payment Method */}
         <div className="bg-card rounded-2xl shadow-sm p-5">
           <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
@@ -234,6 +381,7 @@ export function CheckoutPage() {
               </span>
               {paymentMethod === 'cod' && <Check className="w-4 h-4 text-primary" />}
             </button>
+
             <button
               onClick={() => handlePaymentChange('upi')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
@@ -280,7 +428,7 @@ export function CheckoutPage() {
         )}
       </div>
 
-      {/* Sticky CTA */}
+      {/* Sticky Place Order Button */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-background/95 backdrop-blur-md border-t border-foreground/5 px-5 py-4 pb-8 z-40">
         <button
           onClick={handlePlaceOrder}

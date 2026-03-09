@@ -1,255 +1,211 @@
-import { useState, useEffect } from 'react';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { useMerchantShop } from '@/hooks/useShops';
-import { useMerchantOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
-import { Package, Clock, RefreshCw, Store } from 'lucide-react';
-import { Order, OrderStatus, getShopTypeIcon } from '@/types';
-import { SkeletonCard } from '@/components/ui/SkeletonCard';
-import { MerchantOrderDetailSheet } from '@/components/merchant/MerchantOrderDetailSheet';
-import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+﻿import { useState, useEffect } from "react";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { useAuth } from "@/context/AuthContext";
+import { useMerchantShop } from "@/hooks/useShops";
+import { useMerchantOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { Package, Clock, RefreshCw, Store, ChevronRight } from "lucide-react";
+import { Order, OrderStatus, getShopTypeIcon } from "@/types";
+import { SkeletonCard } from "@/components/ui/SkeletonCard";
+import { MerchantOrderDetailSheet } from "@/components/merchant/MerchantOrderDetailSheet";
+import { toast } from "sonner";
 
-type FilterType = 'all' | 'placed' | 'accepted' | 'ready' | 'delivered';
+type TabType = "new" | "accepted" | "ready" | "completed" | "cancelled";
+
+const TABS: { key: TabType; label: string; statuses: OrderStatus[] }[] = [
+  { key: "new", label: "New", statuses: ["placed"] },
+  { key: "accepted", label: "Accepted", statuses: ["accepted"] },
+  { key: "ready", label: "Ready", statuses: ["ready", "assigned", "pickedUp", "onTheWay"] },
+  { key: "completed", label: "Done", statuses: ["delivered"] },
+  { key: "cancelled", label: "Cancelled", statuses: ["rejected"] },
+];
+
+const STATUS_BADGE: Record<string, string> = {
+  placed: "bg-orange-100 text-orange-700",
+  accepted: "bg-blue-100 text-blue-700",
+  ready: "bg-purple-100 text-purple-700",
+  assigned: "bg-purple-100 text-purple-700",
+  pickedUp: "bg-indigo-100 text-indigo-700",
+  onTheWay: "bg-indigo-100 text-indigo-700",
+  delivered: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+};
 
 export function MerchantOrdersPage() {
   const { user } = useAuth();
-  const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [activeTab, setActiveTab] = useState<TabType>("new");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  
-  // Fetch merchant's shop from database
-  const { data: shop, isLoading: isLoadingShop, error: shopError } = useMerchantShop(user?.id);
-  
-  // Fetch orders for the merchant's shop
-  const { data: orders = [], isLoading: isLoadingOrders, refetch: refetchOrders } = useMerchantOrders(shop?.id);
-  
+
+  const { data: shop, isLoading: shopLoading } = useMerchantShop(user?.id);
+  const { data: orders = [], isLoading: ordersLoading, refetch } = useMerchantOrders(shop?.id);
   const updateOrderStatus = useUpdateOrderStatus();
 
-  // Auto-refresh orders every 15 seconds
   useEffect(() => {
     if (!shop?.id) return;
-    
-    const interval = setInterval(() => {
-      refetchOrders();
-    }, 15000);
-    
+    const interval = setInterval(() => refetch(), 15000);
     return () => clearInterval(interval);
-  }, [shop?.id, refetchOrders]);
+  }, [shop?.id, refetch]);
 
-  const isLoading = isLoadingShop || isLoadingOrders;
+  const currentTab = TABS.find((t) => t.key === activeTab)!;
+  const filteredOrders = orders.filter((o) => currentTab.statuses.includes(o.status));
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
-    : orders.filter(o => o.status === filter);
-
-  const getStatusLabel = (status: OrderStatus) => {
-    switch (status) {
-      case 'placed': return t.statusPlaced;
-      case 'accepted': return t.statusAccepted;
-      case 'ready': return t.statusReady;
-      case 'delivered': return t.statusDelivered;
-      case 'rejected': return t.statusRejected;
-      default: return status;
-    }
-  };
-
-  const statusClasses: Record<OrderStatus, string> = {
-    placed: 'badge-placed',
-    accepted: 'badge-accepted',
-    ready: 'badge-ready',
-    assigned: 'badge-ready',
-    pickedUp: 'badge-ready',
-    onTheWay: 'badge-ready',
-    delivered: 'badge-delivered',
-    rejected: 'badge-rejected',
-  };
-
-  const filterChips: { key: FilterType; label: string }[] = [
-    { key: 'all', label: t.all },
-    { key: 'placed', label: t.new },
-    { key: 'accepted', label: t.statusAccepted },
-    { key: 'ready', label: t.statusReady },
-  ];
+  const getCount = (tab: typeof TABS[0]) =>
+    orders.filter((o) => tab.statuses.includes(o.status)).length;
 
   const handleAccept = async (orderId: string) => {
     try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'accepted' });
-      toast.success(t.orderAccepted);
+      await updateOrderStatus.mutateAsync({ orderId, status: "accepted" });
+      toast.success("Order accepted");
       setSelectedOrder(null);
-      refetchOrders();
-    } catch (error) {
-      toast.error(language === 'en' ? 'Failed to accept order' : 'ఆర్డర్ అంగీకరించడం విఫలమైంది');
-    }
+      refetch();
+    } catch { toast.error("Failed to accept"); }
   };
 
-  const handleReject = async (orderId: string, reason_te: string, reason_en: string) => {
+  const handleReject = async (orderId: string) => {
     try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'rejected' });
-      toast.error(t.orderRejected);
+      await updateOrderStatus.mutateAsync({ orderId, status: "rejected" });
+      toast.error("Order rejected");
       setSelectedOrder(null);
-      refetchOrders();
-    } catch (error) {
-      toast.error(language === 'en' ? 'Failed to reject order' : 'ఆర్డర్ తిరస్కరించడం విఫలమైంది');
-    }
+      refetch();
+    } catch { toast.error("Failed to reject"); }
   };
 
   const handleMarkReady = async (orderId: string) => {
     try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
-      toast.success(t.orderMarkedReady);
+      await updateOrderStatus.mutateAsync({ orderId, status: "ready" });
+      toast.success("Marked as ready");
       setSelectedOrder(null);
-      refetchOrders();
-    } catch (error) {
-      toast.error(language === 'en' ? 'Failed to mark order ready' : 'ఆర్డర్ రెడీగా మార్చడం విఫలమైంది');
-    }
-  };
-
-  const handleRefresh = () => {
-    refetchOrders();
-    toast.success(language === 'en' ? 'Refreshing orders...' : 'ఆర్డర్లు రిఫ్రెష్ అవుతున్నాయి...');
+      refetch();
+    } catch { toast.error("Failed to update"); }
   };
 
   const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return language === 'en' ? 'Just now' : 'ఇప్పుడే';
-    if (minutes < 60) return `${minutes} ${language === 'en' ? 'min ago' : 'ని. క్రితం'}`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} ${language === 'en' ? 'hr ago' : 'గం. క్రితం'}`;
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
     return date.toLocaleDateString();
   };
 
-  // Show "No shop assigned" state if merchant has no shop
-  if (!isLoadingShop && !shop) {
+  if (!shopLoading && !shop) {
     return (
-      <MobileLayout>
-        <header className="px-4 pt-6 pb-4">
-          <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-            {t.incomingOrders}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm animate-fade-in" style={{ animationDelay: '0.05s' }}>
-            {t.merchantMode}
-          </p>
-        </header>
+      <MobileLayout navType="merchant">
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Store className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground text-center text-lg mb-2">
-            {language === 'en' ? 'No shop assigned yet' : 'ఇంకా దుకాణం కేటాయించబడలేదు'}
-          </p>
-          <p className="text-sm text-muted-foreground text-center">
-            {language === 'en' ? 'Contact admin to get your shop assigned.' : 'మీ దుకాణాన్ని కేటాయించడానికి అడ్మిన్‌ను సంప్రదించండి.'}
-          </p>
+          <Store className="w-12 h-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground text-center">No shop assigned yet</p>
         </div>
       </MobileLayout>
     );
   }
 
   return (
-    <MobileLayout>
+    <MobileLayout navType="merchant">
       {/* Header */}
-      <header className="px-4 pt-6 pb-4 flex items-start justify-between">
+      <header className="px-4 pt-6 pb-3 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-            {t.incomingOrders}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm animate-fade-in" style={{ animationDelay: '0.05s' }}>
-            {shop ? (language === 'en' ? shop.name_en : shop.name_te) : t.merchantMode}
-          </p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Orders</p>
+          <h1 className="text-2xl font-bold text-foreground">{shop?.name_en ?? "My Shop"}</h1>
         </div>
-        <button
-          onClick={handleRefresh}
-          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <RefreshCw className="w-5 h-5 text-muted-foreground" />
+        <button onClick={() => refetch()}
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
+          <RefreshCw className="w-4 h-4 text-muted-foreground" />
         </button>
       </header>
 
-      {/* Filter Chips */}
-      <div className="px-4 pb-4">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {filterChips.map(chip => (
-            <button
-              key={chip.key}
-              onClick={() => setFilter(chip.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                filter === chip.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
+      {/* Tabs */}
+      <div className="px-4 pb-3">
+        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
+          {TABS.map((tab) => {
+            const count = getCount(tab);
+            const isActive = activeTab === tab.key;
+            return (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                  isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                {tab.label}
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                    isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Orders List */}
-      {isLoading ? (
+      {ordersLoading || shopLoading ? (
         <div className="px-4 space-y-3">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Package className="w-10 h-10 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center px-6 py-20">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Package className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground text-center text-lg">
-            {t.noOrders}
+          <p className="text-muted-foreground text-center">
+            No {currentTab.label.toLowerCase()} orders
           </p>
-          <button
-            onClick={handleRefresh}
-            className="mt-4 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium"
-          >
-            {language === 'en' ? 'Refresh' : 'రిఫ్రెష్'}
-          </button>
         </div>
       ) : (
-        <div className="px-4 pb-4 space-y-3 stagger-children">
-          {filteredOrders.map(order => {
-            const shopName = language === 'en' ? order.shopName_en : order.shopName_te;
-            
-            return (
-              <div
-                key={order.id}
-                onClick={() => setSelectedOrder(order)}
-                className="bg-card rounded-2xl border border-border p-4 shadow-sm cursor-pointer active:scale-[0.99] transition-transform"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{getShopTypeIcon(order.shopType)}</span>
-                    <div>
-                      <p className="font-semibold text-foreground">#{order.id}</p>
-                      <p className="text-sm text-muted-foreground">{shopName}</p>
-                    </div>
+        <div className="px-4 pb-28 space-y-3">
+          {filteredOrders.map((order) => (
+            <div key={order.id} onClick={() => setSelectedOrder(order)}
+              className="bg-card rounded-2xl border border-border p-4 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg">
+                    {getShopTypeIcon(order.shopType)}
                   </div>
-                  <span className={statusClasses[order.status]}>
-                    {getStatusLabel(order.status)}
-                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground">#{order.id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {formatTime(order.createdAt)}
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {formatTime(order.createdAt)}
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[order.status] ?? "bg-muted text-muted-foreground"}`}>
+                    {order.status}
                   </span>
-                  <span className="font-semibold text-foreground">₹{order.total}</span>
+                  <span className="font-bold text-foreground">₹{order.total}</span>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Items preview */}
+              {order.items && order.items.length > 0 && (
+                <div className="bg-muted/40 rounded-xl p-2.5 mb-2">
+                  {order.items.slice(0, 2).map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between text-xs text-muted-foreground">
+                      <span>{item.name_en ?? item.name_te} x{item.quantity}</span>
+                      <span>₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                  {order.items.length > 2 && (
+                    <p className="text-xs text-primary mt-1">+{order.items.length - 2} more items</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}
+                </span>
+                <span className="text-xs text-primary flex items-center gap-1 font-medium">
+                  View Details <ChevronRight className="w-3 h-3" />
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Order Detail Sheet */}
       <MerchantOrderDetailSheet
         order={selectedOrder}
         isOpen={!!selectedOrder}

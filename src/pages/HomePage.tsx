@@ -7,6 +7,132 @@ import { useCart } from '@/hooks/useCart';
 import welcomeCyclist from '@/assets/welcome-cyclist.png';
 import { formatHonorific } from '@/lib/formatHonorific';
 
+// ── Animated Category Icons ──
+
+function FoodIcon() {
+  return (
+    <span className="relative w-10 h-10 flex items-center justify-center text-2xl">
+      <style>{`
+        @keyframes steam1 {
+          0%, 100% { opacity: 0; transform: translateY(0) scaleX(1); }
+          50% { opacity: 1; transform: translateY(-6px) scaleX(1.2); }
+        }
+        @keyframes steam2 {
+          0%, 100% { opacity: 0; transform: translateY(0) scaleX(1); }
+          50% { opacity: 1; transform: translateY(-8px) scaleX(0.8); }
+        }
+        @keyframes lidBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
+      `}</style>
+      {/* Steam lines */}
+      <span style={{
+        position: 'absolute', top: -6, left: 8, width: 3, height: 6,
+        borderRadius: 4, background: 'rgba(234,140,46,0.5)',
+        animation: 'steam1 1.4s ease-in-out infinite',
+      }} />
+      <span style={{
+        position: 'absolute', top: -8, left: 14, width: 3, height: 8,
+        borderRadius: 4, background: 'rgba(234,140,46,0.4)',
+        animation: 'steam2 1.4s ease-in-out infinite 0.3s',
+      }} />
+      <span style={{
+        position: 'absolute', top: -6, left: 20, width: 3, height: 6,
+        borderRadius: 4, background: 'rgba(234,140,46,0.5)',
+        animation: 'steam1 1.4s ease-in-out infinite 0.6s',
+      }} />
+      <span style={{ animation: 'lidBounce 1.4s ease-in-out infinite', display: 'inline-block' }}>
+        🍲
+      </span>
+    </span>
+  );
+}
+
+function GroceriesIcon() {
+  return (
+    <span className="relative w-10 h-10 flex items-center justify-center text-2xl">
+      <style>{`
+        @keyframes basketSwing {
+          0%, 100% { transform: rotate(-6deg); }
+          50% { transform: rotate(6deg); }
+        }
+        @keyframes itemBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+      `}</style>
+      <span style={{ animation: 'basketSwing 2s ease-in-out infinite', display: 'inline-block', transformOrigin: 'top center' }}>
+        🧺
+      </span>
+      {/* Small bouncing item above basket */}
+      <span style={{
+        position: 'absolute', top: -4, right: 0, fontSize: 10,
+        animation: 'itemBounce 1s ease-in-out infinite 0.2s',
+      }}>
+        🥕
+      </span>
+    </span>
+  );
+}
+
+function PharmacyIcon() {
+  return (
+    <span className="relative w-10 h-10 flex items-center justify-center text-2xl">
+      <style>{`
+        @keyframes pillFloat {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          33% { transform: translateY(-4px) rotate(10deg); }
+          66% { transform: translateY(-2px) rotate(-5deg); }
+        }
+        @keyframes plusPulse {
+          0%, 100% { transform: scale(1); opacity: 0.7; }
+          50% { transform: scale(1.3); opacity: 1; }
+        }
+      `}</style>
+      <span style={{ animation: 'pillFloat 2s ease-in-out infinite', display: 'inline-block' }}>
+        💊
+      </span>
+      {/* Pulsing plus sign */}
+      <span style={{
+        position: 'absolute', top: -2, right: -2, fontSize: 10,
+        color: 'rgba(20,184,166,0.9)', fontWeight: 'bold',
+        animation: 'plusPulse 1.2s ease-in-out infinite',
+      }}>
+        ✚
+      </span>
+    </span>
+  );
+}
+
+function VegFruitsIcon() {
+  return (
+    <span className="relative w-10 h-10 flex items-center justify-center text-2xl">
+      <style>{`
+        @keyframes leafSway {
+          0%, 100% { transform: rotate(-8deg) translateY(0); }
+          50% { transform: rotate(8deg) translateY(-2px); }
+        }
+        @keyframes fruitDrop {
+          0%, 80%, 100% { transform: translateY(0); }
+          90% { transform: translateY(3px); }
+        }
+      `}</style>
+      <span style={{ animation: 'fruitDrop 2s ease-in-out infinite', display: 'inline-block' }}>
+        🍅
+      </span>
+      <span style={{
+        position: 'absolute', top: -4, left: 0, fontSize: 14,
+        animation: 'leafSway 1.8s ease-in-out infinite',
+        display: 'inline-block',
+        transformOrigin: 'bottom center',
+      }}>
+        🥬
+      </span>
+    </span>
+  );
+}
+
 export function HomePage() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -26,6 +152,41 @@ export function HomePage() {
   const tabClass = (active: boolean) =>
     `flex flex-col items-center gap-1 ${active ? 'text-primary' : 'opacity-30'}`;
   const labelClass = 'text-[9px] uppercase tracking-widest font-bold';
+
+  const categories = [
+    {
+      icon: <FoodIcon />,
+      label: t.food,
+      category: 'food',
+      bg: 'rgba(234,140,46,0.12)',
+      border: 'rgba(234,140,46,0.35)',
+      ring: 'rgba(234,140,46,0.25)',
+    },
+    {
+      icon: <GroceriesIcon />,
+      label: t.groceries,
+      category: 'groceries',
+      bg: 'rgba(139,90,43,0.12)',
+      border: 'rgba(139,90,43,0.35)',
+      ring: 'rgba(139,90,43,0.25)',
+    },
+    {
+      icon: <PharmacyIcon />,
+      label: t.pharmacy,
+      category: 'pharmacy',
+      bg: 'rgba(20,184,166,0.12)',
+      border: 'rgba(20,184,166,0.35)',
+      ring: 'rgba(20,184,166,0.25)',
+    },
+    {
+      icon: <VegFruitsIcon />,
+      label: t.fruitsAndVeg,
+      category: 'vegfruits',
+      bg: 'rgba(45,185,45,0.12)',
+      border: 'rgba(45,185,45,0.35)',
+      ring: 'rgba(45,185,45,0.25)',
+    },
+  ];
 
   return (
     <div className="screen-shell relative pb-28 font-display selection:bg-primary/20">
@@ -67,21 +228,37 @@ export function HomePage() {
         <div className="flex overflow-x-auto px-6 gap-3 hide-scrollbar">
           <div className="flex-none w-64">
             <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-foreground/5">
-              <img className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&h=300&fit=crop" alt={language === 'te' ? 'ఉదయపు ఆకుకూరలు' : 'Morning Greens Basket'} />
+              <img
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&h=300&fit=crop"
+                alt={language === 'te' ? 'ఉదయపు ఆకుకూరలు' : 'Morning Greens Basket'}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 text-white">
-                <p className="text-[9px] uppercase tracking-tighter opacity-80">{language === 'te' ? 'స్థానిక పంట' : 'Local Grown'}</p>
-                <p className="text-base font-medium">{language === 'te' ? 'ఉదయపు ఆకుకూరల బుట్ట' : 'Morning Greens Basket'}</p>
+                <p className="text-[9px] uppercase tracking-tighter opacity-80">
+                  {language === 'te' ? 'స్థానిక పంట' : 'Local Grown'}
+                </p>
+                <p className="text-base font-medium">
+                  {language === 'te' ? 'ఉదయపు ఆకుకూరల బుట్ట' : 'Morning Greens Basket'}
+                </p>
               </div>
             </div>
           </div>
           <div className="flex-none w-64">
             <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-foreground/5">
-              <img className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&h=300&fit=crop" alt={language === 'te' ? 'బంగినపల్లి మామిడి' : 'Banganapalli Gold'} />
+              <img
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&h=300&fit=crop"
+                alt={language === 'te' ? 'బంగినపల్లి మామిడి' : 'Banganapalli Gold'}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 text-white">
-                <p className="text-[9px] uppercase tracking-tighter opacity-80">{language === 'te' ? 'స్థానిక పంట' : 'Local Grown'}</p>
-                <p className="text-base font-medium">{language === 'te' ? 'బంగినపల్లి గోల్డ్' : 'Banganapalli Gold'}</p>
+                <p className="text-[9px] uppercase tracking-tighter opacity-80">
+                  {language === 'te' ? 'స్థానిక పంట' : 'Local Grown'}
+                </p>
+                <p className="text-base font-medium">
+                  {language === 'te' ? 'బంగినపల్లి గోల్డ్' : 'Banganapalli Gold'}
+                </p>
               </div>
             </div>
           </div>
@@ -103,31 +280,37 @@ export function HomePage() {
       <section className="px-6 mt-6">
         <p className="label-micro mb-3">{t.dailyEssentials}</p>
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: '🍲', label: t.food, category: 'food', bg: 'rgba(234,140,46,0.12)', border: 'rgba(234,140,46,0.35)', ring: 'rgba(234,140,46,0.25)' },
-            { icon: '🧺', label: t.groceries, category: 'groceries', bg: 'rgba(139,90,43,0.12)', border: 'rgba(139,90,43,0.35)', ring: 'rgba(139,90,43,0.25)' },
-            { icon: '🏥', label: t.pharmacy, category: 'pharmacy', bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.35)', ring: 'rgba(20,184,166,0.25)' },
-            { icon: '🥬🍅', label: t.fruitsAndVeg, category: 'vegetables', bg: 'rgba(45,185,45,0.12)', border: 'rgba(45,185,45,0.35)', ring: 'rgba(45,185,45,0.25)' },
-          ].map(({ icon, label, category, bg, border, ring }) => (
+          {categories.map(({ icon, label, category, bg, border, ring }) => (
             <button
-              key={label}
-              onClick={() => navigate(`/shops?category=${category}`)}
+              key={category}
+              onClick={() => navigate(`/category/${category}`)}
               className="flex items-center gap-3 py-3 px-4 rounded-xl shadow-sm active:scale-[0.97] transition-transform touch-manipulation cursor-pointer bg-mana-cream/90"
               style={{ border: `1.5px solid ${border}` }}
             >
               <span className="relative flex-shrink-0">
+                {/* Bloom ring behind icon */}
                 <span
-                  className="absolute inset-0 rounded-full animate-[bloom-outer_3s_ease-in-out_infinite]"
-                  style={{ background: ring, width: 48, height: 48, top: -4, left: -4 }}
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: ring,
+                    width: 48,
+                    height: 48,
+                    top: -4,
+                    left: -4,
+                    animation: 'bloom-outer 3s ease-in-out infinite',
+                  }}
                 />
+                {/* Icon background circle */}
                 <span
-                  className="relative w-10 h-10 rounded-full flex items-center justify-center text-2xl"
+                  className="relative w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ background: bg }}
                 >
                   {icon}
                 </span>
               </span>
-              <span className="text-[13px] font-sans font-bold text-foreground/90 leading-tight">{label}</span>
+              <span className="text-[13px] font-sans font-bold text-foreground/90 leading-tight">
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -138,16 +321,22 @@ export function HomePage() {
         <div className="card-notice">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-60">{t.communityLabel}</span>
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-60">
+              {t.communityLabel}
+            </span>
           </div>
-          <p className="text-sm italic leading-relaxed text-foreground/80 mb-3">{t.communityMessage}</p>
+          <p className="text-sm italic leading-relaxed text-foreground/80 mb-3">
+            {t.communityMessage}
+          </p>
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1.5">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="w-5 h-5 rounded-full bg-foreground/10 border-2 border-white" />
               ))}
             </div>
-            <span className="text-[7px] font-bold bg-mana-charcoal text-white w-4 h-4 rounded-full flex items-center justify-center">+12</span>
+            <span className="text-[7px] font-bold bg-mana-charcoal text-white w-4 h-4 rounded-full flex items-center justify-center">
+              +12
+            </span>
             <span className="text-[10px] opacity-50 ml-1">{t.neighboursJoined}</span>
           </div>
         </div>
@@ -156,7 +345,7 @@ export function HomePage() {
       {/* 6. BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-mana-cream/95 backdrop-blur-md border-t border-foreground/5 px-8 pt-3 pb-6 z-50">
         <div className="flex justify-between items-end">
-          <button onClick={() => navigate('/homepage')} className={tabClass(true)}>
+          <button onClick={() => navigate('/home')} className={tabClass(true)}>
             <Home className="w-6 h-6" strokeWidth={1.5} />
             <span className={labelClass}>{t.navHome}</span>
           </button>

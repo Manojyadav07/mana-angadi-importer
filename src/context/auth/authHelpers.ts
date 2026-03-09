@@ -29,26 +29,53 @@ export async function fetchProfile(userId: string) {
   return sb.from("profiles").select("*").eq("user_id", userId).maybeSingle();
 }
 
-export async function waitForProfile(userId: string, maxAttempts = 5, delayMs = 300): Promise<{ data: ProfileRow | null; error: Error | null }> {
+export async function waitForProfile(
+  userId: string,
+  maxAttempts = 5,
+  delayMs = 300
+): Promise<{ data: ProfileRow | null; error: Error | null }> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const { data, error } = await fetchProfile(userId);
     if (data) return { data: data as ProfileRow, error: null };
     if (error && !error.message?.includes("No rows")) return { data: null, error };
-    if (attempt < maxAttempts) await new Promise(resolve => setTimeout(resolve, delayMs));
+    if (attempt < maxAttempts)
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
   return { data: null, error: new Error("Profile not found after signup") };
 }
 
-/** Read-only: fetch the user's role from user_roles */
-export async function fetchRole(userId: string): Promise<{ data: { role: string } | null; error: any }> {
-  return sb.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
+/**
+ * Read role from profiles.roles[] array — current schema.
+ * Priority: admin > merchant > delivery > customer
+ */
+export async function fetchRole(
+  userId: string
+): Promise<{ data: { role: string } | null; error: any }> {
+  const { data, error } = await sb
+    .from("profiles")
+    .select("roles")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) return { data: null, error };
+  if (!data?.roles || data.roles.length === 0)
+    return { data: { role: "customer" }, error: null };
+
+  const roles: string[] = data.roles;
+
+  if (roles.includes("admin")) return { data: { role: "admin" }, error: null };
+  if (roles.includes("merchant")) return { data: { role: "merchant" }, error: null };
+  if (roles.includes("delivery")) return { data: { role: "delivery" }, error: null };
+  return { data: { role: "customer" }, error: null };
 }
 
 /**
- * Read-only role resolution. Returns the role from DB, or 'customer' as default.
- * Never writes to user_roles — the trigger on auth.users handles that.
+ * Read-only role resolution from profiles.roles[] array.
+ * Falls back to 'customer' if no roles found.
  */
-export async function resolveRole(userId: string): Promise<{ role: UserRole; error: any }> {
+export async function resolveRole(
+  userId: string
+): Promise<{ role: UserRole; error: any }> {
   const { data, error } = await fetchRole(userId);
   if (error && !error.message?.includes("No rows")) {
     return { role: "customer", error };
@@ -56,39 +83,66 @@ export async function resolveRole(userId: string): Promise<{ role: UserRole; err
   if (data?.role) {
     return { role: data.role as UserRole, error: null };
   }
-  console.warn("[auth] No role row found for user", userId, "— defaulting to 'customer'. The DB trigger should have created one.");
+  console.warn(
+    "[auth] No role found for user",
+    userId,
+    "— defaulting to 'customer'"
+  );
   return { role: "customer", error: null };
 }
 
-export async function fetchOnboardingApplication(userId: string): Promise<{ data: OnboardingApplicationRow | null; error: any }> {
-  return sb.from("onboarding_applications").select("*").eq("user_id", userId).maybeSingle();
-}
-
-export async function createOnboardingApplication(userId: string, role: string) {
+export async function fetchOnboardingApplication(
+  userId: string
+): Promise<{ data: OnboardingApplicationRow | null; error: any }> {
   return sb
     .from("onboarding_applications")
-    .upsert({ user_id: userId, role, status: "pending" }, { onConflict: "user_id" })
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+}
+
+export async function createOnboardingApplication(
+  userId: string,
+  role: string
+) {
+  return sb
+    .from("onboarding_applications")
+    .upsert(
+      { user_id: userId, role, status: "pending" },
+      { onConflict: "user_id" }
+    )
     .select()
     .single();
 }
 
-export async function updateMerchantStatus(userId: string, status: MerchantStatus) {
-  const { error } = await sb.from("profiles").update({ merchant_status: status }).eq("user_id", userId);
+export async function updateMerchantStatus(
+  userId: string,
+  status: MerchantStatus
+) {
+  const { error } = await sb
+    .from("profiles")
+    .update({ merchant_status: status })
+    .eq("user_id", userId);
   return { error };
 }
 
-export function getRouteForRole(role: UserRole | null, onboardingStatus?: OnboardingStatus) {
+export function getRouteForRole(
+  role: UserRole | null,
+  onboardingStatus?: OnboardingStatus
+) {
   switch (role) {
+    case "admin":
+      return "/admin/dashboard";
     case "merchant":
       if (!onboardingStatus) return "/apply";
-      if (onboardingStatus === "pending" || onboardingStatus === "rejected") return "/merchant/pending";
+      if (onboardingStatus === "pending" || onboardingStatus === "rejected")
+        return "/merchant/pending";
       return "/merchant/orders";
     case "delivery":
       if (!onboardingStatus) return "/apply";
-      if (onboardingStatus === "pending" || onboardingStatus === "rejected") return "/delivery/pending";
+      if (onboardingStatus === "pending" || onboardingStatus === "rejected")
+        return "/delivery/pending";
       return "/delivery/orders";
-    case "admin":
-      return "/admin/dashboard";
     default:
       return "/home";
   }

@@ -1,12 +1,13 @@
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { AdminBottomNav } from '@/components/admin/AdminBottomNav';
 import { useAdminOnboarding, OnboardingWithProfile } from '@/hooks/useAdminOnboarding';
 import { UserPlus, Check, X, Clock, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
 export function AdminOnboardingPage() {
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const {
     applications,
@@ -174,7 +175,7 @@ export function AdminOnboardingPage() {
               </div>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 pb-32">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{labels.role}</p>
@@ -242,8 +243,12 @@ export function AdminOnboardingPage() {
           </div>
         </div>
       )}
-
-      <AdminBottomNav />
     </div>
   );
 }
+
+
+
+
+
+

@@ -19,7 +19,7 @@ export interface ProfileRow {
   user_id: string;
   display_name: string | null;
   phone: string | null;
-  role: string | null;
+  roles: string[];
 }
 
 export interface OnboardingWithProfile extends OnboardingRow {
@@ -33,7 +33,6 @@ export function useAdminOnboarding() {
   const query = useQuery({
     queryKey: ["admin-onboarding-applications"],
     queryFn: async () => {
-      // Fetch all applications
       const { data: apps, error } = await sb
         .from("onboarding_applications")
         .select("*")
@@ -41,13 +40,12 @@ export function useAdminOnboarding() {
 
       if (error) throw error;
 
-      // Fetch profiles for all applicants
       const userIds = (apps as OnboardingRow[]).map((a) => a.user_id);
       let profiles: ProfileRow[] = [];
       if (userIds.length > 0) {
         const { data: profileData, error: pErr } = await sb
           .from("profiles")
-          .select("id, user_id, display_name, phone, role")
+          .select("id, user_id, display_name, phone, roles")
           .in("user_id", userIds);
         if (!pErr && profileData) profiles = profileData as ProfileRow[];
       }
@@ -64,30 +62,87 @@ export function useAdminOnboarding() {
   const approveMerchant = async (userId: string) => {
     setActionLoading(userId);
     try {
+      // 1. Get current roles
+      const { data: profile, error: fetchError } = await sb
+        .from("profiles")
+        .select("roles")
+        .eq("user_id", userId)
+        .maybeSingle();
+  
+      if (fetchError) throw fetchError;
+  
+      // 2. Get application form_data to auto-create shop
+      const { data: application, error: appFetchError } = await sb
+        .from("onboarding_applications")
+        .select("form_data")
+        .eq("user_id", userId)
+        .maybeSingle();
+  
+      if (appFetchError) throw appFetchError;
+  
+      const formData = application?.form_data as any;
+  
+      // 3. Add merchant to roles[]
+      const currentRoles: string[] = profile?.roles || ["customer"];
+      const newRoles = currentRoles.includes("merchant")
+        ? currentRoles
+        : [...currentRoles, "merchant"];
+  
       const { error: roleError } = await sb
         .from("profiles")
-        .update({ role: "merchant" })
+        .update({ roles: newRoles })
         .eq("user_id", userId);
-
+  
       if (roleError) throw roleError;
-
+  
+      // 4. Auto-create shop from form_data if not already exists
+      const { data: existingShop } = await sb
+        .from("shops")
+        .select("id")
+        .eq("owner_id", userId)
+        .maybeSingle();
+  
+      if (!existingShop && formData) {
+        // Map business_type to shop type
+        const typeMap: Record<string, string> = {
+          grocery: "kirana",
+          restaurant: "restaurant",
+          medical: "medical",
+          bakery: "kirana",
+          fruits_vegetables: "kirana",
+          dairy: "kirana",
+          general: "kirana",
+          other: "kirana",
+        };
+        const shopType = typeMap[formData.business_type] || "kirana";
+        const shopName = formData.shop_name || "My Shop";
+  
+        const { error: shopError } = await sb.from("shops").insert({
+          owner_id: userId,
+          name: shopName,
+          name_te: shopName,
+          name_en: shopName,
+          type: shopType,
+          is_open: true,
+          is_active: true,
+          town_id: formData.town_id || null,
+          upi_vpa: formData.upi_id || null,
+        });
+  
+        if (shopError) console.warn("Shop auto-create failed:", shopError);
+      }
+  
+      // 5. Mark application as approved
       const { error: appError } = await sb
         .from("onboarding_applications")
         .update({ status: "approved" })
         .eq("user_id", userId);
-
+  
       if (appError) throw appError;
-
-      // Also update user_roles table
-      const { error: urError } = await sb
-        .from("user_roles")
-        .update({ role: "merchant" })
-        .eq("user_id", userId);
-
-      if (urError) console.warn("user_roles update failed (may need service_role):", urError);
-
-      toast.success("Application approved");
+  
+      toast.success("Application approved ✅ Shop created automatically");
       queryClient.invalidateQueries({ queryKey: ["admin-onboarding-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
     } catch (err: any) {
       console.error("Approve error:", err);
       toast.error(err.message || "Failed to approve");
@@ -108,6 +163,7 @@ export function useAdminOnboarding() {
 
       toast.success("Application rejected");
       queryClient.invalidateQueries({ queryKey: ["admin-onboarding-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
     } catch (err: any) {
       console.error("Reject error:", err);
       toast.error(err.message || "Failed to reject");

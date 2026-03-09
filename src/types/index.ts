@@ -16,13 +16,18 @@ export interface User {
   insuranceAcknowledged?: boolean;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  minOrderAmount?: number;
+  prepTimeMinutes?: number;
+  acceptsCod?: boolean;
+  acceptsUpi?: boolean;
+  tempClosureReason?: string;
 }
 
 export type ShopType = 'kirana' | 'restaurant' | 'medical';
 
 export interface Shop {
   id: string;
-  ownerId?: string; // merchant user id
+  ownerId?: string;
   name_te: string;
   name_en: string;
   type: ShopType;
@@ -32,13 +37,22 @@ export interface Shop {
   isActive: boolean;
   address_te?: string;
   address_en?: string;
-  // Pickup location coordinates (Metpally)
   pickupLat?: number;
   pickupLng?: number;
-  // UPI details for payments
   upiVpa?: string;
   upiPayeeName?: string;
   villageId?: string;
+  // profile fields
+  phone?: string;
+  address?: string;
+  logo_url?: string;
+  working_hours?: any;
+  // order settings
+  minOrderAmount?: number;
+  prepTimeMinutes?: number;
+  acceptsCod?: boolean;
+  acceptsUpi?: boolean;
+  tempClosureReason?: string;
 }
 
 export interface Product {

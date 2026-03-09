@@ -2,136 +2,137 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 
-// Convert DB product to app Product type
-function dbToProduct(dbProduct: any): Product {
+const sb = supabase as any;
+
+// ─── DB → App type mapping ────────────────────────────────────────────────────
+
+function dbToProduct(db: any): Product {
   return {
-    id: dbProduct.id,
-    shopId: dbProduct.shop_id,
-    name_te: dbProduct.name_te,
-    name_en: dbProduct.name_en,
-    price: Number(dbProduct.price),
-    inStock: dbProduct.in_stock ?? true,
-    isActive: dbProduct.is_active ?? true,
-    unit_te: dbProduct.unit,
-    unit_en: dbProduct.unit,
-    image: dbProduct.image_url,
-    category: dbProduct.description_en || undefined
+    id:       db.id,
+    shopId:   db.shop_id,
+    name_te:  db.name_te  ?? db.name_en ?? '',
+    name_en:  db.name_en  ?? '',
+    price:    Number(db.price),
+    inStock:  db.is_available ?? db.is_active ?? true,
+    isActive: db.is_active    ?? true,
+    unit_te:  db.unit     ?? undefined,
+    unit_en:  db.unit     ?? undefined,
+    image:    db.image_url ?? undefined,
+    category: db.category  ?? undefined,
   };
 }
+
+// ─── App → DB type mapping ────────────────────────────────────────────────────
+
+function productToDb(product: Partial<Product> & { shopId?: string }): any {
+  const db: any = {};
+  if (product.shopId    !== undefined) db.shop_id      = product.shopId;
+  if (product.name_te   !== undefined) db.name_te      = product.name_te;
+  if (product.name_en   !== undefined) db.name_en      = product.name_en;
+  if (product.price     !== undefined) db.price        = product.price;
+  if (product.inStock   !== undefined) db.is_available = product.inStock;
+  if (product.isActive  !== undefined) db.is_active    = product.isActive;
+  if (product.unit_en   !== undefined) db.unit         = product.unit_en;
+  if (product.image     !== undefined) db.image_url    = product.image;
+  if (product.category  !== undefined) db.category     = product.category || null;
+  return db;
+}
+
+// ─── hooks ────────────────────────────────────────────────────────────────────
 
 export function useProducts(shopId: string | undefined) {
   return useQuery({
     queryKey: ['products', shopId],
+    enabled: !!shopId,
     queryFn: async () => {
       if (!shopId) return [];
-
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await sb
+        .from('items')
         .select('*')
         .eq('shop_id', shopId)
         .eq('is_active', true)
         .order('name_en');
-
       if (error) throw error;
-      return data.map(dbToProduct);
+      return (data ?? []).map(dbToProduct);
     },
-    enabled: !!shopId
   });
 }
 
 export function useMerchantProducts(shopId: string | undefined) {
   return useQuery({
     queryKey: ['merchant-products', shopId],
+    enabled: !!shopId,
     queryFn: async () => {
       if (!shopId) return [];
-
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await sb
+        .from('items')
         .select('*')
         .eq('shop_id', shopId)
         .order('name_en');
-
       if (error) throw error;
-      return data.map(dbToProduct);
+      return (data ?? []).map(dbToProduct);
     },
-    enabled: !!shopId
   });
 }
 
 export function useCreateProduct() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (product: Omit<Product, 'id'>) => {
-      const { data, error } = await supabase
-        .from('products')
-        .insert({
-          shop_id: product.shopId,
-          name_te: product.name_te,
-          name_en: product.name_en,
-          price: product.price,
-          in_stock: product.inStock,
-          is_active: product.isActive,
-          unit: product.unit_en,
-          image_url: product.image
-        })
+    mutationFn: async (product: any) => {
+      const db = productToDb(product);
+      // ensure shop_id is set whether passed as shopId or shop_id
+      if (product.shopId) db.shop_id = product.shopId;
+
+      const { data, error } = await sb
+        .from('items')
+        .insert(db)
         .select()
         .single();
-
       if (error) throw error;
       return dbToProduct(data);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['products', variables.shopId] });
-      queryClient.invalidateQueries({ queryKey: ['merchant-products', variables.shopId] });
-    }
+    onSuccess: (_, variables: any) => {
+      const shopId = variables.shopId ?? variables.shop_id;
+      qc.invalidateQueries({ queryKey: ['products', shopId] });
+      qc.invalidateQueries({ queryKey: ['merchant-products', shopId] });
+      qc.invalidateQueries({ queryKey: ['inventory', shopId] });
+    },
   });
 }
 
 export function useUpdateProduct() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Product> }) => {
-      const dbUpdates: any = {};
-
-      if (updates.name_te !== undefined) dbUpdates.name_te = updates.name_te;
-      if (updates.name_en !== undefined) dbUpdates.name_en = updates.name_en;
-      if (updates.price !== undefined) dbUpdates.price = updates.price;
-      if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
-      if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
-      if (updates.unit_en !== undefined) dbUpdates.unit = updates.unit_en;
-      if (updates.image !== undefined) dbUpdates.image_url = updates.image;
-
-      const { error } = await supabase
-        .from('products')
-        .update(dbUpdates)
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const db = productToDb(updates);
+      const { error } = await sb
+        .from('items')
+        .update(db)
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['merchant-products'] });
-    }
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['merchant-products'] });
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 }
 
 export function useDeleteProduct() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('products')
+      const { error } = await sb
+        .from('items')
         .delete()
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['merchant-products'] });
-    }
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['merchant-products'] });
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 }
