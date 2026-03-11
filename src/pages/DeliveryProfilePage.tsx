@@ -1,189 +1,194 @@
-import { useNavigate } from 'react-router-dom';
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useApp } from '@/context/AppContext';
-import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { useUserMode } from '@/context/UserModeContext';
-import { SwitchModeMenu } from '@/components/SwitchModeMenu';
-import { User, MapPin, Phone, LogOut, Languages, Power, AlertCircle, HelpCircle, MessageCircle } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import {
+  User, Phone, Bike, IndianRupee,
+  Save, Loader2, LogOut, ChevronLeft,
+} from "lucide-react";
+import { toast } from "sonner";
 
-// Support contact configuration
-const SUPPORT_CONFIG = {
-  phone: '+919876543210',
-  whatsapp: '+919876543210',
-};
+const sb = supabase as any;
 
 export function DeliveryProfilePage() {
-  const navigate = useNavigate();
-  const { user, logout, updateUserAvailability } = useApp();
-  const { signOut } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
-  const { resetMode } = useUserMode();
+  const navigate   = useNavigate();
+  const { user }   = useAuth();
+  const [saving, setSaving] = useState(false);
 
-  const handleLogout = async () => {
-    resetMode();
-    await signOut();
-    logout();
-    navigate('/');
+  const { data: application } = useQuery({
+    queryKey: ["delivery-profile-app", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await sb
+        .from("onboarding_applications")
+        .select("data, status, created_at")
+        .eq("user_id", user!.id)
+        .eq("type", "delivery")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      return data;
+    },
+  });
+
+  const appData = (application?.data as any) ?? {};
+
+  const [form, setForm] = useState({
+    name:       "",
+    phone:      "",
+    vehicle_no: "",
+    upi_vpa:    "",
+  });
+
+  useEffect(() => {
+    if (appData.name) {
+      setForm({
+        name:       appData.name       ?? "",
+        phone:      appData.phone      ?? "",
+        vehicle_no: appData.vehicle_no ?? "",
+        upi_vpa:    appData.upi_vpa    ?? "",
+      });
+    }
+  }, [application]);
+
+  const set = (patch: Partial<typeof form>) =>
+    setForm((p) => ({ ...p, ...patch }));
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await sb
+        .from("profiles")
+        .update({
+          display_name: form.name.trim(),
+          phone:        form.phone.trim(),
+        })
+        .eq("id", user.id);
+
+      toast.success("Profile updated");
+    } catch (err: any) {
+      toast.error(err.message ?? "Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleAvailabilityChange = (checked: boolean) => {
-    updateUserAvailability(checked);
+  const handleLogout = async () => {
+    await sb.auth.signOut();
+    navigate("/login");
   };
 
   return (
-    <MobileLayout>
-      <header className="screen-header flex items-center justify-between px-4">
-        <h1 className="text-xl font-bold text-foreground">{t.navProfile}</h1>
-        <SwitchModeMenu />
+    <MobileLayout navType="delivery">
+      <header className="px-4 pt-6 pb-3 flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Delivery</p>
+          <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
+        </div>
       </header>
 
-      <div className="px-4 py-4 space-y-4">
-        {/* User Info Card */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-8 h-8 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
-                {user?.name || t.deliveryPartner}
-              </h2>
-              <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                <Phone className="w-3 h-3" />
-                <span>+91 {user?.phone}</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                <MapPin className="w-3 h-3" />
-                <span>{user?.village || 'Metlachittapur'}</span>
-              </div>
-            </div>
+      <div className="px-4 pb-36 space-y-5">
+
+        {/* ── Avatar block ── */}
+        <div className="flex flex-col items-center py-4">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+            <User className="w-9 h-9 text-primary" />
           </div>
+          <p className="text-base font-black text-foreground">{form.name || "Delivery Partner"}</p>
+          <p className="text-xs text-muted-foreground">{user?.email}</p>
+          <span className={`mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+            application?.status === "approved"
+              ? "bg-green-100 text-green-700"
+              : application?.status === "rejected"
+              ? "bg-red-100 text-red-700"
+              : "bg-amber-100 text-amber-700"
+          }`}>
+            {application?.status === "approved" ? "Active Partner"
+              : application?.status === "rejected" ? "Application Rejected"
+              : "Pending Approval"}
+          </span>
         </div>
 
-        {/* Availability Toggle */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                user?.isAvailable ? 'bg-green-500/10' : 'bg-muted'
-              }`}>
-                <Power className={`w-5 h-5 ${
-                  user?.isAvailable ? 'text-green-600' : 'text-muted-foreground'
-                }`} />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">
-                  {user?.isAvailable ? t.available : t.notAvailable}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {user?.isAvailable 
-                    ? language === 'te' ? 'మీకు డెలివరీలు కనిపిస్తాయి' : 'You will see deliveries'
-                    : language === 'te' ? 'డెలివరీలు కనిపించవు' : 'No deliveries will show'
-                  }
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={user?.isAvailable || false}
-              onCheckedChange={handleAvailabilityChange}
+        {/* ── Editable fields ── */}
+        <div>
+          <label className="block text-xs font-semibold text-foreground mb-1.5">Full Name</label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={form.name}
+              onChange={(e) => set({ name: e.target.value })}
+              className="input-village pl-9"
             />
           </div>
         </div>
 
-        {/* Language Toggle */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Languages className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">{t.language}</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setLanguage('te')}
-              className={`py-3 rounded-xl font-medium transition-all ${
-                language === 'te'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              తెలుగు
-            </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`py-3 rounded-xl font-medium transition-all ${
-                language === 'en'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              English
-            </button>
+        <div>
+          <label className="block text-xs font-semibold text-foreground mb-1.5">Phone Number</label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => set({ phone: e.target.value.replace(/\D/g, "") })}
+              maxLength={10}
+              className="input-village pl-9"
+            />
           </div>
         </div>
 
-        {/* Help & Support */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-primary" />
-            {language === 'te' ? 'సహాయం' : 'Help & Support'}
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => window.location.href = `tel:${SUPPORT_CONFIG.phone}`}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-secondary text-secondary-foreground font-medium active:scale-[0.98] transition-transform"
-            >
-              <Phone className="w-4 h-4" />
-              {language === 'te' ? 'కాల్' : 'Call'}
-            </button>
-            <button
-              onClick={() => {
-                const msg = encodeURIComponent(language === 'te' ? 'నాకు సహాయం కావాలి' : 'I need help');
-                window.open(`https://wa.me/${SUPPORT_CONFIG.whatsapp.replace('+', '')}?text=${msg}`, '_blank');
-              }}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-green-500/10 text-green-700 font-medium active:scale-[0.98] transition-transform"
-            >
-              <MessageCircle className="w-4 h-4" />
-              {language === 'te' ? 'వాట్సాప్' : 'WhatsApp'}
-            </button>
-          </div>
-        </div>
-
-        {/* Emergency Contact */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
-            </div>
+        {/* ── Read-only from application ── */}
+        <div className="bg-card border border-border rounded-2xl divide-y divide-border">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Bike className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <div>
-              <p className="font-medium text-foreground">{t.emergencyContact}</p>
-              <p className="text-sm text-muted-foreground">
-                {user?.emergencyContactName || (language === 'te' ? 'జోడించలేదు' : 'Not added')}
+              <p className="text-[10px] text-muted-foreground uppercase font-semibold">Vehicle</p>
+              <p className="text-sm font-bold text-foreground">
+                {appData.vehicle_no ?? "—"} · <span className="capitalize">{appData.vehicle_type ?? "—"}</span>
               </p>
             </div>
           </div>
+          <div className="flex items-center gap-3 px-4 py-3">
+            <IndianRupee className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-semibold">UPI ID</p>
+              <p className="text-sm font-bold text-foreground">{appData.upi_vpa ?? "Not set"}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Logout Button */}
+        <p className="text-xs text-muted-foreground text-center">
+          To update vehicle or UPI details, contact admin support.
+        </p>
+
+        {/* ── Sign out ── */}
         <button
           onClick={handleLogout}
-          className="w-full bg-destructive/10 text-destructive py-4 rounded-2xl font-medium flex items-center justify-center gap-2 active:scale-98 transition-transform"
+          className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 font-bold py-3 rounded-2xl text-sm active:scale-95 transition-all"
         >
-          <LogOut className="w-5 h-5" />
-          {t.logout}
+          <LogOut className="w-4 h-4" />
+          Sign Out
         </button>
+      </div>
 
-        {/* Privacy Note */}
-        <div className="bg-primary/10 rounded-2xl p-4">
-          <p className="text-sm text-center text-foreground">
-            🔒 {t.privacyNote}
-          </p>
-        </div>
+      {/* ── Save CTA ── */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-8 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-black py-4 rounded-2xl text-base shadow-lg active:scale-95 transition-all disabled:opacity-60"
+        >
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Save Changes</>}
+        </button>
       </div>
     </MobileLayout>
   );

@@ -1,386 +1,239 @@
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { useLanguage } from '@/context/LanguageContext';
-import { useShops, useUpdateShop } from '@/hooks/useShops';
-import { Shop, ShopType } from '@/types';
-import { Store, Search, Edit2, MapPin, Check, X, Loader2, RefreshCw, Power } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+// src/pages/admin/AdminShopsPage.tsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  ChevronLeft, Store, Search,
+  ToggleLeft, ToggleRight, RefreshCw, MapPin,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const sb = supabase as any;
+
+function useAdminShops() {
+  return useQuery({
+    queryKey: ["admin-shops"],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from("shops")
+        .select("id, name, name_en, category, phone, logo_url, is_approved, created_at, towns(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+}
 
 export function AdminShopsPage() {
-  const navigate = useNavigate();
-  const { language } = useLanguage();
-  const en = language === 'en';
-  const { data: shops = [], isLoading, refetch } = useShops();
-  const updateShop = useUpdateShop();
+  const navigate  = useNavigate();
+  const qc        = useQueryClient();
+  const { data: shops, isLoading, refetch } = useAdminShops();
+  const [search,  setSearch]  = useState("");
+  const [filter,  setFilter]  = useState<"all" | "pending" | "approved">("all");
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-  const [editData, setEditData] = useState<Partial<Shop>>({});
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
-
-  const shopTypeOptions: { value: ShopType; label: string; emoji: string }[] = [
-    { value: 'kirana', label: en ? 'Grocery' : 'కిరాణా', emoji: '🛒' },
-    { value: 'restaurant', label: en ? 'Restaurant' : 'హోటల్', emoji: '🍽️' },
-    { value: 'medical', label: en ? 'Medical' : 'మెడికల్', emoji: '💊' },
-  ];
-
-  const getShopTypeEmoji = (type: string) => {
-    const found = shopTypeOptions.find(o => o.value === type);
-    return found?.emoji ?? '🏪';
-  };
-
-  const filteredShops = shops.filter(shop => {
-    const matchesSearch =
-      shop.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.name_te.includes(searchQuery);
-    const matchesFilter =
-      filterStatus === 'all' ||
-      (filterStatus === 'active' && shop.isActive) ||
-      (filterStatus === 'inactive' && !shop.isActive);
-    return matchesSearch && matchesFilter;
+  const toggleApproval = useMutation({
+    mutationFn: async ({ id, current }: { id: string; current: boolean }) => {
+      const { error } = await sb
+        .from("shops")
+        .update({ is_approved: !current })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-shops"] });
+      toast.success("Shop approval updated");
+    },
+    onError: () => toast.error("Update failed"),
   });
 
-  const handleEdit = (shop: Shop) => {
-    setSelectedShop(shop);
-    setEditData({ ...shop });
-  };
+  const all      = shops ?? [];
+  const approved = all.filter((s: any) => s.is_approved);
+  const pending  = all.filter((s: any) => !s.is_approved);
 
-  const handleSave = async () => {
-    if (!selectedShop) return;
-    try {
-      await updateShop.mutateAsync({ id: selectedShop.id, updates: editData });
-      toast.success(en ? 'Shop updated ✅' : 'షాప్ అప్‌డేట్ అయింది ✅');
-      setSelectedShop(null);
-      setEditData({});
-    } catch (err: any) {
-      toast.error(err.message || (en ? 'Failed to update' : 'అప్‌డేట్ విఫలమైంది'));
-    }
-  };
+  const filtered = all.filter((s: any) => {
+    const matchSearch = !search.trim() ||
+      (s.name ?? s.name_en ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchFilter =
+      filter === "all"      ? true :
+      filter === "approved" ? s.is_approved :
+      !s.is_approved;
+    return matchSearch && matchFilter;
+  });
 
-  const handleQuickToggle = async (shop: Shop, field: 'isOpen' | 'isActive') => {
-    try {
-      await updateShop.mutateAsync({
-        id: shop.id,
-        updates: { [field]: !shop[field] },
-      });
-      toast.success(
-        field === 'isOpen'
-          ? (shop.isOpen ? (en ? 'Shop closed' : 'షాప్ మూసివేయబడింది') : (en ? 'Shop opened' : 'షాప్ తెరవబడింది'))
-          : (shop.isActive ? (en ? 'Shop deactivated' : 'షాప్ నిష్క్రియం చేయబడింది') : (en ? 'Shop activated' : 'షాప్ యాక్టివ్ చేయబడింది'))
-      );
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Stats
-  const activeCount = shops.filter(s => s.isActive).length;
-  const openCount = shops.filter(s => s.isOpen && s.isActive).length;
-  const inactiveCount = shops.filter(s => !s.isActive).length;
+  const FILTER_TABS: { key: typeof filter; label: string; count: number }[] = [
+    { key: "all",      label: "All",      count: all.length      },
+    { key: "pending",  label: "Pending",  count: pending.length  },
+    { key: "approved", label: "Approved", count: approved.length },
+  ];
 
   return (
-    <div className="mobile-container min-h-screen bg-background pb-28">
-      {/* Header */}
-      <header className="px-5 pt-8 pb-4 sticky top-0 z-10 bg-background border-b border-foreground/5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-              {en ? 'Admin' : 'అడ్మిన్'}
-            </p>
-            <h1 className="text-2xl font-semibold text-foreground">
-              {en ? 'Shops' : 'షాప్స్'}
-            </h1>
-          </div>
+    <MobileLayout navType="admin">
+      <header className="px-4 pt-6 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => refetch()}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
           >
-            <RefreshCw className="w-4 h-4 text-muted-foreground" />
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Admin</p>
+            <h1 className="text-2xl font-bold text-foreground">Shops</h1>
+          </div>
         </div>
+        <button
+          onClick={() => refetch()}
+          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95"
+        >
+          <RefreshCw className="w-4 h-4 text-muted-foreground" />
+        </button>
       </header>
 
-      <div className="px-5 pt-4 space-y-4">
+      <div className="px-4 pb-28 space-y-4">
 
-        {/* Stats Row */}
+        {/* ── Stat cards ── */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: en ? 'Total' : 'మొత్తం', value: shops.length, color: 'text-foreground' },
-            { label: en ? 'Open' : 'తెరిచి', value: openCount, color: 'text-green-600' },
-            { label: en ? 'Inactive' : 'నిష్క్రియ', value: inactiveCount, color: 'text-red-600' },
-          ].map(stat => (
-            <div key={stat.label} className="bg-card rounded-xl shadow-sm p-3 text-center">
-              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            { label: "Total",    value: all.length,      color: "text-foreground",  bg: "bg-card"      },
+            { label: "Pending",  value: pending.length,  color: "text-amber-600",   bg: "bg-amber-50"  },
+            { label: "Approved", value: approved.length, color: "text-green-600",   bg: "bg-green-50"  },
+          ].map((c) => (
+            <div key={c.label} className={`${c.bg} border border-border rounded-2xl p-3 text-center`}>
+              <p className={`text-xl font-black ${c.color}`}>
+                {isLoading ? "—" : c.value}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{c.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={en ? 'Search shops...' : 'షాప్‌లు వెతకండి...'}
-            className="pl-9 rounded-xl"
-          />
-        </div>
-
-        {/* Filter chips */}
-        <div className="flex gap-2">
-          {(['all', 'active', 'inactive'] as const).map(f => (
+        {/* ── Filter tabs ── */}
+        <div className="flex gap-1 bg-muted rounded-xl p-1">
+          {FILTER_TABS.map((tab) => (
             <button
-              key={f}
-              onClick={() => setFilterStatus(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                filterStatus === f
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                filter === tab.key
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
               }`}
             >
-              {f === 'all' ? (en ? 'All' : 'అన్నీ') :
-               f === 'active' ? (en ? 'Active' : 'యాక్టివ్') :
-               (en ? 'Inactive' : 'నిష్క్రియ')}
+              {tab.label}
+              <span className={`text-[10px] px-1 rounded-full ${
+                filter === tab.key ? "bg-primary/10 text-primary" : "bg-border text-muted-foreground"
+              }`}>
+                {tab.count}
+              </span>
             </button>
           ))}
         </div>
 
-        {/* Shop List */}
+        {/* ── Search ── */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search shops…"
+            className="input-village pl-9"
+          />
+        </div>
+
+        {/* ── List ── */}
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : filteredShops.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Store className="w-8 h-8 text-muted-foreground" />
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-card border border-border rounded-2xl p-4">
+              <div className="h-4 bg-muted rounded animate-pulse w-1/2 mb-2" />
+              <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
             </div>
-            <p className="text-muted-foreground text-sm">
-              {en ? 'No shops found' : 'షాప్‌లు కనుగొనబడలేదు'}
-            </p>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <Store className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-semibold text-muted-foreground">No shops found</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredShops.map((shop) => (
-              <div key={shop.id} className="bg-card rounded-2xl shadow-sm p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl flex-shrink-0">
-                      {getShopTypeEmoji(shop.type)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground">
-                        {en ? shop.name_en : shop.name_te}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">{shop.type}</p>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        {/* Open/Closed quick toggle */}
-                        <button
-                          onClick={() => handleQuickToggle(shop, 'isOpen')}
-                          disabled={updateShop.isPending}
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
-                            shop.isOpen
-                              ? 'bg-green-500/10 text-green-600'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {shop.isOpen ? (en ? 'Open' : 'తెరిచి') : (en ? 'Closed' : 'మూసి')}
-                        </button>
-                        {/* Active/Inactive quick toggle */}
-                        <button
-                          onClick={() => handleQuickToggle(shop, 'isActive')}
-                          disabled={updateShop.isPending}
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
-                            shop.isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-red-500/10 text-red-600'
-                          }`}
-                        >
-                          {shop.isActive ? (en ? 'Active' : 'యాక్టివ్') : (en ? 'Inactive' : 'నిష్క్రియ')}
-                        </button>
-                      </div>
-                    </div>
+        ) : filtered.map((s: any) => {
+          const shopName = s.name ?? s.name_en ?? "Unnamed Shop";
+          return (
+            <div key={s.id} className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                {/* Logo */}
+                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {s.logo_url
+                    ? <img src={s.logo_url} alt="" className="w-full h-full object-cover" />
+                    : <Store className="w-5 h-5 text-muted-foreground" />
+                  }
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">{shopName}</p>
+
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {s.category && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">
+                        {s.category}
+                      </span>
+                    )}
+                    {(s.towns as any)?.name && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <MapPin className="w-2.5 h-2.5" />
+                        {(s.towns as any).name}
+                      </span>
+                    )}
                   </div>
+
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      s.is_approved
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}>
+                      {s.is_approved ? "Approved" : "Pending"}
+                    </span>
+                    {s.phone && (
+                      <span className="text-[10px] text-muted-foreground">{s.phone}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Approval toggle */}
+                <button
+                  onClick={() => toggleApproval.mutate({ id: s.id, current: s.is_approved })}
+                  disabled={toggleApproval.isPending}
+                  className="active:scale-90 transition-transform flex-shrink-0 disabled:opacity-50"
+                  title={s.is_approved ? "Revoke approval" : "Approve shop"}
+                >
+                  {s.is_approved
+                    ? <ToggleRight className="w-9 h-9 text-green-500" />
+                    : <ToggleLeft  className="w-9 h-9 text-muted-foreground" />
+                  }
+                </button>
+              </div>
+
+              {/* Pending action banner */}
+              {!s.is_approved && (
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                  <p className="text-xs text-amber-600 font-semibold">
+                    Waiting for approval — not visible to customers
+                  </p>
                   <button
-                    onClick={() => handleEdit(shop)}
-                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                    onClick={() => toggleApproval.mutate({ id: s.id, current: false })}
+                    disabled={toggleApproval.isPending}
+                    className="text-xs font-bold text-white bg-green-500 px-3 py-1 rounded-lg active:scale-95 transition-transform disabled:opacity-50"
                   >
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
+                    Approve
                   </button>
                 </div>
-
-                {shop.pickupLat && shop.pickupLng && (
-                  <div className="mt-3 pt-3 border-t border-foreground/5 flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" />
-                    <span>{shop.pickupLat.toFixed(4)}, {shop.pickupLng.toFixed(4)}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })}
       </div>
-
-      {/* Edit Sheet */}
-      {selectedShop && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-background rounded-t-3xl overflow-hidden max-h-[90vh] flex flex-col">
-            {/* Sheet Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/5">
-              <h3 className="font-semibold text-lg text-foreground">
-                {en ? 'Edit Shop' : 'షాప్ సవరించు'}
-              </h3>
-              <button
-                onClick={() => { setSelectedShop(null); setEditData({}); }}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
-              {/* Name Telugu */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {en ? 'Name (Telugu)' : 'పేరు (తెలుగు)'}
-                </label>
-                <Input
-                  value={editData.name_te || ''}
-                  onChange={(e) => setEditData({ ...editData, name_te: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* Name English */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {en ? 'Name (English)' : 'పేరు (ఆంగ్లం)'}
-                </label>
-                <Input
-                  value={editData.name_en || ''}
-                  onChange={(e) => setEditData({ ...editData, name_en: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* Shop Type */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {en ? 'Shop Type' : 'షాప్ రకం'}
-                </label>
-                <div className="flex gap-2">
-                  {shopTypeOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setEditData({
-                        ...editData,
-                        type: opt.value,
-                        type_te: opt.value === 'kirana' ? 'కిరాణా' : opt.value === 'restaurant' ? 'హోటల్' : 'మెడికల్',
-                        type_en: opt.value === 'kirana' ? 'Grocery' : opt.value === 'restaurant' ? 'Restaurant' : 'Medical',
-                      })}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                        editData.type === opt.value
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
-                      }`}
-                    >
-                      {opt.emoji} {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Toggles */}
-              <div className="space-y-2">
-                {[
-                  { label: en ? 'Open Now' : 'ఇప్పుడు తెరిచి ఉంది', field: 'isOpen' as const },
-                  { label: en ? 'Active' : 'యాక్టివ్', field: 'isActive' as const },
-                ].map(({ label, field }) => (
-                  <div key={field} className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Power className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">{label}</span>
-                    </div>
-                    <Switch
-                      checked={!!editData[field]}
-                      onCheckedChange={(checked) => setEditData({ ...editData, [field]: checked })}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Pickup Location */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {en ? 'Pickup Location (GPS)' : 'పికప్ లొకేషన్ (GPS)'}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    placeholder="Latitude"
-                    value={editData.pickupLat || ''}
-                    onChange={(e) => setEditData({ ...editData, pickupLat: parseFloat(e.target.value) })}
-                    className="rounded-xl"
-                  />
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    placeholder="Longitude"
-                    value={editData.pickupLng || ''}
-                    onChange={(e) => setEditData({ ...editData, pickupLng: parseFloat(e.target.value) })}
-                    className="rounded-xl"
-                  />
-                </div>
-              </div>
-
-              {/* UPI Details */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {en ? 'UPI ID' : 'UPI ID'}
-                </label>
-                <Input
-                  value={editData.upiVpa || ''}
-                  onChange={(e) => setEditData({ ...editData, upiVpa: e.target.value })}
-                  placeholder="merchant@upi"
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2 pb-4">
-                <button
-                  onClick={() => { setSelectedShop(null); setEditData({}); }}
-                  className="flex-1 py-3 rounded-xl border border-foreground/10 text-foreground font-medium text-sm"
-                >
-                  {en ? 'Cancel' : 'రద్దు'}
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={updateShop.isPending}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {updateShop.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Check className="w-4 h-4" />
-                  )}
-                  {en ? 'Save Changes' : 'మార్పులు సేవ్ చేయండి'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </MobileLayout>
   );
 }
-
-
-
-
-
-

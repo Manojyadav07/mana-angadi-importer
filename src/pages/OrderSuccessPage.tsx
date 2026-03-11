@@ -1,161 +1,246 @@
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { ArrowRight } from 'lucide-react';
-import orderSuccessCyclist from '@/assets/order-success-cyclist.png';
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { CheckCircle2, Sun, Moon, MapPin, ShoppingBag, ChevronRight, Home } from "lucide-react";
 
+const sb = supabase as any;
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+const SLOT_CONFIG = {
+  morning: {
+    label:        "Morning Batch",
+    label_te:     "ఉదయం బ్యాచ్",
+    dispatch:     "11:00 AM",
+    icon:         Sun,
+    iconColor:    "text-amber-500",
+    bgColor:      "bg-amber-50",
+    borderColor:  "border-amber-200",
+  },
+  evening: {
+    label:        "Evening Batch",
+    label_te:     "సాయంత్రం బ్యాచ్",
+    dispatch:     "5:00 PM",
+    icon:         Moon,
+    iconColor:    "text-indigo-500",
+    bgColor:      "bg-indigo-50",
+    borderColor:  "border-indigo-200",
+  },
+} as const;
+
+const STATUS_COLORS: Record<string, string> = {
+  placed:     "bg-blue-100 text-blue-700",
+  dispatched: "bg-amber-100 text-amber-700",
+  delivered:  "bg-green-100 text-green-700",
+  cancelled:  "bg-red-100 text-red-700",
+};
+
+function fmt(n: number) {
+  return `₹${n.toFixed(2)}`;
+}
+
+// ─── main page ────────────────────────────────────────────────────────────────
 export function OrderSuccessPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const { language } = useLanguage();
-  const { user, profile } = useAuth();
-  const en = language === 'en';
+  const navigate      = useNavigate();
+  const [params]      = useSearchParams();
+  const orderId       = params.get("id");
 
-  // Gather order IDs from state or query string
-  const stateIds: string[] = location.state?.orderIds || [];
-  const queryIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
-  const orderIds = stateIds.length > 0 ? stateIds : queryIds;
+  // If no orderId somehow, bounce home
+  useEffect(() => {
+    if (!orderId) navigate("/home", { replace: true });
+  }, [orderId, navigate]);
 
-  const displayName = profile?.display_name || user?.email?.split('@')[0] || (en ? 'Friend' : 'మిత్రమా');
-
-  const { data: orders } = useQuery({
-    queryKey: ['success-orders', orderIds],
+  const { data: order, isLoading } = useQuery({
+    queryKey: ["order-success", orderId],
+    enabled:  !!orderId,
+    staleTime: 60_000,
     queryFn: async () => {
-      if (!orderIds.length) return [];
-      const { data, error } = await supabase
-        .from('orders')
-        .select('id, shop_id, total_amount, status')
-        .in('id', orderIds);
+      const { data, error } = await sb
+        .from("orders")
+        .select(`
+          id, slot, status, subtotal, delivery_fee, bulk_fee,
+          total_amount, payment_method, created_at,
+          villages ( name ),
+          order_items ( id )
+        `)
+        .eq("id", orderId)
+        .single();
       if (error) throw error;
-      if (!data?.length) return [];
-
-      const shopIds = [...new Set(data.map(o => o.shop_id))];
-      const { data: shops } = await supabase.from('shops').select('id, name').in('id', shopIds);
-      const shopMap = new Map((shops || []).map(s => [s.id, s.name]));
-
-      return data.map(o => ({
-        id: o.id,
-        shopName: shopMap.get(o.shop_id) || 'Village Shop',
-        total: Number(o.total_amount),
-        status: o.status || 'placed',
-      }));
+      return data;
     },
-    enabled: orderIds.length > 0,
   });
 
-  const hasOrders = orders && orders.length > 0;
-  const isSingle = orders?.length === 1;
+  const slot        = order?.slot as keyof typeof SLOT_CONFIG | undefined;
+  const slotCfg     = slot ? SLOT_CONFIG[slot] : null;
+  const SlotIcon    = slotCfg?.icon ?? Sun;
+  const itemCount   = order?.order_items?.length ?? 0;
+  const villageName = (order?.villages as any)?.name ?? "—";
 
-  // No order IDs provided
-  if (!orderIds.length) {
+  // ── loading ──────────────────────────────────────────────────────────────
+  if (isLoading || !order) {
     return (
-      <div className="screen-shell min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#F9F8F4' }}>
-        <p className="text-foreground/60 text-center mb-6">{en ? 'No order information found.' : 'ఆర్డర్ సమాచారం కనుగొనబడలేదు.'}</p>
-        <button
-          onClick={() => navigate('/orders')}
-          className="bg-primary text-primary-foreground font-semibold px-8 py-3 rounded-xl"
-        >
-          {en ? 'Go to Orders' : 'ఆర్డర్లకు వెళ్ళండి'}
-        </button>
-      </div>
+      <MobileLayout navType="customer">
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6">
+          <div className="w-20 h-20 rounded-full bg-muted animate-pulse" />
+          <div className="h-5 w-40 rounded-full bg-muted animate-pulse" />
+          <div className="h-4 w-56 rounded-full bg-muted animate-pulse" />
+        </div>
+      </MobileLayout>
     );
   }
 
   return (
-    <div className="screen-shell min-h-screen relative overflow-hidden" style={{ background: '#F9F8F4' }}>
-      {/* Decorative blurred blobs */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 right-0 w-40 h-40 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+    <MobileLayout navType="customer">
+      <div className="min-h-screen flex flex-col pb-32">
 
-      <div className="relative z-10 flex flex-col items-center px-6 pt-14 pb-10">
-        {/* Top branding */}
-        <div className="text-center mb-10">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-foreground/35 font-sans">MANA</p>
-          <p className="text-[13px] uppercase tracking-[0.25em] text-foreground/60 font-bold font-sans -mt-0.5">ANGADI</p>
+        {/* ── Hero ── */}
+        <div className="flex flex-col items-center justify-center px-6 pt-14 pb-8 text-center">
+          {/* Animated tick */}
+          <div className="relative mb-5">
+            <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="w-12 h-12 text-green-500" strokeWidth={1.5} />
+            </div>
+            {/* Pulse ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-green-200 animate-ping opacity-30" />
+          </div>
+
+          <h1 className="text-2xl font-black text-foreground mb-1">Order Placed!</h1>
+          <p className="text-sm text-muted-foreground mb-3">
+            Your order is confirmed and will be dispatched today.
+          </p>
+
+          {/* Order ID chip */}
+          <div className="bg-muted px-3 py-1 rounded-full">
+            <p className="text-xs font-mono text-muted-foreground">
+              #{order.id.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
         </div>
 
-        {/* Hero illustration */}
-        <div
-          className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center mb-8 border-2"
-          style={{ borderColor: "rgba(45,185,45,0.25)", boxShadow: "0 8px 24px rgba(45,185,45,0.15)" }}
-        >
-          <img src={orderSuccessCyclist} alt="Order Success" className="w-full h-full object-cover" />
-        </div>
+        <div className="px-4 space-y-3">
 
-        {/* Heading */}
-        <h1 className="font-display text-2xl font-semibold text-foreground text-center mb-2 leading-snug">
-          {en ? 'Dhanyavadalu,' : 'ధన్యవాదాలు,'}
-          <br />
-          <span className="italic">{displayName}</span> {en ? 'Gaaru!' : 'గారు!'}
-        </h1>
+          {/* ── Slot dispatch card ── */}
+          {slotCfg && (
+            <div className={`rounded-2xl border-2 ${slotCfg.borderColor} ${slotCfg.bgColor} px-4 py-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                  <SlotIcon className={`w-5 h-5 ${slotCfg.iconColor}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Your Slot
+                  </p>
+                  <p className="text-base font-black text-foreground">
+                    {slotCfg.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {slotCfg.label_te}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-muted-foreground">Dispatch</p>
+                  <p className="text-lg font-black text-foreground">{slotCfg.dispatch}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Subtext */}
-        <p className="text-foreground/55 text-center text-sm mb-8 max-w-xs leading-relaxed">
-          {isSingle && hasOrders
-            ? (en
-              ? `Your order from ${orders[0].shopName} is being hand-prepared.`
-              : `${orders[0].shopName} నుండి మీ ఆర్డర్ చేతితో తయారు చేయబడుతోంది.`)
-            : (en
-              ? 'Your orders are being prepared by our village partners.'
-              : 'మీ ఆర్డర్లు మా గ్రామ భాగస్వాములచే తయారు చేయబడుతున్నాయి.')}
-        </p>
+          {/* ── Order summary card ── */}
+          <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
+            {/* Village */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Delivering to</p>
+                <p className="text-sm font-bold text-foreground">{villageName}</p>
+              </div>
+            </div>
 
-        {/* Order cards */}
-        {hasOrders && (
-          <div className="w-full space-y-3 mb-8">
-            {orders.map((o) => (
-              <div
-                key={o.id}
-                className="bg-primary/5 border border-primary/10 rounded-xl p-5 space-y-2"
-              >
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/50 uppercase tracking-wide">{en ? 'Order Reference' : 'ఆర్డర్ రిఫరెన్స్'}</span>
-                  <span className="font-mono text-sm font-semibold text-foreground">
-                    #MA-{o.id.slice(0, 6).toUpperCase()}
-                  </span>
+            {/* Items + payment */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <ShoppingBag className="w-4 h-4 text-primary flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Items</p>
+                <p className="text-sm font-bold text-foreground">
+                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Payment</p>
+                <p className="text-sm font-bold text-foreground uppercase">
+                  {order.payment_method}
+                </p>
+              </div>
+            </div>
+
+            {/* Fee breakdown */}
+            <div className="px-4 py-3 space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-semibold text-foreground">{fmt(order.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Delivery fee</span>
+                <span className="font-semibold text-foreground">{fmt(order.delivery_fee)}</span>
+              </div>
+              {order.bulk_fee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bulk handling fee</span>
+                  <span className="font-semibold text-foreground">{fmt(order.bulk_fee)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/50 uppercase tracking-wide">{en ? 'Shop' : 'షాప్'}</span>
-                  <span className="text-sm font-medium text-foreground">{o.shopName}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/50 uppercase tracking-wide">{en ? 'Total' : 'మొత్తం'}</span>
-                  <span className="text-sm font-bold text-foreground">₹{o.total}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/50 uppercase tracking-wide">{en ? 'Status' : 'స్థితి'}</span>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full capitalize">
-                    {en ? 'Placed' : 'ఆర్డర్ చేయబడింది'}
-                  </span>
-                </div>
+              )}
+              <div className="flex justify-between text-sm font-black border-t border-border pt-1.5 mt-1.5">
+                <span className="text-foreground">Total</span>
+                <span className="text-primary text-base">{fmt(order.total_amount)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Status badge ── */}
+          <div className="flex justify-center">
+            <span className={`text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[order.status] ?? "bg-muted text-muted-foreground"}`}>
+              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            </span>
+          </div>
+
+          {/* ── What to expect ── */}
+          <div className="bg-muted/50 rounded-2xl p-4 space-y-2">
+            <p className="text-xs font-bold text-foreground mb-2">What happens next?</p>
+            {[
+              { icon: "📦", text: `Merchants prepare your order before ${slotCfg?.dispatch ?? "dispatch time"}` },
+              { icon: "🚚", text: `Delivery partner picks up and rides to ${villageName}` },
+              { icon: "🔔", text: "You'll be notified when your order is out for delivery" },
+              { icon: "💵", text: order.payment_method === "cod" ? "Keep cash ready for payment on delivery" : "UPI payment collected on delivery" },
+            ].map(({ icon, text }, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-base leading-tight">{icon}</span>
+                <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
               </div>
             ))}
           </div>
-        )}
 
-        {/* CTAs */}
-        <button
-          onClick={() => {
-            if (isSingle && orders?.[0]) navigate(`/order/${orders[0].id}`);
-            else navigate('/orders');
-          }}
-          className="w-full bg-primary text-white font-semibold text-base py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-        >
-          {en ? 'Track My Order' : 'నా ఆర్డర్ ట్రాక్ చేయండి'}
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        </div>
 
-        <button
-          onClick={() => navigate('/home')}
-          className="mt-5 text-foreground/45 text-sm font-sans hover:text-foreground/70 transition-colors"
-        >
-          {en ? 'Back to Home' : 'హోమ్‌కు తిరిగి వెళ్ళండి'}
-        </button>
+        {/* ── Sticky CTAs ── */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-8 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent space-y-2">
+          <button
+            onClick={() => navigate(`/orders/${order.id}`)}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-black py-4 rounded-2xl text-base shadow-lg active:scale-95 transition-all"
+          >
+            Track Order
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => navigate("/home")}
+            className="w-full flex items-center justify-center gap-2 bg-muted text-foreground font-bold py-3.5 rounded-2xl text-sm active:scale-95 transition-all"
+          >
+            <Home className="w-4 h-4" />
+            Continue Shopping
+          </button>
+        </div>
+
       </div>
-    </div>
+    </MobileLayout>
   );
 }

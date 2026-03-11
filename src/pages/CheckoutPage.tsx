@@ -1,447 +1,263 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '@/hooks/useCart';
-import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { useCreateOrder } from '@/hooks/useOrders';
-import { useOrderTotals } from '@/hooks/useOrderTotals';
-import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Package, Banknote, CreditCard, Check, AlertTriangle, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
+// src/pages/CheckoutPage.tsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { useVillageFees, calculateBulkFee } from "@/hooks/useVillageFees";
+import { useSlotStatus } from "@/hooks/useSlotStatus";
+import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  ChevronLeft, Sun, Moon, MapPin, ShoppingBag, AlertCircle,
+  IndianRupee, Package, Truck, CheckCircle2, Clock
+} from "lucide-react";
+import { toast } from "sonner";
+
+const sb = supabase as any;
 
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, refetch } = useCart();
   const { user } = useAuth();
-  const { language } = useLanguage();
-  const createOrder = useCreateOrder();
+  const { items, subtotal, totalWeight, villageId, clearCart } = useCart();
+  const slotStatus = useSlotStatus();
+  const [selectedSlot, setSelectedSlot] = useState<"morning" | "evening">(slotStatus.slot);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "upi">("cod");
 
-  const [isPlacing, setIsPlacing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi'>('cod');
-  const [changeFor, setChangeFor] = useState<number | null>(null);
+  const { data: village, isLoading: villageLoading } = useVillageFees(villageId);
 
-  // Address state
-  const [editingAddress, setEditingAddress] = useState(false);
-  const [doorNumber, setDoorNumber] = useState('');
-  const [landmark, setLandmark] = useState('');
-  const [deliveryPhone, setDeliveryPhone] = useState('');
-  const [villageName, setVillageName] = useState('');
+  const deliveryFee = village?.delivery_fee ?? 0;
+  const bulkFee     = village ? calculateBulkFee(village.tier, totalWeight) : 0;
+  const total       = subtotal + deliveryFee + bulkFee;
+  const meetsMinimum = village ? subtotal >= village.minimum_order : true;
 
-  const en = language === 'en';
-  const subtotal = getCartTotal();
+  const placeOrder = useMutation({
+    mutationFn: async () => {
+      if (!user)    throw new Error("Not logged in");
+      if (!villageId) throw new Error("No village selected");
+      if (!village) throw new Error("Village data not loaded");
+      if (!meetsMinimum) throw new Error(`Minimum order is ₹${village.minimum_order}`);
+      if (items.length === 0) throw new Error("Cart is empty");
 
-  // Server-side delivery fee from calculate_order_totals RPC
-  const { data: totals, isLoading: totalsLoading, error: totalsError } = useOrderTotals(user?.id, subtotal);
-  const deliveryFee = totals?.delivery_fee ?? 0;
-  const minOrder = totals?.min_order ?? 0;
-  const total = totals?.total_amount ?? subtotal;
+      // Commission: 10% of subtotal (simplified — real calc per shop category)
+      const commissionAmount = Math.round(subtotal * 0.10 * 100) / 100;
 
-  // Load saved address from profile
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('profiles')
-      .select('delivery_address, delivery_phone, village_id, villages(name)')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          const parts = ((data as any).delivery_address || '').split('|');
-          const door = parts[0]?.trim() || '';
-          const lmark = parts[1]?.trim() || '';
-          setDoorNumber(door);
-          setLandmark(lmark);
-          setDeliveryPhone((data as any).delivery_phone || '');
-          setVillageName((data as any).villages?.name || '');
-          // Auto-open edit if no address saved yet
-          if (!door) setEditingAddress(true);
-        }
-      });
-  }, [user]);
+      // 1. Create order
+      const { data: order, error: orderError } = await sb
+        .from("orders")
+        .insert({
+          user_id:           user.id,
+          village_id:        villageId,
+          subtotal:          subtotal,
+          delivery_fee:      deliveryFee,
+          bulk_fee:          bulkFee,
+          commission_amount: commissionAmount,
+          total_amount:      total,
+          payment_method:    paymentMethod,
+          slot:              selectedSlot,
+          status:            "placed",
+          settlement_status: "pending",
+        })
+        .select("id")
+        .single();
 
-  const handlePaymentChange = (method: 'cod' | 'upi') => {
-    setPaymentMethod(method);
-    if (method === 'upi') setChangeFor(null);
-  };
+      if (orderError) throw orderError;
 
-  const handlePlaceOrder = async () => {
-    if (!user) {
-      toast.error(en ? 'Please log in' : 'దయచేసి లాగిన్ అవ్వండి');
-      return;
-    }
-    if (cart.length === 0) {
-      toast.error(en ? 'Your basket is empty' : 'మీ బుట్ట ఖాళీగా ఉంది');
-      return;
-    }
-    if (!totals) {
-      toast.error(en ? 'Please set your delivery village in Profile' : 'దయచేసి మీ గ్రామాన్ని ప్రొఫైల్‌లో సెట్ చేయండి');
-      return;
-    }
-    if (subtotal < minOrder) {
-      toast.error(en ? `Minimum order for your village is ₹${minOrder}` : `మీ గ్రామానికి కనీస ఆర్డర్ ₹${minOrder}`);
-      return;
-    }
-    if (!doorNumber.trim()) {
-      toast.error(en ? 'Please add your delivery address' : 'డెలివరీ చిరునామా జోడించండి');
-      setEditingAddress(true);
-      return;
-    }
+      // 2. Insert order items
+      const orderItems = items.map((item) => ({
+        order_id:        order.id,
+        item_id:         item.id,
+        shop_id:         item.shop_id,
+        quantity:        item.quantity,
+        price_snapshot:  item.price,
+        weight_snapshot: item.weight_kg,
+      }));
 
-    setIsPlacing(true);
-    try {
-      const deliveryAddress = `${doorNumber.trim()} | ${landmark.trim()}`;
+      const { error: itemsError } = await sb.from("order_items").insert(orderItems);
+      if (itemsError) throw itemsError;
 
-      const result = await createOrder.mutateAsync({
-        userId: user.id,
-        cartItems: cart.map(c => ({
-          item_id: c.item_id,
-          shop_id: c.shop_id,
-          quantity: c.quantity,
-          item_price: c.item_price,
-          item_name: c.item_name,
-          shop_name: c.shop_name,
-        })),
-        paymentMethod,
-        cashChangeFor: changeFor,
-        deliveryFee: totals.delivery_fee,
-        villageId: totals.village_id,
-        deliveryAddress,
-        deliveryPhone: deliveryPhone || '',
-      });
+      return order.id;
+    },
+    onSuccess: (orderId) => {
+      clearCart();
+      navigate(`/order-success?id=${orderId}`);
+    },
+    onError: (e: any) => {
+      toast.error(e.message ?? "Order failed");
+    },
+  });
 
-      refetch();
-
-      if (result.deliveryWarnings && result.deliveryWarnings.length > 0) {
-        toast.info(en
-          ? 'All delivery partners are currently busy. Your order will be assigned shortly.'
-          : 'అన్ని డెలివరీ భాగస్వాములు ప్రస్తుతం బిజీగా ఉన్నారు. మీ ఆర్డర్ త్వరలో కేటాయించబడుతుంది.');
-      }
-
-      navigate('/order-success', {
-        state: {
-          orderIds: result.orderIds,
-          shopNames: result.shopNames,
-          totals: result.totals,
-        },
-      });
-    } catch (err: any) {
-      console.error('Order failed:', err);
-      toast.error(en ? 'Failed to place order. Please try again.' : 'ఆర్డర్ విఫలమైంది. మళ్ళీ ప్రయత్నించండి.');
-    } finally {
-      setIsPlacing(false);
-    }
-  };
-
-  // Empty cart screen
-  if (cart.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="screen-shell min-h-screen flex flex-col bg-background items-center justify-center px-8">
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-          <Package className="w-9 h-9 text-primary" />
+      <MobileLayout>
+        <div className="flex flex-col items-center justify-center min-h-screen px-4">
+          <ShoppingBag className="w-14 h-14 text-muted-foreground mb-4 opacity-30" />
+          <p className="text-base font-bold text-foreground mb-1">Cart is empty</p>
+          <button onClick={() => navigate("/")} className="mt-4 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl text-sm active:scale-95 transition-transform">
+            Browse Shops
+          </button>
         </div>
-        <h2 className="font-display text-xl font-semibold text-foreground mb-2">
-          {en ? 'Your basket is empty' : 'మీ బుట్ట ఖాళీగా ఉంది'}
-        </h2>
-        <button onClick={() => navigate('/home')} className="btn-primary-pill px-8 py-3 text-sm font-semibold mt-6">
-          {en ? 'Browse Shops' : 'అంగడులు చూడండి'}
-        </button>
-      </div>
+      </MobileLayout>
     );
   }
 
-  const FALLBACK = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=60';
-  const changeOptions = [
-    { value: null, label: en ? 'None' : 'వద్దు' },
-    { value: 200, label: '₹200' },
-    { value: 500, label: '₹500' },
-    { value: 1000, label: '₹1000' },
-  ];
+  if (!villageId) {
+    return (
+      <MobileLayout>
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+          <MapPin className="w-14 h-14 text-muted-foreground mb-4 opacity-30" />
+          <p className="text-base font-bold text-foreground mb-1">Village not set</p>
+          <p className="text-sm text-muted-foreground mb-4">Please update your profile with your village to continue</p>
+          <button onClick={() => navigate("/profile")} className="bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl text-sm active:scale-95 transition-transform">
+            Go to Profile
+          </button>
+        </div>
+      </MobileLayout>
+    );
+  }
 
   return (
-    <div className="screen-shell min-h-screen flex flex-col bg-background">
-
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-foreground/5">
-        <div className="pt-12 px-5 pb-4">
-          <div className="flex items-center">
-            <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-transform">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="flex-1 text-center font-display text-2xl font-semibold text-foreground">
-              {en ? 'Checkout' : 'చెక్‌అవుట్'}
-            </h1>
-            <div className="w-10" />
-          </div>
+    <MobileLayout>
+      <header className="px-4 pt-6 pb-3 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
+          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Order</p>
+          <h1 className="text-2xl font-bold text-foreground">Checkout</h1>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-5 pb-40 space-y-5 pt-5">
-
-        {/* Village not set warning */}
-        {totalsError && (
-          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+      <div className="px-4 pb-36 space-y-4">
+        {/* Slot closed warning */}
+        {!slotStatus.isOpen && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-destructive">
-                {en ? 'Delivery location not set' : 'డెలివరీ స్థలం సెట్ చేయలేదు'}
-              </p>
-              <p className="text-xs text-destructive/80 mt-1">
-                {en ? 'Please update your village in Profile to proceed.' : 'కొనసాగించడానికి ప్రొఫైల్‌లో మీ గ్రామాన్ని అప్‌డేట్ చేయండి.'}
-              </p>
+              <p className="text-sm font-bold text-amber-700">Ordering window closed</p>
+              <p className="text-xs text-amber-600 mt-0.5">{slotStatus.nextSlotLabel}</p>
             </div>
           </div>
         )}
 
-        {/* Order Summary */}
-        <div className="bg-card rounded-2xl shadow-sm p-5">
-          <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
-            {en ? 'Order Summary' : 'ఆర్డర్ సారాంశం'}
-          </p>
-          <div className="space-y-3">
-            {cart.map(item => (
-              <div key={item.id} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  <img
-                    src={item.item_image_url || FALLBACK}
-                    alt={item.item_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground truncate">{item.item_name}</p>
-                  <p className="text-xs text-muted-foreground">{item.quantity} × ₹{item.item_price}</p>
-                </div>
-                <span className="text-sm font-semibold text-foreground">₹{item.item_price * item.quantity}</span>
+        {/* Slot selection */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">Select Delivery Slot</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { slot: "morning" as const, icon: Sun,  label: "Morning Slot", time: "Dispatch 11:00 AM", window: "6 AM – 10:30 AM" },
+              { slot: "evening" as const, icon: Moon, label: "Evening Slot", time: "Dispatch 5:00 PM",  window: "12 PM – 4:30 PM" },
+            ]).map(({ slot, icon: Icon, label, time, window }) => (
+              <button key={slot} onClick={() => setSelectedSlot(slot)}
+                className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
+                  selectedSlot === slot ? "border-primary bg-primary/5" : "border-border bg-muted/50"
+                }`}>
+                <Icon className={`w-5 h-5 mb-1 ${selectedSlot === slot ? "text-primary" : "text-muted-foreground"}`} />
+                <p className={`text-xs font-bold ${selectedSlot === slot ? "text-primary" : "text-foreground"}`}>{label}</p>
+                <p className="text-[10px] text-muted-foreground">{time}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">{window}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Delivery location */}
+        {village && (
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <MapPin className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Delivering to</p>
+              <p className="text-sm font-bold text-foreground">{village.name}</p>
+              <p className="text-[10px] text-muted-foreground">Tier {village.tier} · Min order ₹{village.minimum_order}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Minimum order warning */}
+        {village && !meetsMinimum && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <p className="text-xs font-semibold text-red-700">
+              Minimum order is ₹{village.minimum_order}. Add ₹{(village.minimum_order - subtotal).toFixed(0)} more.
+            </p>
+          </div>
+        )}
+
+        {/* Cart summary */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">Order Summary</p>
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between">
+                <p className="text-sm text-foreground flex-1 truncate">{item.name} × {item.quantity}</p>
+                <p className="text-sm font-semibold text-foreground ml-2">₹{(item.price * item.quantity).toFixed(0)}</p>
               </div>
             ))}
           </div>
-
-          {/* Min order warning */}
-          {subtotal < minOrder && minOrder > 0 && (
-            <div className="mt-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-destructive">
-                {en
-                  ? `Minimum order for your village is ₹${minOrder}. Add ₹${minOrder - subtotal} more.`
-                  : `మీ గ్రామానికి కనీస ఆర్డర్ ₹${minOrder}. ₹${minOrder - subtotal} మరింత జోడించండి.`}
-              </p>
-            </div>
-          )}
-
-          {/* Totals */}
-          <div className="border-t border-foreground/5 mt-4 pt-4 space-y-2">
+          <div className="border-t border-border mt-3 pt-3 space-y-1.5">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{en ? 'Subtotal' : 'ఉప మొత్తం'}</span>
-              <span className="text-foreground">₹{subtotal}</span>
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-semibold text-foreground">₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{en ? 'Village Delivery Fee' : 'గ్రామ డెలివరీ రుసుము'}</span>
-              <span className="text-primary font-medium">
-                {totalsLoading ? '...' : `₹${deliveryFee}`}
-              </span>
+              <span className="text-muted-foreground flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Delivery</span>
+              <span className="font-semibold text-foreground">₹{deliveryFee}</span>
             </div>
-            <div className="border-t border-dashed border-foreground/10 my-1" />
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-foreground">{en ? 'Total' : 'మొత్తం'}</span>
-              <span className="text-2xl font-bold text-foreground">
-                {totalsLoading ? '...' : `₹${total}`}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── DELIVERY ADDRESS ── */}
-        <div className="bg-card rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              <p className="text-xs uppercase tracking-widest text-primary font-semibold">
-                {en ? 'Delivery Address' : 'డెలివరీ చిరునామా'}
-              </p>
-            </div>
-            {!editingAddress && (
-              <button
-                onClick={() => setEditingAddress(true)}
-                className="text-xs text-primary font-medium"
-              >
-                {en ? 'Edit' : 'మార్చు'}
-              </button>
+            {bulkFee > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1"><Package className="w-3.5 h-3.5" /> Bulk fee ({totalWeight.toFixed(1)}kg)</span>
+                <span className="font-semibold text-amber-600">₹{bulkFee}</span>
+              </div>
             )}
+            <div className="flex justify-between text-base font-black border-t border-border pt-2 mt-1">
+              <span className="text-foreground">Total</span>
+              <span className="text-primary">₹{total.toFixed(2)}</span>
+            </div>
           </div>
+        </div>
 
-          {editingAddress ? (
-            <div className="space-y-3">
-              {/* Door Number */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">
-                  {en ? 'Door / House Number' : 'తలుపు / ఇంటి నంబర్'} <span className="text-destructive">*</span>
-                </label>
-                <input
-                  value={doorNumber}
-                  onChange={e => setDoorNumber(e.target.value)}
-                  placeholder={en ? 'e.g. Door No. 4-5, Yadav Street' : 'ఉదా. తలుపు నం. 4-5, యాదవ్ వీధి'}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Landmark */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">
-                  {en ? 'Street / Landmark' : 'వీధి / లాండ్‌మార్క్'}
-                </label>
-                <input
-                  value={landmark}
-                  onChange={e => setLandmark(e.target.value)}
-                  placeholder={en ? 'e.g. Near Hanuman Temple' : 'ఉదా. హనుమాన్ గుడి దగ్గర'}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* Village (read-only) */}
-              {villageName && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">
-                    {en ? 'Village' : 'గ్రామం'}
-                  </label>
-                  <input
-                    value={villageName}
-                    disabled
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/50 text-sm opacity-70"
-                  />
-                </div>
-              )}
-
-              {/* Delivery Phone */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">
-                  {en ? 'Phone for Delivery' : 'డెలివరీ ఫోన్'}
-                </label>
-                <input
-                  value={deliveryPhone}
-                  onChange={e => setDeliveryPhone(e.target.value)}
-                  placeholder={en ? 'Leave blank to use your profile phone' : 'ఖాళీగా వదిలితే మీ ప్రొఫైల్ ఫోన్ వాడతాం'}
-                  type="tel"
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <button
-                onClick={() => setEditingAddress(false)}
-                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold"
-              >
-                {en ? 'Done' : 'సరే'}
+        {/* Payment method */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">Payment Method</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { method: "cod" as const, label: "Cash on Delivery", icon: "💵" },
+              { method: "upi" as const, label: "UPI",              icon: "📱" },
+            ]).map(({ method, label, icon }) => (
+              <button key={method} onClick={() => setPaymentMethod(method)}
+                className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                  paymentMethod === method ? "border-primary bg-primary/5" : "border-border bg-muted/50"
+                }`}>
+                <span className="text-lg">{icon}</span>
+                <span className={`text-xs font-semibold ${paymentMethod === method ? "text-primary" : "text-foreground"}`}>{label}</span>
               </button>
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Place order button */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-8 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <button
+          onClick={() => placeOrder.mutate()}
+          disabled={placeOrder.isPending || !meetsMinimum || villageLoading || !slotStatus.isOpen}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-black py-4 rounded-2xl text-base shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {placeOrder.isPending ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            <div className="space-y-1">
-              {doorNumber ? (
-                <>
-                  <p className="text-sm text-foreground">{doorNumber}</p>
-                  {landmark && <p className="text-sm text-muted-foreground">{landmark}</p>}
-                  {villageName && <p className="text-sm text-muted-foreground">{villageName}</p>}
-                  {deliveryPhone && (
-                    <p className="text-xs text-muted-foreground mt-1">📞 {deliveryPhone}</p>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="w-4 h-4" />
-                  <p className="text-sm">
-                    {en ? 'Please add delivery address' : 'డెలివరీ చిరునామా జోడించండి'}
-                  </p>
-                </div>
-              )}
-            </div>
+            <>
+              <CheckCircle2 className="w-5 h-5" />
+              Place Order · ₹{total.toFixed(2)}
+            </>
           )}
-        </div>
-
-        {/* Payment Method */}
-        <div className="bg-card rounded-2xl shadow-sm p-5">
-          <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-4">
-            {en ? 'Payment Method' : 'చెల్లింపు విధానం'}
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handlePaymentChange('cod')}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                paymentMethod === 'cod'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-card hover:border-primary/30'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                paymentMethod === 'cod' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}>
-                <Banknote className="w-5 h-5" />
-              </div>
-              <span className="text-sm font-medium text-foreground">
-                {en ? 'Cash on Delivery' : 'డెలివరీ నగదు'}
-              </span>
-              {paymentMethod === 'cod' && <Check className="w-4 h-4 text-primary" />}
-            </button>
-
-            <button
-              onClick={() => handlePaymentChange('upi')}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                paymentMethod === 'upi'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-card hover:border-primary/30'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                paymentMethod === 'upi' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}>
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <span className="text-sm font-medium text-foreground">
-                {en ? 'UPI Payment' : 'UPI చెల్లింపు'}
-              </span>
-              {paymentMethod === 'upi' && <Check className="w-4 h-4 text-primary" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Change chips (COD only) */}
-        {paymentMethod === 'cod' && (
-          <div className="bg-card rounded-2xl shadow-sm p-5">
-            <p className="text-sm font-medium text-foreground mb-3">
-              {en ? 'Need change for?' : 'చిల్లర కావాలి?'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {changeOptions.map(opt => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => setChangeFor(opt.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    changeFor === opt.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        </button>
+        {!slotStatus.isOpen && (
+          <p className="text-center text-xs text-muted-foreground mt-2">Ordering is currently closed</p>
         )}
       </div>
-
-      {/* Sticky Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-background/95 backdrop-blur-md border-t border-foreground/5 px-5 py-4 pb-8 z-40">
-        <button
-          onClick={handlePlaceOrder}
-          disabled={isPlacing || !totals || (minOrder > 0 && subtotal < minOrder)}
-          className="w-full bg-primary text-primary-foreground font-semibold text-base py-4 rounded-full shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-70"
-        >
-          {isPlacing
-            ? (en ? 'Placing Order...' : 'ఆర్డర్ చేస్తోంది...')
-            : totalsLoading
-              ? (en ? 'Calculating...' : 'లెక్కిస్తోంది...')
-              : (en ? `Place Order · ₹${total}` : `ఆర్డర్ చేయండి · ₹${total}`)}
-        </button>
-      </div>
-    </div>
+    </MobileLayout>
   );
 }

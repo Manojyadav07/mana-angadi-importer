@@ -1,145 +1,147 @@
-import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { useDeliveredOrders } from '@/hooks/useDeliveryEarnings';
-import { getShopTypeIcon } from '@/types';
-import { Wallet, TrendingUp, Package, Clock, RefreshCw } from 'lucide-react';
-import { SkeletonCard } from '@/components/ui/SkeletonCard';
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { ChevronLeft, TrendingUp, Package, IndianRupee, Clock } from "lucide-react";
+
+const sb = supabase as any;
+
+function fmt(n: number) { return `₹${n.toFixed(2)}`; }
 
 export function DeliveryEarningsPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { t, language } = useLanguage();
 
-  const { data: deliveredOrders = [], isLoading, refetch } = useDeliveredOrders(user?.id);
-  
-  // Filter today's deliveries
-  const today = new Date().toDateString();
-  const todayDeliveries = deliveredOrders.filter(o => 
-    o.deliveredAt && new Date(o.deliveredAt).toDateString() === today
-  );
+  const { data: assignments = [], isLoading } = useQuery({
+    queryKey: ["delivery-earnings", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from("delivery_assignments")
+        .select(`
+          id, status, payout_amount, payout_status, assigned_at,
+          orders ( slot, villages ( name ) )
+        `)
+        .eq("delivery_partner_id", user!.id)
+        .order("assigned_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
 
-  const todayEarnings = todayDeliveries.reduce((sum, o) => sum + (o.deliveryFee || 20), 0);
-  const totalEarnings = deliveredOrders.reduce((sum, o) => sum + (o.deliveryFee || 20), 0);
+  const delivered  = assignments.filter((a: any) => a.status === "delivered");
+  const totalEarned = delivered.reduce((sum: number, a: any) => sum + (a.payout_amount ?? 0), 0);
+  const pending     = delivered.filter((a: any) => a.payout_status === "pending");
+  const pendingAmt  = pending.reduce((sum: number, a: any) => sum + (a.payout_amount ?? 0), 0);
+  const paidAmt     = totalEarned - pendingAmt;
 
-  const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString(language === 'te' ? 'te-IN' : 'en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
+  // Group by date
+  const byDate = delivered.reduce<Record<string, any[]>>((acc, a: any) => {
+    const date = new Date(a.assigned_at).toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
     });
-  };
-
-  if (isLoading) {
-    return (
-      <MobileLayout>
-        <header className="screen-header">
-          <h1 className="text-xl font-bold text-foreground">{t.earnings}</h1>
-        </header>
-        <div className="px-4 py-4 space-y-4">
-          <SkeletonCard variant="shop" />
-          <SkeletonCard variant="order" />
-          <SkeletonCard variant="order" />
-        </div>
-      </MobileLayout>
-    );
-  }
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(a);
+    return acc;
+  }, {});
 
   return (
-    <MobileLayout>
-      <header className="screen-header">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">{t.earnings}</h1>
-          <button 
-            onClick={() => refetch()} 
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-          >
-            <RefreshCw className="w-5 h-5 text-muted-foreground" />
-          </button>
+    <MobileLayout navType="delivery">
+      <header className="px-4 pt-6 pb-3 flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
+        <div>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Delivery</p>
+          <h1 className="text-2xl font-bold text-foreground">Earnings</h1>
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Today's Earnings */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-4 border border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-primary" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">{t.todayEarnings}</p>
-            <p className="text-2xl font-bold text-primary">₹{todayEarnings}</p>
-          </div>
+      <div className="px-4 pb-28 space-y-4">
 
-          {/* Today's Deliveries */}
-          <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-2xl p-4 border border-green-500/20">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              </div>
+        {/* ── Stat cards ── */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Total Earned",   value: fmt(totalEarned), icon: TrendingUp,    color: "text-foreground"  },
+            { label: "Pending Payout", value: fmt(pendingAmt),  icon: Clock,         color: "text-amber-600"   },
+            { label: "Total Trips",    value: delivered.length, icon: Package,       color: "text-primary"     },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="bg-card border border-border rounded-2xl p-3 text-center">
+              <Icon className={`w-4 h-4 mx-auto mb-1 ${color}`} />
+              <p className={`text-base font-black ${color}`}>
+                {isLoading ? "—" : value}
+              </p>
+              <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
             </div>
-            <p className="text-sm text-muted-foreground">{t.todayDeliveries}</p>
-            <p className="text-2xl font-bold text-green-600">{todayDeliveries.length}</p>
-          </div>
+          ))}
         </div>
 
-        {/* Total Stats */}
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        {/* ── Settlement info ── */}
+        {pendingAmt > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <IndianRupee className="w-4 h-4 text-amber-600 flex-shrink-0" />
             <div>
-              <p className="text-sm text-muted-foreground">{t.total} {t.earnings}</p>
-              <p className="text-xl font-bold text-foreground">₹{totalEarnings}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">{t.total} {t.navDeliveries}</p>
-              <p className="text-xl font-bold text-foreground">{deliveredOrders.length}</p>
+              <p className="text-xs font-bold text-amber-700">
+                {fmt(pendingAmt)} pending settlement
+              </p>
+              <p className="text-[11px] text-amber-600">
+                Admin settles weekly to your UPI account
+              </p>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Delivery History */}
-        <section>
-          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Package className="w-5 h-5 text-muted-foreground" />
-            {t.todayDeliveries}
-          </h2>
-
-          {todayDeliveries.length === 0 ? (
-            <div className="bg-card rounded-2xl border border-border p-8 text-center">
-              <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">{t.noEarningsYet}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {todayDeliveries.map(order => (
-                <div 
-                  key={order.id}
-                  className="bg-card rounded-2xl border border-border p-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{getShopTypeIcon(order.shopType)}</span>
-                      <span className="font-medium text-foreground">
-                        {language === 'en' ? order.shopName_en : order.shopName_te}
+        {/* ── History by date ── */}
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+          ))
+        ) : Object.keys(byDate).length === 0 ? (
+          <div className="text-center py-20">
+            <IndianRupee className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-bold text-foreground">No earnings yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Completed deliveries will appear here</p>
+          </div>
+        ) : Object.entries(byDate).map(([date, rows]) => {
+          const dayTotal = rows.reduce((s: number, a: any) => s + (a.payout_amount ?? 0), 0);
+          return (
+            <div key={date} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b border-border">
+                <p className="text-xs font-bold text-foreground">{date}</p>
+                <p className="text-xs font-black text-primary">{fmt(dayTotal)}</p>
+              </div>
+              <div className="divide-y divide-border">
+                {rows.map((a: any) => (
+                  <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-xs font-bold text-foreground font-mono">
+                        Order delivery
+                      </p>
+                      <p className="text-[10px] text-muted-foreground capitalize">
+                        {(a.orders as any)?.slot} · {(a.orders as any)?.villages?.name ?? "—"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-foreground">{fmt(a.payout_amount ?? 0)}</p>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        a.payout_status === "paid"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {a.payout_status === "paid" ? "Paid" : "Pending"}
                       </span>
                     </div>
-                    <span className="badge-delivered">{t.statusDelivered}</span>
                   </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>{order.deliveredAt && formatTime(order.deliveredAt)}</span>
-                    </div>
-                    <span className="font-semibold text-primary">
-                      +₹{order.deliveryFee || 20}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          )}
-        </section>
+          );
+        })}
       </div>
     </MobileLayout>
   );

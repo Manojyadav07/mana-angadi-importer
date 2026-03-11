@@ -1,155 +1,186 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { ItemDetailSheet } from '@/components/browse/ItemDetailSheet';
-import { BrowseItem } from '@/hooks/useBrowse';
-import { ArrowLeft, Search, Loader2, Package, MapPin } from 'lucide-react';
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/layout/MobileLayout";
+import { ChevronLeft, Store, Package, LogIn } from "lucide-react";
+
+const sb = supabase as any;
+
+const CATEGORY_CONFIG: Record<string, { emoji: string; label: string }> = {
+  grocery:    { emoji: "🛒", label: "Grocery"    },
+  vegetables: { emoji: "🥦", label: "Vegetables" },
+  meat:       { emoji: "🍖", label: "Meat"        },
+  pharmacy:   { emoji: "💊", label: "Pharmacy"   },
+  bakery:     { emoji: "🍞", label: "Bakery"      },
+  dairy:      { emoji: "🥛", label: "Dairy"       },
+  general:    { emoji: "🏪", label: "General"     },
+};
 
 export function PublicShopPage() {
   const { shopId } = useParams<{ shopId: string }>();
-  const navigate = useNavigate();
-  const { language } = useLanguage();
-  const [search, setSearch] = useState('');
-  const [selectedItem, setSelectedItem] = useState<BrowseItem | null>(null);
+  const navigate   = useNavigate();
 
   const { data: shop, isLoading: shopLoading } = useQuery({
-    queryKey: ['browse-shop', shopId],
+    queryKey: ["public-shop", shopId],
+    enabled: !!shopId,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shops')
-        .select('id, name, address')
-        .eq('id', shopId!)
-        .maybeSingle();
+      const { data, error } = await sb
+        .from("shops")
+        .select("id, name, category, description, logo_url, phone, towns(name)")
+        .eq("id", shopId)
+        .eq("is_approved", true)
+        .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!shopId,
   });
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ['browse-shop-items', shopId, search],
-    queryFn: async () => {
-      let query = supabase
-        .from('items')
-        .select('id, name, price, shop_id, is_active, created_at')
-        .eq('shop_id', shopId!)
-        .eq('is_active', true)
-        .order('name')
-        .limit(50);
-
-      if (search.trim()) {
-        query = query.ilike('name', `%${search.trim()}%`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []).map((row: any): BrowseItem => ({
-        id: row.id,
-        name: row.name,
-        price: Number(row.price),
-        shop_id: row.shop_id,
-        is_active: row.is_active ?? true,
-        created_at: row.created_at,
-        shop_name: shop?.name,
-      }));
-    },
+    queryKey: ["public-shop-items", shopId],
     enabled: !!shopId,
-  });
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from("items")
+        .select("id, name, name_te, price, unit, image_url")
+        .eq("shop_id", shopId)
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  }) as { data: any[]; isLoading: boolean };
 
   const isLoading = shopLoading || itemsLoading;
+  const cat = shop ? (CATEGORY_CONFIG[shop.category] ?? { emoji: "🏪", label: shop.category }) : null;
 
   if (isLoading) {
     return (
-      <div className="screen-shell flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <MobileLayout navType="customer">
+        <div className="px-4 pt-6 space-y-3">
+          <div className="h-36 rounded-2xl bg-muted animate-pulse" />
+          {[1,2,3].map(i => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}
+        </div>
+      </MobileLayout>
     );
   }
 
   if (!shop) {
     return (
-      <div className="screen-shell flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-muted-foreground">{language === 'te' ? 'దుకాణం కనుగొనబడలేదు' : 'Shop not found'}</p>
-        <button onClick={() => navigate('/')} className="text-primary text-sm font-medium">
-          {language === 'te' ? 'వెనుకకు' : 'Go back'}
-        </button>
-      </div>
+      <MobileLayout navType="customer">
+        <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center">
+          <Store className="w-12 h-12 text-muted-foreground" />
+          <p className="text-base font-bold text-foreground">Shop not found</p>
+          <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+        </div>
+      </MobileLayout>
     );
   }
 
   return (
-    <div className="screen-shell pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 py-3">
+    <MobileLayout navType="customer">
+      <div className="min-h-screen pb-32">
+
+        {/* ── Banner ── */}
+        <div className="relative w-full h-40 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+          {shop.logo_url
+            ? <img src={shop.logo_url} alt={shop.name} className="w-full h-full object-cover" />
+            : <span className="text-6xl">{cat?.emoji}</span>
+          }
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+            className="absolute top-4 left-4 w-9 h-9 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow"
           >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            <ChevronLeft className="w-4 h-4 text-foreground" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground truncate flex-1">{shop.name}</h1>
         </div>
-      </header>
 
-      {/* Shop info */}
-      <div className="px-5 pt-4 pb-3">
-        <h2 className="text-xl font-semibold text-foreground">{shop.name}</h2>
-        {shop.address && (
-          <div className="flex items-center gap-1.5 mt-1.5 text-muted-foreground text-sm">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span>{shop.address}</span>
+        {/* ── Shop info ── */}
+        <div className="px-4 pt-4 pb-3">
+          <h1 className="text-xl font-black text-foreground">{shop.name}</h1>
+          {shop.description && (
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{shop.description}</p>
+          )}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {cat && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                {cat.emoji} {cat.label}
+              </span>
+            )}
+            {shop.towns?.name && (
+              <span className="text-xs text-muted-foreground">{shop.towns.name}</span>
+            )}
           </div>
-        )}
-        <div className="divider-section mt-4" />
-      </div>
-
-      {/* Search */}
-      <div className="px-5 mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={language === 'te' ? 'వస్తువులు వెతకండి...' : 'Search items...'}
-            className="w-full pl-9 pr-4 py-2.5 rounded-full bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
         </div>
-      </div>
 
-      {/* Items list */}
-      <div className="px-5 space-y-2">
-        {items.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">
-              {language === 'te' ? 'వస్తువులు అందుబాటులో లేవు' : 'No items available'}
-            </p>
-          </div>
-        ) : (
-          items.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setSelectedItem(item)}
-              className="w-full bg-card rounded-xl p-4 flex items-center gap-4 shadow-sm border border-border active:scale-[0.99] transition-transform text-left"
-            >
-              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                <Package className="w-5 h-5 text-muted-foreground/50" />
-              </div>
+        {/* ── Login CTA banner ── */}
+        <div className="mx-4 mb-4 bg-primary/5 border border-primary/20 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <LogIn className="w-4 h-4 text-primary flex-shrink-0" />
+          <p className="text-xs text-foreground flex-1">
+            <span className="font-bold">Sign in to order</span> — prices and ordering available after login
+          </p>
+          <button
+            onClick={() => navigate("/login")}
+            className="text-xs font-black text-primary flex-shrink-0"
+          >
+            Login →
+          </button>
+        </div>
+
+        {/* ── Items preview ── */}
+        <div className="px-4 space-y-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+            {items.length} Products Available
+          </p>
+          {items.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-30" />
+              <p className="text-sm text-muted-foreground">No products listed yet</p>
+            </div>
+          ) : items.map((item: any) => (
+            <div key={item.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <Package className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-foreground truncate">{item.name}</h4>
+                <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
+                {item.name_te && (
+                  <p className="text-xs text-muted-foreground truncate">{item.name_te}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{item.unit}</p>
               </div>
-              <span className="text-sm font-bold text-foreground flex-shrink-0">₹{item.price}</span>
-            </button>
-          ))
-        )}
+              {/* Price blurred until login */}
+              <div className="flex-shrink-0 text-right">
+                <p className="text-sm font-black text-foreground blur-sm select-none">₹{item.price}</p>
+                <p className="text-[10px] text-muted-foreground">Login to order</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
       </div>
 
-      <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} />
-    </div>
+      {/* ── Sticky login CTA ── */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-8 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <button
+          onClick={() => navigate("/login")}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-black py-4 rounded-2xl text-base shadow-lg active:scale-95 transition-all"
+        >
+          <LogIn className="w-5 h-5" />
+          Login to Place Order
+        </button>
+        <button
+          onClick={() => navigate("/signup")}
+          className="w-full text-center text-xs text-muted-foreground mt-2 py-1"
+        >
+          New customer? <span className="text-primary font-bold">Sign up free</span>
+        </button>
+      </div>
+    </MobileLayout>
   );
 }

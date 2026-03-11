@@ -1,219 +1,237 @@
-﻿import { useState, useEffect } from "react";
+﻿// src/pages/MerchantOrdersPage.tsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useMerchantShop } from "@/hooks/useShops";
-import { useMerchantOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
-import { Package, Clock, RefreshCw, Store, ChevronRight } from "lucide-react";
-import { Order, OrderStatus, getShopTypeIcon } from "@/types";
-import { SkeletonCard } from "@/components/ui/SkeletonCard";
-import { MerchantOrderDetailSheet } from "@/components/merchant/MerchantOrderDetailSheet";
-import { toast } from "sonner";
+import {
+  ChevronLeft, RefreshCw, Package,
+  Sun, Moon, MapPin,
+} from "lucide-react";
 
-type TabType = "new" | "accepted" | "ready" | "completed" | "cancelled";
+const sb = supabase as any;
 
-const TABS: { key: TabType; label: string; statuses: OrderStatus[] }[] = [
-  { key: "new", label: "New", statuses: ["placed"] },
-  { key: "accepted", label: "Accepted", statuses: ["accepted"] },
-  { key: "ready", label: "Ready", statuses: ["ready", "assigned", "pickedUp", "onTheWay"] },
-  { key: "completed", label: "Done", statuses: ["delivered"] },
-  { key: "cancelled", label: "Cancelled", statuses: ["rejected"] },
-];
-
-const STATUS_BADGE: Record<string, string> = {
-  placed: "bg-orange-100 text-orange-700",
-  accepted: "bg-blue-100 text-blue-700",
-  ready: "bg-purple-100 text-purple-700",
-  assigned: "bg-purple-100 text-purple-700",
-  pickedUp: "bg-indigo-100 text-indigo-700",
-  onTheWay: "bg-indigo-100 text-indigo-700",
-  delivered: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
+// ─── matches new order_status enum exactly ────────────────────────────────────
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  placed:     { label: "New Order",   color: "bg-blue-100 text-blue-700"   },
+  dispatched: { label: "Dispatched",  color: "bg-amber-100 text-amber-700" },
+  delivered:  { label: "Delivered",   color: "bg-green-100 text-green-700" },
+  cancelled:  { label: "Cancelled",   color: "bg-red-100 text-red-700"     },
 };
 
+const FILTER_TABS = [
+  { key: "all",       label: "All"        },
+  { key: "placed",    label: "New"        },
+  { key: "dispatched",label: "Dispatched" },
+  { key: "delivered", label: "Delivered"  },
+] as const;
+
+type FilterKey = (typeof FILTER_TABS)[number]["key"];
+
+function fmt(n: number) { return `₹${n.toFixed(2)}`; }
+
 export function MerchantOrdersPage() {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>("new");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const navigate      = useNavigate();
+  const { user }      = useAuth();
+  const { data: shop } = useMerchantShop(user?.id);
+  const [filter, setFilter] = useState<FilterKey>("all");
 
-  const { data: shop, isLoading: shopLoading } = useMerchantShop(user?.id);
-  const { data: orders = [], isLoading: ordersLoading, refetch } = useMerchantOrders(shop?.id);
-  const updateOrderStatus = useUpdateOrderStatus();
+  const { data: orders = [], isLoading, refetch } = useQuery({
+    queryKey: ["merchant-orders", shop?.id, filter],
+    enabled:  !!shop?.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      // Pull order IDs that contain items from this shop
+      const { data: orderItemRows, error: oiErr } = await sb
+        .from("order_items")
+        .select("order_id")
+        .eq("shop_id", shop!.id);
+      if (oiErr) throw oiErr;
 
-  useEffect(() => {
-    if (!shop?.id) return;
-    const interval = setInterval(() => refetch(), 15000);
-    return () => clearInterval(interval);
-  }, [shop?.id, refetch]);
+      const orderIds = [...new Set((orderItemRows ?? []).map((r: any) => r.order_id))] as string[];
+      if (orderIds.length === 0) return [];
 
-  const currentTab = TABS.find((t) => t.key === activeTab)!;
-  const filteredOrders = orders.filter((o) => currentTab.statuses.includes(o.status));
+      let q = sb
+        .from("orders")
+        .select(`
+          id, status, slot, subtotal, delivery_fee, bulk_fee, total_amount,
+          payment_method, created_at,
+          villages ( name ),
+          order_items (
+            id, quantity, price_snapshot,
+            items ( name ),
+            shop_id
+          )
+        `)
+        .in("id", orderIds)
+        .order("created_at", { ascending: false });
 
-  const getCount = (tab: typeof TABS[0]) =>
-    orders.filter((o) => tab.statuses.includes(o.status)).length;
+      if (filter !== "all") q = q.eq("status", filter);
 
-  const handleAccept = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: "accepted" });
-      toast.success("Order accepted");
-      setSelectedOrder(null);
-      refetch();
-    } catch { toast.error("Failed to accept"); }
-  };
+      const { data, error } = await q;
+      if (error) throw error;
 
-  const handleReject = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: "rejected" });
-      toast.error("Order rejected");
-      setSelectedOrder(null);
-      refetch();
-    } catch { toast.error("Failed to reject"); }
-  };
+      // For each order, keep only order_items belonging to this shop
+      return (data ?? []).map((o: any) => ({
+        ...o,
+        order_items: (o.order_items ?? []).filter(
+          (oi: any) => oi.shop_id === shop!.id
+        ),
+      }));
+    },
+  });
 
-  const handleMarkReady = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: "ready" });
-      toast.success("Marked as ready");
-      setSelectedOrder(null);
-      refetch();
-    } catch { toast.error("Failed to update"); }
-  };
-
-  const formatTime = (date: Date) => {
-    const diff = Date.now() - date.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return date.toLocaleDateString();
-  };
-
-  if (!shopLoading && !shop) {
-    return (
-      <MobileLayout navType="merchant">
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-          <Store className="w-12 h-12 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground text-center">No shop assigned yet</p>
-        </div>
-      </MobileLayout>
-    );
-  }
+  const newCount = (orders).filter((o: any) => o.status === "placed").length;
 
   return (
     <MobileLayout navType="merchant">
-      {/* Header */}
       <header className="px-4 pt-6 pb-3 flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Orders</p>
-          <h1 className="text-2xl font-bold text-foreground">{shop?.name_en ?? "My Shop"}</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Merchant</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              Orders
+              {newCount > 0 && (
+                <span className="ml-2 text-sm font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                  {newCount} new
+                </span>
+              )}
+            </h1>
+          </div>
         </div>
-        <button onClick={() => refetch()}
-          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
+        <button
+          onClick={() => refetch()}
+          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95"
+        >
           <RefreshCw className="w-4 h-4 text-muted-foreground" />
         </button>
       </header>
 
-      {/* Tabs */}
-      <div className="px-4 pb-3">
-        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
-          {TABS.map((tab) => {
-            const count = getCount(tab);
-            const isActive = activeTab === tab.key;
-            return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                  isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}>
-                {tab.label}
-                {count > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                    isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <div className="px-4 pb-28 space-y-4">
 
-      {/* Orders List */}
-      {ordersLoading || shopLoading ? (
-        <div className="px-4 space-y-3">
-          <SkeletonCard /><SkeletonCard /><SkeletonCard />
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-6 py-20">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
-            <Package className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground text-center">
-            No {currentTab.label.toLowerCase()} orders
-          </p>
-        </div>
-      ) : (
-        <div className="px-4 pb-28 space-y-3">
-          {filteredOrders.map((order) => (
-            <div key={order.id} onClick={() => setSelectedOrder(order)}
-              className="bg-card rounded-2xl border border-border p-4 shadow-sm cursor-pointer active:scale-[0.99] transition-transform">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg">
-                    {getShopTypeIcon(order.shopType)}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">#{order.id.slice(0, 8)}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatTime(order.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[order.status] ?? "bg-muted text-muted-foreground"}`}>
-                    {order.status}
-                  </span>
-                  <span className="font-bold text-foreground">₹{order.total}</span>
-                </div>
-              </div>
-
-              {/* Items preview */}
-              {order.items && order.items.length > 0 && (
-                <div className="bg-muted/40 rounded-xl p-2.5 mb-2">
-                  {order.items.slice(0, 2).map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between text-xs text-muted-foreground">
-                      <span>{item.name_en ?? item.name_te} x{item.quantity}</span>
-                      <span>₹{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                  {order.items.length > 2 && (
-                    <p className="text-xs text-primary mt-1">+{order.items.length - 2} more items</p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}
-                </span>
-                <span className="text-xs text-primary flex items-center gap-1 font-medium">
-                  View Details <ChevronRight className="w-3 h-3" />
-                </span>
-              </div>
-            </div>
+        {/* ── Filter tabs ── */}
+        <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                filter === tab.key
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
-      )}
 
-      <MerchantOrderDetailSheet
-        order={selectedOrder}
-        isOpen={!!selectedOrder}
-        onClose={() => setSelectedOrder(null)}
-        onAccept={handleAccept}
-        onReject={handleReject}
-        onMarkReady={handleMarkReady}
-      />
+        {/* ── List ── */}
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-card border border-border rounded-2xl p-4">
+              <div className="h-4 bg-muted rounded animate-pulse w-1/3 mb-2" />
+              <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
+            </div>
+          ))
+        ) : orders.length === 0 ? (
+          <div className="text-center py-20">
+            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-bold text-foreground">No orders yet</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Orders from customers will appear here
+            </p>
+          </div>
+        ) : orders.map((o: any) => {
+          const statusCfg = STATUS_CONFIG[o.status] ?? { label: o.status, color: "bg-muted text-muted-foreground" };
+          const myItems   = o.order_items ?? [];
+          const mySubtotal = myItems.reduce(
+            (sum: number, oi: any) => sum + oi.price_snapshot * oi.quantity, 0
+          );
+
+          return (
+            <div key={o.id} className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              {/* Top row */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <p className="text-sm font-black text-foreground font-mono">
+                    #{o.id.slice(0, 8).toUpperCase()}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {new Date(o.created_at).toLocaleString("en-IN", {
+                      day: "2-digit", month: "short",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 ${statusCfg.color}`}>
+                  {statusCfg.label}
+                </span>
+              </div>
+
+              {/* Slot + village */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+                  o.slot === "morning" ? "bg-amber-50" : "bg-indigo-50"
+                }`}>
+                  {o.slot === "morning"
+                    ? <Sun  className="w-3 h-3 text-amber-500" />
+                    : <Moon className="w-3 h-3 text-indigo-500" />
+                  }
+                  <span className={`text-[10px] font-bold capitalize ${
+                    o.slot === "morning" ? "text-amber-700" : "text-indigo-700"
+                  }`}>
+                    {o.slot}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="w-3 h-3" />
+                  <span>{(o.villages as any)?.name ?? "—"}</span>
+                </div>
+              </div>
+
+              {/* Items from this shop */}
+              <div className="space-y-1.5 mb-3">
+                {myItems.map((oi: any) => (
+                  <div key={oi.id} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground truncate">
+                      ×{oi.quantity} {(oi.items as any)?.name ?? "Item"}
+                    </span>
+                    <span className="font-semibold text-foreground flex-shrink-0 ml-2">
+                      {fmt(oi.price_snapshot * oi.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                    o.payment_method === "cod"
+                      ? "bg-orange-100 text-orange-700"
+                      : "bg-purple-100 text-purple-700"
+                  }`}>
+                    {o.payment_method}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {myItems.length} {myItems.length === 1 ? "item" : "items"}
+                  </span>
+                </div>
+                <p className="text-sm font-black text-foreground">{fmt(mySubtotal)}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </MobileLayout>
   );
 }
